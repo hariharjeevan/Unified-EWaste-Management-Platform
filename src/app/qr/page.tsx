@@ -26,8 +26,18 @@ const QRPage = () => {
   const generateQRCode = () => {
     if (!product || !user) return;
     const qrData = JSON.stringify({ product, user: user.uid });
+    console.log("QR Data:", qrData); // Debugging
     setQrCode(qrData);
   };
+  {qrCode ? (
+    <div className="mt-6">
+      <h2 className="text-xl font-semibold text-gray-800">QR Code:</h2>
+      <QRCodeCanvas value={qrCode} className="mt-4 border p-2 bg-white rounded-lg shadow-md" />
+    </div>
+  ) : (
+    <p className="text-red-500">No QR code generated yet.</p>
+  )}
+  
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4">
