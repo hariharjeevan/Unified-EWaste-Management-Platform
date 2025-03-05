@@ -5,13 +5,13 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/
 
 // Your Firebase config (replace with your own)
 const firebaseConfig = {
-  apiKey: "AIzaSyBkcpnBe24_482SrXweu4BGfx8ohuqAIis",
-  authDomain: "uemp-b8f1e.firebaseapp.com",
-  projectId: "uemp-b8f1e",
-  storageBucket: "uemp-b8f1e.firebasestorage.app",
-  messagingSenderId: "1025161639985",
-  appId: "1:1025161639985:web:1db09501c94588d2943d10",
-  measurementId: "G-WFSGQ514G7"
+  apiKey: "AIzaSyADfXP2LnYm4fI45QJoclpUCsmLcaYqlD8",
+  authDomain: "uemp-aadde.firebaseapp.com",
+  projectId: "uemp-aadde",
+  storageBucket: "uemp-aadde.firebasestorage.app",
+  messagingSenderId: "882454100715",
+  appId: "1:882454100715:web:5dbaeddc7f7ea5ec951cae",
+  measurementId: "G-TX6GBJ6G99"
 };
 
 // Initialize Firebase
