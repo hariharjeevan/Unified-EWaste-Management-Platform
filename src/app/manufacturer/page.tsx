@@ -16,6 +16,8 @@ interface Product {
   recyclability: string;
   recoverableMetals: string;
   qrHash: string;
+  createdAt?: { seconds: number };
+  usersCount?: number;
 }
 
 const Manufacturer = () => {
@@ -189,7 +191,7 @@ const Manufacturer = () => {
           <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50">
             <div className="bg-white p-6 rounded-lg shadow-lg">
               <h3 className="text-lg font-semibold mb-4 text-black">Create New Product</h3>
-              {["name", "serialNumber", "category", "recyclability", "recoverableMetals"].map((field) => (
+              {["name", "serialNumber", "category", "recyclability", "recoverableMetals", "usersCount"].map((field) => (
                 <input
                   key={field}
                   type="text"
@@ -206,23 +208,46 @@ const Manufacturer = () => {
 
         {showProductDetails && (
           <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg">
-              <h3 className="text-lg font-semibold mb-4">Product Details</h3>
-              {Object.entries(showProductDetails).map(([key, value]) => (
-                <p key={key} className="text-black">
-                  <strong>{key}:</strong>{" "}
-                  {typeof value === "object" && value?.seconds
-                    ? new Date(value.seconds * 1000).toLocaleString()
-                    : value}
-                </p>
-              ))}
+            <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+              <h3 className="text-lg text-white text-center bg-black font-semibold mb-6 rounded-full p-2">Product Details</h3>
+              <p className="text-black"><strong>Name:</strong> {showProductDetails.name}</p>
+              <p className="text-black"><strong>Serial Number:</strong> {showProductDetails.serialNumber}</p>
+              <p className="text-black"><strong>Category:</strong> {showProductDetails.category}</p>
+              <p className="text-black"><strong>Recyclability:</strong> {showProductDetails.recyclability}</p>
+              <p className="text-black"><strong>Recoverable Metals:</strong> {showProductDetails.recoverableMetals}</p>
+              <p className="text-red-500 text-center"><strong>QR Hash</strong></p>
+              <div className="mt-2 flex justify-center">
+                <QRCode value={showProductDetails.qrHash} size={100} bgColor="white" fgColor="black" />
+              </div>
+              {/* Timeline */}
+              <div className="mt-4">
+                <h4 className="text-red-500 text-center font-semibold mb-2">Product Timeline</h4>
+                <div className="relative">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                      <div className="text-black">Created: {showProductDetails.createdAt?.seconds ? new Date(showProductDetails.createdAt.seconds * 1000).toLocaleDateString() : "N/A"}</div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                        <div className="text-black">
+                        Time Since Creation: {showProductDetails.createdAt?.seconds ? Math.floor((Date.now() - showProductDetails.createdAt.seconds * 1000) / (1000 * 60 * 60 * 24)) + " days" : "N/A"}
+                        </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                      <div className="text-black">Users Count: {showProductDetails.usersCount}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-              <button onClick={() => setShowProductDetails(null)} className="mt-4 bg-gray-400 text-white px-4 py-2 rounded">Close</button>
+              <button onClick={() => setShowProductDetails(null)} className="mt-4 bg-red-500 text-white px-4 py-2 rounded">Close</button>
             </div>
           </div>
         )}
-      </div>
-    </div>
+      </div >
+    </div >
   );
 };
 
