@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "@/firebaseConfig";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
-import { collection, doc, setDoc } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
@@ -17,9 +17,13 @@ const Login = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        router.push("/manufacturer");
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          redirectToPage(userData.userType, currentUser.uid);
+        }
       }
     });
     return () => unsubscribe();
@@ -30,22 +34,38 @@ const Login = () => {
     setError("");
     try {
       if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          redirectToPage(userData.userType, user.uid);
+        }
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
         // Store additional user details in Firestore
-        await setDoc(doc(collection(db, "users"), user.uid), {
+        await setDoc(doc(db, "users", user.uid), {
           name,
           email,
           userType,
           organization: userType === "Consumer" ? "" : organization, // Save organization only if not a consumer
         });
+        redirectToPage(userType, user.uid);
       }
-      router.push("/manufacturer");
     } catch (error: any) {
       setError(error.message);
+    }
+  };
+
+  const redirectToPage = (userType: string, userId: string) => {
+    if (userType === "Manufacturer") {
+      router.push("/manufacturer");
+    } else if (userType === "Recycler") {
+      router.push(`/Recyclerpage/${userId}`);
+    } else if (userType === "Consumer") {
+      router.push("/consumer");
     }
   };
 
