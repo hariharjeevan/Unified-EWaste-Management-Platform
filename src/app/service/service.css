@@ -1,0 +1,50 @@
+.Add-product {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f4f4f4;
+    padding: 20px;
+    width: 100%;
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    color: black;
+    caret-color: black;
+}
+
+input::placeholder {
+    color: black;
+    opacity: 1;
+}
+
+
+select {
+    background-color: #fff;
+    cursor: pointer;
+}
+
+.Add-product button {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    font-weight: bold;
+    text-align: center;
+    background-color: #007bff;
+    color: white;
+}
+
+.Add-product button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.Add-product button:hover {
+    background-color: #0056b3;
+}
