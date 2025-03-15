@@ -19,15 +19,22 @@ const Login = () => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          redirectToPage(userData.userType, currentUser.uid);
+        try {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            redirectToPage(userData.userType);
+          } else {
+            setError("User data not found. Please sign up again.");
+          }
+        } catch (err) {
+          console.error("Error fetching user data:", err);
+          setError("Failed to fetch user data.");
         }
       }
     });
     return () => unsubscribe();
-  }, [router]);
+  }, []);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +46,9 @@ const Login = () => {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          redirectToPage(userData.userType, user.uid);
+          redirectToPage(userData.userType);
+        } else {
+          setError("No user data found. Please contact support.");
         }
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
@@ -50,22 +59,35 @@ const Login = () => {
           name,
           email,
           userType,
-          organization: userType === "Consumer" ? "" : organization, // Save organization only if not a consumer
+          organization: userType === "Consumer" ? "" : organization,
         });
-        redirectToPage(userType, user.uid);
+
+        redirectToPage(userType);
       }
     } catch (error: any) {
-      setError(error.message);
+      console.error("Authentication Error:", error);
+      setError(error.message || "An error occurred. Please try again.");
     }
   };
 
-  const redirectToPage = (userType: string, userId: string) => {
-    if (userType === "Manufacturer") {
-      router.push("/manufacturer");
-    } else if (userType === "Recycler") {
-      router.push(`/Recyclerpage/${userId}`);
-    } else if (userType === "Consumer") {
-      router.push("/consumer");
+  const redirectToPage = (userType: string) => {
+    if (!userType) {
+      setError("User type is undefined. Please try logging in again.");
+      return;
+    }
+
+    switch (userType) {
+      case "Manufacturer":
+        router.push("/manufacturer");
+        break;
+      case "Recycler":
+        router.push("/recycler");
+        break;
+      case "Consumer":
+        router.push("/consumer");
+        break;
+      default:
+        setError("Invalid user type. Please contact support.");
     }
   };
 
