@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { db, auth } from "@/firebaseConfig";
 import { collection, doc, setDoc, getDoc, getDocs, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { onAuthStateChanged, signOut } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { QRCodeCanvas as QRCode } from "qrcode.react";
@@ -57,8 +57,7 @@ const Manufacturer = () => {
       if (!categorizedProducts[data.category]) {
         categorizedProducts[data.category] = [];
       }
-      const { id, ...rest } = data;
-      categorizedProducts[data.category].push({ id: doc.id, ...rest });
+      categorizedProducts[data.category].push({ ...data, id: doc.id });
     });
     setProducts(categorizedProducts);
     setShowProducts(true);

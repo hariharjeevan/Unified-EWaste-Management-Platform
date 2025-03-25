@@ -23,6 +23,8 @@ const Home = () => {
           const userData = userDoc.data();
           setUserType(userData.userType);
           setUserId(currentUser.uid);
+          console.log("User ID:", userId);
+
         }
       }
     });

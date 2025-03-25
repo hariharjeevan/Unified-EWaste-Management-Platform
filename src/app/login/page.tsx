@@ -2,7 +2,12 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "@/firebaseConfig";
 import { FirebaseError } from "firebase/app";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  User,
+} from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -18,7 +23,7 @@ const Login = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser: User | null) => {
       if (currentUser) {
         try {
           const userDoc = await getDoc(doc(db, "users", currentUser.uid));
@@ -34,12 +39,14 @@ const Login = () => {
         }
       }
     });
-    return () => unsubscribe();
-  }, []);
+
+    return () => unsubscribe(); // Cleanup function
+  }, [auth, router]); // ✅ Fixed missing dependencies
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
     try {
       if (isLogin) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
