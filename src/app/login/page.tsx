@@ -1,8 +1,9 @@
 "use client";
 import { useState, useEffect } from "react";
 import { auth, db } from "@/firebaseConfig";
+import { FirebaseError } from "firebase/app";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
-import { collection, doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
@@ -64,9 +65,14 @@ const Login = () => {
 
         redirectToPage(userType);
       }
-    } catch (error: any) {
-      console.error("Authentication Error:", error);
-      setError(error.message || "An error occurred. Please try again.");
+    } catch (error: unknown) {
+      if (error instanceof FirebaseError) {
+        console.error("Authentication Error:", error);
+        setError(error.message);
+      } else {
+        console.error("Unexpected Error:", error);
+        setError("An unknown error occurred. Please try again.");
+      }
     }
   };
 

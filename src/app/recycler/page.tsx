@@ -82,7 +82,6 @@ const RecyclerPage = () => {
 
   const fetchFacilityLocation = async (userId: string) => {
     try {
-      const facilityRef = doc(wdb, "recyclers", userId);
       const facilityDoc = await getDocs(collection(wdb, "recyclers"));
       facilityDoc.forEach((doc) => {
         if (doc.id === userId) {

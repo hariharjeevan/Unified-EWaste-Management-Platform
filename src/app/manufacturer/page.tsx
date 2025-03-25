@@ -9,7 +9,7 @@ import Navbar from "@/components/Navbar";
 import { QRCodeCanvas as QRCode } from "qrcode.react";
 
 interface Product {
-  id: string;
+  id:string;
   name: string;
   serialNumber: string;
   category: string;
@@ -115,15 +115,6 @@ const Manufacturer = () => {
       fetchProducts(); // Refresh product list
     } catch (error) {
       console.error("Error adding product:", error);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      router.push("/login");
-    } catch (error) {
-      console.error("Error logging out:", error);
     }
   };
 

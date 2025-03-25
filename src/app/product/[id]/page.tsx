@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 import "./prod.css";
 import { auth, rdb } from "@/firebaseConfig";
 import Navbar from "@/components/Navbar";
@@ -16,7 +16,7 @@ interface Product {
   points: number;
   desc : string;
   userId: string;
-  timestamp: any;
+  timestamp: Timestamp;
 }
 
 const ProductDetails = () => {

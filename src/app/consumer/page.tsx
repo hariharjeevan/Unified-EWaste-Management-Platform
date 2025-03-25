@@ -1,10 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { db, auth } from "@/firebaseConfig";
-import { collection, doc, setDoc, getDoc, getDocs, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
 const consumer = () => {
