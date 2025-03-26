@@ -6,6 +6,7 @@ import { auth, wdb } from "@/firebaseConfig";
 import { AiOutlineSearch } from "react-icons/ai";
 import { collection, doc, getDocs, setDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
 
@@ -183,13 +184,15 @@ const RecyclerPage = () => {
             <p className="text-gray-600">Loading products...</p>
           ) : filteredProducts.length > 0 ? (
             filteredProducts.map((product) => (
-              <div key={product.id} className="p-4 bg-white rounded-lg shadow-md">
+              <Link key={product.id} href={`/product/${product.id}`} passHref>
+              <div className="p-4 bg-white rounded-lg shadow-md cursor-pointer hover:shadow-lg transition">
                 <h3 className="text-lg font-semibold text-gray-900">{product.productName}</h3>
                 <p className="text-gray-600">Category: {product.category}</p>
                 <p className="text-gray-800">Price: ${product.price}</p>
-                <p className="text-green-600 font-bold">Points: {product.points}</p>
+                <p className="text-green-600 font-bold">Total Price: {product.points}</p>
                 <p className="text-gray-500 text-sm">{product.desc}</p>
               </div>
+            </Link>
             ))
           ) : (
             <p className="text-gray-600">No products found.</p>
