@@ -1,12 +1,9 @@
 <div align="center">
 <img src="docs/favicon.png" width="50">
-</div>
-<div align="center">
 
 # **Unified E-Waste Management Platform (UEMP)**
-<div style="background: #55C1FF; color: black; margin: 0px auto; width: 456px; padding: 5px; border-radius: 10px; font-family: sans-serif; font-size: 13pt; ">
-(For Google Solutions Challenge 2025)
-</div>
+
+<img src="docs/GSC.png">
 </div>
 
 ## **Overview**
@@ -64,9 +61,7 @@ The **Unified E-Waste Management Platform (UEMP)** aims to streamline e-waste tr
   - **Unique product ID (UUID)**.
   - **Manufacturer reference**.
   - **Material and recyclability metadata**.
-
-#### 🔒 **Security**
-- QR codes are **encrypted** to prevent **duplication or tampering**.
+  - **Register device ownership to customers**
 
 ### **2. Backend System**
 #### 🗄 **Database**
@@ -91,7 +86,22 @@ The **Unified E-Waste Management Platform (UEMP)** aims to streamline e-waste tr
 - **Product QR code scanner tool**.
 - **Nearby recycler locator with map integration**.
 
+## 📸 Website Snapshots
+
+### 1️⃣ Home Screen
+<img src="docs/screenshots/Home_Screen.png" alt="Home Screen" width="600">
+
+### 2️⃣ Manufacturer Dashboard
+<img src="docs/screenshots/Manufacturer_Dashboard.png" alt="Manufacturer Dashboard" width="600">
+
+### 3️⃣ Recycler Dashboard
+<img src="docs/screenshots/Recycler_Dashboard.png" alt="Recycler Dashboard" width="600">
+
+### 4️⃣ Consumer Portal
+<img src="docs/screenshots/consumer.png" alt="Consumer Portal" width="600">
+
 ## 🚀 **Get Started**
+
 ### **Installation**
 ```sh
 # Clone the repository
@@ -110,9 +120,7 @@ npm install  # or yarn install
 npm run dev  # or yarn dev
 ```
 <div align="center">
-<div align="center">
   
 *__Made with 💖 by Aventra__*
 
-</div>
 </div>

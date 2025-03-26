@@ -15,6 +15,7 @@ const Login = () => {
   const [userType, setUserType] = useState("Manufacturer");
   const [error, setError] = useState("");
   const [isLogin, setIsLogin] = useState(true);
+  const [isLoading, setIsLoading] = useState(false); // Loading state
   const router = useRouter();
 
   useEffect(() => {
@@ -41,6 +42,7 @@ const Login = () => {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setIsLoading(true); // Start loading
 
     try {
       let user;
@@ -63,7 +65,7 @@ const Login = () => {
       const userDoc = await getDoc(doc(db, "users", user.uid));
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        redirectToPage(userData.userType, user.uid); // Pass the user's UID to redirectToPage
+        redirectToPage(userData.userType, user.uid);
       } else {
         setError("No user data found. Please contact support.");
       }
@@ -75,6 +77,8 @@ const Login = () => {
         console.error("Unexpected Error:", error);
         setError("An unknown error occurred. Please try again.");
       }
+    } finally {
+      setIsLoading(false); // Stop loading after process completes
     }
   };
 
@@ -166,11 +170,17 @@ const Login = () => {
               className="border p-2 rounded w-full text-black bg-white placeholder-gray-500"
             />
 
+            {/* Login Button with Loading Spinner */}
             <button
               type="submit"
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition flex items-center justify-center"
+              disabled={isLoading}
             >
-              {isLogin ? "Login" : "Sign Up"}
+              {isLoading ? (
+                <div className="animate-spin h-5 w-5 border-4 border-white border-t-transparent rounded-full"></div>
+              ) : (
+                isLogin ? "Login" : "Sign Up"
+              )}
             </button>
           </form>
 

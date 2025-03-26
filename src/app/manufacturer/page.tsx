@@ -9,13 +9,13 @@ import Navbar from "@/components/Navbar";
 import { QRCodeCanvas as QRCode } from "qrcode.react";
 
 interface Product {
-  id:string;
+  id: string;
   name: string;
   serialNumber: string;
   category: string;
   recyclability: string;
   recoverableMetals: string;
-  qrHash: string;
+  qrCode: string;
   createdAt?: { seconds: number };
   usersCount?: number;
 }
@@ -59,6 +59,7 @@ const Manufacturer = () => {
       }
       categorizedProducts[data.category].push({ ...data, id: doc.id });
     });
+
     setProducts(categorizedProducts);
     setShowProducts(true);
   };
@@ -66,28 +67,18 @@ const Manufacturer = () => {
   const deleteProduct = async (productId: string) => {
     if (!user) return;
 
-    const confirmDelete = window.confirm("Are you sure you want to delete this product?");
-    if (!confirmDelete) return;
+    if (!confirm("Are you sure you want to delete this product?")) return;
 
     try {
       await deleteDoc(doc(db, "manufacturers", user.uid, "products", productId));
-      fetchProducts(); // Refresh the list after deletion
+      fetchProducts();
     } catch (error) {
       console.error("Error deleting product:", error);
     }
   };
 
-  const generateHash = async (input: string) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(input);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    return Array.from(new Uint8Array(hashBuffer))
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
-  };
-
   const addProduct = async () => {
-    if (!user || !productDetails.name || !productDetails.serialNumber || !productDetails.category) {
+    if (!user || !productDetails.serialNumber || !productDetails.category) {
       alert("Please fill in all required fields.");
       return;
     }
@@ -101,17 +92,19 @@ const Manufacturer = () => {
         return;
       }
 
-      const hash = await generateHash(productDetails.name + productDetails.serialNumber);
+
+      const qrData = `${user.uid}-${productDetails.serialNumber}`;
+
       const newProduct = {
         ...productDetails,
-        qrHash: hash,
+        qrCode: qrData,
         createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       };
 
       await setDoc(serialRef, newProduct);
       setShowDialog(false);
-      fetchProducts(); // Refresh product list
+      fetchProducts();
     } catch (error) {
       console.error("Error adding product:", error);
     }
@@ -119,7 +112,6 @@ const Manufacturer = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f3f4]">
-      {/* Navbar */}
       <Navbar links={[{ label: "", href: "" }]} />
       <div className="bg-gray-100 min-h-screen flex flex-col items-center pt-16">
         <h2 className="text-xl text-black font-semibold mt-4">Manufacturer Dashboard</h2>
@@ -137,11 +129,7 @@ const Manufacturer = () => {
                   <h4 className="text-md font-bold text-gray-700">{category}</h4>
                   <ul>
                     {items.map((product) => (
-                      <li
-                        key={product.id}
-                        className="border-b p-3 text-black flex justify-between items-center"
-                      >
-                        {/* Product Name & Serial Number Group */}
+                      <li key={product.id} className="border-b p-3 text-black flex justify-between items-center">
                         <div className="flex items-center space-x-3 relative group">
                           <span
                             className="cursor-pointer text-blue-600 hover:underline hover:text-blue-800 transition-all duration-200"
@@ -149,21 +137,12 @@ const Manufacturer = () => {
                           >
                             {product.name}
                           </span>
-
                           <span className="text-gray-700">({product.serialNumber})</span>
-
-                          <div
-                            className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20"
-                          >
-                            <QRCode value={product.qrHash} size={100} bgColor="white" fgColor="black" />
+                          <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20">
+                            <QRCode value={product.qrCode} size={100} bgColor="white" fgColor="black" />
                           </div>
                         </div>
-
-                        {/* Delete Button */}
-                        <button
-                          onClick={() => deleteProduct(product.id)}
-                          className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition-all duration-200"
-                        >
+                        <button onClick={() => deleteProduct(product.id)} className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition-all duration-200">
                           Delete
                         </button>
                       </li>
@@ -205,9 +184,9 @@ const Manufacturer = () => {
               <p className="text-black"><strong>Category:</strong> {showProductDetails.category}</p>
               <p className="text-black"><strong>Recyclability:</strong> {showProductDetails.recyclability}</p>
               <p className="text-black"><strong>Recoverable Metals:</strong> {showProductDetails.recoverableMetals}</p>
-              <p className="text-red-500 text-center"><strong>QR Hash</strong></p>
+              <p className="text-red-500 text-center"><strong>Product QR Code</strong></p>
               <div className="mt-2 flex justify-center">
-                <QRCode value={showProductDetails.qrHash} size={100} bgColor="white" fgColor="black" />
+                <QRCode value={showProductDetails.qrCode} size={100} bgColor="white" fgColor="black" />
               </div>
               {/* Timeline */}
               <div className="mt-4">
@@ -220,9 +199,9 @@ const Manufacturer = () => {
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                        <div className="text-black">
+                      <div className="text-black">
                         Time Since Creation: {showProductDetails.createdAt?.seconds ? Math.floor((Date.now() - showProductDetails.createdAt.seconds * 1000) / (1000 * 60 * 60 * 24)) + " days" : "N/A"}
-                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center space-x-4">
                       <div className="w-4 h-4 bg-red-500 rounded-full"></div>
@@ -231,13 +210,12 @@ const Manufacturer = () => {
                   </div>
                 </div>
               </div>
-
               <button onClick={() => setShowProductDetails(null)} className="mt-4 bg-red-500 text-white px-4 py-2 rounded">Close</button>
             </div>
           </div>
         )}
-      </div >
-    </div >
+      </div>
+    </div>
   );
 };
 
