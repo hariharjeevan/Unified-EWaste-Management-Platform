@@ -2,12 +2,7 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "@/firebaseConfig";
 import { FirebaseError } from "firebase/app";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  User,
-} from "firebase/auth";
+import {createUserWithEmailAndPassword , signInWithEmailAndPassword , onAuthStateChanged , User} from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -99,6 +94,9 @@ const Login = () => {
       case "Consumer":
         router.push(`/consumer/${userId}`);
         break;
+      case "Government":
+        router.push("/government");
+        break;
       default:
         setError("Invalid user type. Please contact support.");
     }
@@ -134,6 +132,7 @@ const Login = () => {
                   <option value="Manufacturer">Manufacturer</option>
                   <option value="Recycler">Recycler</option>
                   <option value="Consumer">Consumer</option>
+                  <option value="Government">Government</option>
                 </select>
 
                 {userType !== "Consumer" && (
