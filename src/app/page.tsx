@@ -32,17 +32,22 @@ const Home = () => {
   }, []);
 
   const handleLinkClick = (requiredUserType: string, href: string) => {
-    if (!userType) {
+    if (!userType || !userId) {
       router.push("/login");
       return;
     }
-
+  
     if (userType === requiredUserType) {
-      router.push(href);
+      if (requiredUserType === "Consumer") {
+        router.push(`/consumer/${userId}`);
+      } else {
+        router.push(href);
+      }
     } else {
       setError(`You must be logged in as a ${requiredUserType} to access this page.`);
     }
   };
+  
 
 
   return (

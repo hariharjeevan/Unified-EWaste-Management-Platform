@@ -29,7 +29,7 @@ const Login = () => {
           const userDoc = await getDoc(doc(db, "users", currentUser.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            redirectToPage(userData.userType);
+            redirectToPage(userData.userType, currentUser.uid);
           } else {
             setError("User data not found. Please sign up again.");
           }
@@ -40,27 +40,21 @@ const Login = () => {
       }
     });
 
-    return () => unsubscribe(); // Cleanup function
-  }, [auth, router]); // ✅ Fixed missing dependencies
+    return () => unsubscribe();
+  }, [auth, router]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     try {
+      let user;
       if (isLogin) {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          redirectToPage(userData.userType);
-        } else {
-          setError("No user data found. Please contact support.");
-        }
+        user = userCredential.user;
       } else {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
+        user = userCredential.user;
 
         // Store additional user details in Firestore
         await setDoc(doc(db, "users", user.uid), {
@@ -69,8 +63,14 @@ const Login = () => {
           userType,
           organization: userType === "Consumer" ? "" : organization,
         });
+      }
 
-        redirectToPage(userType);
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        redirectToPage(userData.userType, user.uid); // Pass the user's UID to redirectToPage
+      } else {
+        setError("No user data found. Please contact support.");
       }
     } catch (error: unknown) {
       if (error instanceof FirebaseError) {
@@ -83,7 +83,7 @@ const Login = () => {
     }
   };
 
-  const redirectToPage = (userType: string) => {
+  const redirectToPage = (userType: string, userId: string) => {
     if (!userType) {
       setError("User type is undefined. Please try logging in again.");
       return;
@@ -97,7 +97,7 @@ const Login = () => {
         router.push("/recycler");
         break;
       case "Consumer":
-        router.push("/consumer");
+        router.push(`/consumer/${userId}`);
         break;
       default:
         setError("Invalid user type. Please contact support.");

@@ -1,4 +1,13 @@
+<div align="center">
+<img src="docs/favicon.png" width="50">
+</div>
+<div align="center">
+
 # **Unified E-Waste Management Platform (UEMP)**
+<div style="background: #55C1FF; color: black; margin: 0px auto; width: 456px; padding: 5px; border-radius: 10px; font-family: sans-serif; font-size: 13pt; ">
+(For Google Solutions Challenge 2025)
+</div>
+</div>
 
 ## **Overview**
 The **Unified E-Waste Management Platform (UEMP)** aims to streamline e-waste tracking and recycling through a unified digital solution. It connects **manufacturers, recyclers, and consumers** to promote responsible e-waste management and lifecycle tracking of electronic products.
@@ -68,7 +77,7 @@ The **Unified E-Waste Management Platform (UEMP)** aims to streamline e-waste tr
 
 ### **1. Intuitive Design**
 #### 🏠 **Homepage**
-- Clear navigation with separate sections for **manufacturers, recyclers, and consumers**.
+- Clear navigation with separate sections for **manufacturers, recyclers, consumers and government organizations**.
 
 #### 📊 **QR Code Dashboard (Manufacturers)**
 - Simple tools to **generate and track QR codes**.
@@ -79,7 +88,7 @@ The **Unified E-Waste Management Platform (UEMP)** aims to streamline e-waste tr
 - **Calendar for scheduling pickups or appointments**.
 
 #### 📱 **Consumer Portal**
-- **QR code scanner tool**.
+- **Product QR code scanner tool**.
 - **Nearby recycler locator with map integration**.
 
 ## 🚀 **Get Started**
@@ -100,3 +109,10 @@ npm install  # or yarn install
 # Start the development server
 npm run dev  # or yarn dev
 ```
+<div align="center">
+<div align="center">
+  
+*__Made with 💖 by Aventra__*
+
+</div>
+</div>
