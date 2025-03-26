@@ -81,7 +81,6 @@ const Consumer = () => {
             <Navbar links={[{ label: "", href: "" }]} />
             <div className="w-screen h-screen flex flex-col items-center justify-center bg-[#f5f3f4] p-4">
                 
-                {/* Image Section */}
                 <div className="relative flex justify-center w-full max-w-lg mt-[-100px]">
                     <img 
                         src="/Cleaning Earth Environment.svg" 
@@ -90,12 +89,10 @@ const Consumer = () => {
                     />
                 </div>
 
-                {/* Welcome Text */}
                 <h1 className="text-black font-bold text-lg sm:text-xl mt-2 text-center">
                     {user ? `Welcome, ${user.email}` : "Not signed in"}
                 </h1>
 
-                {/* Buttons Below Text */}
                 <div className="flex justify-center space-x-4 w-full mt-2">
                     <button
                         onClick={() => router.push(`/addproduct/${uid}`)}
@@ -112,14 +109,12 @@ const Consumer = () => {
                     </button>
                 </div>
 
-                {/* QR Scanner Section */}
                 <div className="flex flex-col items-center w-full max-w-md mt-6">
                     <div id="qr-reader" ref={scannerRef} className="w-full h-60 max-h-[250px]"></div>
                     {errorMessage && <p className="text-red-500 text-sm mt-2">{errorMessage}</p>}
                 </div>
             </div>
 
-            {/* Global Styles for QR Text */}
             <style jsx global>{`
                 #qr-reader__scan_region, #qr-reader__scan_region div, #qr-reader span {
                     color: black !important;
