@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, wdb } from "@/firebaseConfig";
-import "./service.css";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import Navbar from "@/components/Navbar";
@@ -22,7 +21,6 @@ const ServicePage = () => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -61,10 +59,8 @@ const ServicePage = () => {
       };
 
       await setDoc(docRef, newProduct);
-
       alert("Data saved successfully with ID: " + productId);
 
-      // Reset fields
       setProductId("");
       setNameofProduct("");
       setSelectedValue("");
@@ -72,7 +68,6 @@ const ServicePage = () => {
       setPointValue("");
       setProductdesc("");
 
-      // Redirect to recycler page after successful save
       router.push("/recycler");
     } catch (error) {
       console.error("Error saving data:", error);
@@ -83,53 +78,22 @@ const ServicePage = () => {
   return (
     <>
       <Navbar links={[{ label: "Recycler", href: "/recycler" }]} />
-      <div className="Add-product">
-        <div className="form-group">
-          <input
-            type="text"
-            placeholder="Enter Product ID"
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-            required
-          />
-          <input
-            type="text"
-            placeholder="Enter name of product"
-            value={nameofproduct}
-            onChange={(e) => setNameofProduct(e.target.value)}
-            required
-          />
-          <select value={selectedValue} onChange={(e) => setSelectedValue(e.target.value)}>
+      <div className="flex justify-center items-center h-screen bg-white p-4">
+        <div className="w-80 bg-white p-4 rounded-lg shadow-lg">
+          <input type="text" placeholder="Enter Product ID" value={productId} onChange={(e) => setProductId(e.target.value)} required className="w-full p-2 mb-2 border border-gray-300 rounded text-black" />
+          <input type="text" placeholder="Enter name of product" value={nameofproduct} onChange={(e) => setNameofProduct(e.target.value)} required className="w-full p-2 mb-2 border border-gray-300 rounded text-black" />
+          <select value={selectedValue} onChange={(e) => setSelectedValue(e.target.value)} className="w-full p-2 mb-2 border border-gray-300 rounded text-black">
             <option value="">Choose a category</option>
             <option value="Electronics">Electronics</option>
             <option value="Plastic">Plastic</option>
             <option value="Metal">Metal</option>
           </select>
-          <input
-            type="number"
-            placeholder="Enter price of product customer gets"
-            value={pricevalue}
-            onChange={(e) => setPriceValue(e.target.value)}
-            required
-          />
-          <input
-            type="number"
-            placeholder="Enter points for product you receive"
-            value={pointvalue}
-            onChange={(e) => setPointValue(e.target.value)}
-            required
-          />
-          <input
-            type="text"
-            placeholder="Enter product description"
-            value={productdesc}
-            onChange={(e) => setProductdesc(e.target.value)}
-            required
-            style={{ width: "100%", height: "50px", fontSize: "16px" }}
-          />
-          <div className="button-group">
-            <button onClick={savedata}>Add</button>
-            <button className="close-btn" onClick={() => router.push("/recycler")}>Close</button>
+          <input type="number" placeholder="Enter price of product customer gets" value={pricevalue} onChange={(e) => setPriceValue(e.target.value)} required className="w-full p-2 mb-2 border border-gray-300 rounded text-black" />
+          <input type="number" placeholder="Enter price for product you receive" value={pointvalue} onChange={(e) => setPointValue(e.target.value)} required className="w-full p-2 mb-2 border border-gray-300 rounded text-black" />
+          <input type="text" placeholder="Enter product description" value={productdesc} onChange={(e) => setProductdesc(e.target.value)} required className="w-full h-12 p-2 mb-2 border border-gray-300 rounded text-black" />
+          <div className="flex gap-2">
+            <button onClick={savedata} className="w-full p-2 bg-green-600 text-white rounded hover:bg-green-700">Add</button>
+            <button className="w-full p-2 bg-green-600 text-white rounded hover:bg-green-700" onClick={() => router.push("/recycler")}>Close</button>
           </div>
         </div>
       </div>
