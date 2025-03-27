@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, wdb } from "@/firebaseConfig";
 import { AiOutlineSearch } from "react-icons/ai";
-import { collection, doc, getDocs, setDoc } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -83,16 +83,18 @@ const RecyclerPage = () => {
 
   const fetchFacilityLocation = async (userId: string) => {
     try {
-      const facilityDoc = await getDocs(collection(wdb, "recyclers"));
-      facilityDoc.forEach((doc) => {
-        if (doc.id === userId) {
-          const data = doc.data();
-          if (data.location) {
-            setFacilityLocation(data.location);
-            setFacilityAddress(data.address || null);
-          }
+      const facilityDocRef = doc(wdb, "recyclers", userId);
+      const docSnapshot = await getDoc(facilityDocRef);
+
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        if (data?.location) {
+          setFacilityLocation(data.location);
+          setFacilityAddress(data.address || null);
         }
-      });
+      } else {
+        console.log("No such document!");
+      }
     } catch (error) {
       console.error("Error fetching facility location:", error);
     }
@@ -185,14 +187,14 @@ const RecyclerPage = () => {
           ) : filteredProducts.length > 0 ? (
             filteredProducts.map((product) => (
               <Link key={product.id} href={`/product/${product.id}`} passHref>
-              <div className="p-4 bg-white rounded-lg shadow-md cursor-pointer hover:shadow-lg transition">
-                <h3 className="text-lg font-semibold text-gray-900">{product.productName}</h3>
-                <p className="text-gray-600">Category: {product.category}</p>
-                <p className="text-gray-800">Price: ${product.price}</p>
-                <p className="text-green-600 font-bold">Total Price: {product.points}</p>
-                <p className="text-gray-500 text-sm">{product.desc}</p>
-              </div>
-            </Link>
+                <div className="p-4 bg-white rounded-lg shadow-md cursor-pointer hover:shadow-lg transition">
+                  <h3 className="text-lg font-semibold text-gray-900">{product.productName}</h3>
+                  <p className="text-gray-600">Category: {product.category}</p>
+                  <p className="text-gray-800">Price: ₹{product.price}</p>
+                  <p className="text-green-600 font-bold">Total Price: {product.points}</p>
+                  <p className="text-gray-500 text-sm">{product.desc}</p>
+                </div>
+              </Link>
             ))
           ) : (
             <p className="text-gray-600">No products found.</p>

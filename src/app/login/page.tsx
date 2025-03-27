@@ -2,10 +2,17 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "@/firebaseConfig";
 import { FirebaseError } from "firebase/app";
-import {createUserWithEmailAndPassword , signInWithEmailAndPassword , onAuthStateChanged , User} from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+  User
+} from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -14,8 +21,10 @@ const Login = () => {
   const [organization, setOrganization] = useState("");
   const [userType, setUserType] = useState("Manufacturer");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isLogin, setIsLogin] = useState(true);
-  const [isLoading, setIsLoading] = useState(false); // Loading state
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,7 +51,8 @@ const Login = () => {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setIsLoading(true); // Start loading
+    setSuccess(""); // Clear previous success messages
+    setIsLoading(true);
 
     try {
       let user;
@@ -53,7 +63,6 @@ const Login = () => {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         user = userCredential.user;
 
-        // Store additional user details in Firestore
         await setDoc(doc(db, "users", user.uid), {
           name,
           email,
@@ -78,7 +87,30 @@ const Login = () => {
         setError("An unknown error occurred. Please try again.");
       }
     } finally {
-      setIsLoading(false); // Stop loading after process completes
+      setIsLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError("Please enter your email to reset your password.");
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+
+    try {
+      await sendPasswordResetEmail(auth, email);
+      setSuccess("Password reset email sent! Check your inbox.");
+    } catch (error: unknown) {
+      if (error instanceof FirebaseError) {
+        console.error("Password Reset Error:", error);
+        setError(error.message);
+      } else {
+        console.error("Unexpected Error:", error);
+        setError("An error occurred. Please try again.");
+      }
     }
   };
 
@@ -107,14 +139,17 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f5f3f4]">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar links={[{ label: "About Us", href: "/about" }]} />
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 pt-16">
-        <div className="bg-white p-8 rounded-lg shadow-md w-96 mt-8">
+      <div className="flex flex-col items-center justify-center min-h-screen px-4">
+        <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
           <h1 className="text-2xl font-bold mb-4 text-center text-green-700">
             {isLogin ? "Login" : "Sign Up"}
           </h1>
+
           {error && <p className="text-red-500 text-center">{error}</p>}
+          {success && <p className="text-green-500 text-center">{success}</p>}
+
           <form onSubmit={handleAuth} className="flex flex-col gap-4">
             {!isLogin && (
               <>
@@ -161,31 +196,43 @@ const Login = () => {
               className="border p-2 rounded w-full text-black bg-white placeholder-gray-500"
             />
 
-            <input
-              type="password"
-              placeholder={isLogin ? "Password" : "Create Password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="border p-2 rounded w-full text-black bg-white placeholder-gray-500"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder={isLogin ? "Password" : "Create Password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="border p-2 rounded w-full text-black bg-white placeholder-gray-500 pr-10"
+              />
+              <button
+                type="button"
+                className="absolute right-3 top-3 text-gray-500"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <AiOutlineEyeInvisible size={20} /> : <AiOutlineEye size={20} />}
+              </button>
+            </div>
 
-            {/* Login Button with Loading Spinner */}
+            {isLogin && (
+              <p
+                className="text-sm text-blue-500 cursor-pointer hover:underline text-center"
+                onClick={handleForgotPassword}
+              >
+                Forgot Password?
+              </p>
+            )}
+
             <button
               type="submit"
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition flex items-center justify-center"
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
               disabled={isLoading}
             >
-              {isLoading ? (
-                <div className="animate-spin h-5 w-5 border-4 border-white border-t-transparent rounded-full"></div>
-              ) : (
-                isLogin ? "Login" : "Sign Up"
-              )}
+              {isLoading ? "Loading..." : isLogin ? "Login" : "Sign Up"}
             </button>
           </form>
-
           <p className="text-center text-black mt-4">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
+            {isLogin ? "Don't have an account yet? " : "Already have an account? "}
             <span
               className="text-blue-500 cursor-pointer hover:underline"
               onClick={() => setIsLogin(!isLogin)}
@@ -193,6 +240,7 @@ const Login = () => {
               {isLogin ? "Sign Up" : "Login"}
             </span>
           </p>
+
         </div>
       </div>
     </div>

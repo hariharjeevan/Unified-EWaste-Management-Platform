@@ -1,12 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { auth } from "@/firebaseConfig";
+import { auth, db } from "@/firebaseConfig";
 import { RiLogoutBoxFill, RiAccountPinCircleFill } from "react-icons/ri";
 import { IoLogIn } from "react-icons/io5";
+import { doc, getDoc } from "firebase/firestore";
+import { Mona_Sans } from 'next/font/google';
+
+const monaSans = Mona_Sans({
+  subsets: ['latin'],
+  weight: '800',
+  display: 'swap',
+});
 
 interface NavbarProps {
   links?: { label: string; href: string }[];
@@ -14,14 +22,37 @@ interface NavbarProps {
 
 const Navbar = ({ links = [] }: NavbarProps) => {
   const [user, setUser] = useState(auth.currentUser);
+  const [userData, setUserData] = useState<{ name: string; organization: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+        if (userDoc.exists()) {
+          setUserData(userDoc.data() as { name: string; organization: string });
+        }
+      }
     });
+
     return () => unsubscribe();
+  }, []);
+
+  // Close menu if clicked outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -31,45 +62,61 @@ const Navbar = ({ links = [] }: NavbarProps) => {
 
   return (
     <nav className="bg-[#000500] text-white p-4 flex justify-between items-center shadow-md relative">
-      {/* Left: User Menu */}
-      <div className="relative hover:text-green-400">
+      {/* Left: User Icon */}
+      <div className="relative">
         <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center space-x-2">
-          <RiAccountPinCircleFill size={40} />
+          <RiAccountPinCircleFill size={40} className="cursor-pointer hover:text-green-400" />
         </button>
 
+        {/* Dropdown Menu */}
         {menuOpen && (
-          <div className="absolute left-0 mt-1 w-48 bg-white text-black shadow-lg rounded-lg border border-gray-200">
-            <p className="block px-4 py-2 text-gray-700 border-b border-gray-200">
-              {user ? `Welcome, ${user.email}` : "Not signed in"}
+          <div
+            ref={menuRef}
+            className="absolute top-full left-0 mt-2 w-64 bg-white text-black shadow-lg rounded-lg border border-gray-200 z-50 p-4
+                       transition-opacity duration-300 opacity-100"
+          >
+            <p className="block text-gray-700 border-b border-gray-200 pb-2 text-lg font-semibold">
+              {userData?.name || "User"}
             </p>
-            {user ? (
-              <button
-          onClick={handleLogout}
-          className="flex items-center w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 transition-colors duration-200"
-              >
-          <RiLogoutBoxFill size={25} className="mr-2" /> Logout
-              </button>
-            ) : (
+            <p className="block text-gray-600 text-sm">{user?.email}</p>
+            {userData?.organization && (
+              <p className="block text-gray-500 text-sm mt-1 italic">{userData.organization}</p>
+            )}
+
+            <div className="mt-3">
+              {user ? (
                 <button
-                onClick={() => router.push("/login")}
-                className="flex items-center w-full text-left px-4 py-2 text-green-600 hover:bg-gray-100 transition-colors duration-200"
+                  onClick={handleLogout}
+                  className="flex items-center w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 transition-colors duration-200 rounded"
                 >
-                <IoLogIn size={28} className="mr-2" /> Login
+                  <RiLogoutBoxFill size={25} className="mr-2" /> Logout
                 </button>
-            )}
-              </div>
-            )}
+              ) : (
+                <button
+                  onClick={() => router.push("/login")}
+                  className="flex items-center w-full text-left px-4 py-2 text-green-600 hover:bg-gray-100 transition-colors duration-200 rounded"
+                >
+                  <IoLogIn size={28} className="mr-2" /> Login
+                </button>
+              )}
+            </div>
           </div>
-          
+        )}
+      </div>
 
       {/* Center: Logo */}
-      <h1 className="text-2xl font-bold">
-        <Link href="/">UEMP</Link>
+      <h1 className={`${monaSans.className} font-sans`}>
+        <Link href="/" className="text-2xl">UEMP</Link>
       </h1>
+
       {/* Right: Navigation Links */}
       <div className="flex space-x-4">
         {links.map((link) => (
-          <Link key={link.href} href={link.href} className="text-lg hover:text-green-400 transition-colors duration-300">
+          <Link
+            key={link.href}
+            href={link.href}
+            className="text-lg hover:text-green-400 transition-colors duration-300"
+          >
             {link.label}
           </Link>
         ))}
