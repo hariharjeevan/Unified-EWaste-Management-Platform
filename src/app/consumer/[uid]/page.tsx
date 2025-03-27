@@ -6,18 +6,23 @@ import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/fi
 import { onAuthStateChanged, User } from "firebase/auth";
 import Navbar from "@/components/Navbar";
 import { Html5QrcodeScanner } from "html5-qrcode";
+import Image from "next/image";
 
 const Consumer = () => {
+    interface Product {
+        id?: string;
+        name: string;
+        serialNumber: string;
+        category: string;
+        recyclability: string;
+        recoverableMetals: string;
+    }
+
     const [user, setUser] = useState<User | null>(null);
-    const [mounted, setMounted] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
-    const [productDetails, setProductDetails] = useState<any | null>(null);
-    const [scannedProducts, setScannedProducts] = useState<any[]>([]);
+    const [productDetails, setProductDetails] = useState<Product | null>(null);
+    const [scannedProducts, setScannedProducts] = useState<Product[]>([]);
     const scannerRef = useRef<HTMLDivElement>(null);
-    
-    useEffect(() => {
-        setMounted(true);
-    }, []);
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -32,20 +37,20 @@ const Consumer = () => {
     const fetchScannedProducts = async (userId: string) => {
         const userScansRef = collection(db, "consumers", userId, "scannedProducts");
         const snapshot = await getDocs(userScansRef);
-        const products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const products: Product[] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Product));
         setScannedProducts(products);
-    };
+    };    
 
-    const saveScannedProduct = async (userId: string, product: any) => {
+    const saveScannedProduct = async (userId: string, product: Product) => {
         const productRef = doc(db, "consumers", userId, "scannedProducts", product.serialNumber);
         await setDoc(productRef, product);
         await fetchScannedProducts(userId);
-    };
+    };    
 
     const deleteScannedProduct = async (userId: string, productId: string) => {
         await deleteDoc(doc(db, "consumers", userId, "scannedProducts", productId));
         await fetchScannedProducts(userId);
-    };
+    };    
 
     const startQRScanner = () => {
         if (!scannerRef.current) return;
@@ -83,7 +88,7 @@ const Consumer = () => {
                     const productSnap = await getDoc(productRef);
 
                     if (productSnap.exists()) {
-                        const productData = productSnap.data();
+                        const productData = productSnap.data() as Product;
                         setProductDetails(productData);
                         if (user) {
                             await saveScannedProduct(user.uid, productData);
@@ -103,56 +108,69 @@ const Consumer = () => {
     };
 
     return (
-    <>
-        <Navbar links={[{ label: "Home", href: "/" }]} />
-        <div className="min-h-screen flex flex-col items-center bg-gray-100">
-            <div className="relative flex flex-col items-center w-full max-w-2xl mt-[10px]">
-                <img
-                    src="/Cleaning Earth Environment.svg"
-                    alt="E-Waste Management"
-                    className="w-3/4 md:w-1/2 h-auto rounded-lg shadow-md"
-                />
-                {user && <h2 className="text-xl text-black font-semibold mt-2">Hello, {user.email || "User"}</h2>}
-            </div>
-
-            <h2 className="text-xl text-black font-semibold mt-4">Scan Product QR Code</h2>
-            <div ref={scannerRef} id="qr-reader" className="mt-4" style={{color: "black" }}></div>
-            <button onClick={startQRScanner} className="bg-green-600 text-white px-4 py-2 mt-4 rounded">
-                Start Scanner
-            </button>
-            
-            {errorMessage && <p className="text-red-500 mt-4">{errorMessage}</p>}
-            
-            {productDetails && (
-                <div className="mt-6 w-full max-w-2xl bg-white shadow-lg rounded-xl p-6 border border-gray-300">
-                    <h3 className="text-lg text-black font-semibold border-b pb-2">Product Details</h3>
-                    <p className="text-black mt-2"><strong>Name:</strong> {productDetails.name}</p>
-                    <p className="text-black"><strong>Serial Number:</strong> {productDetails.serialNumber}</p>
-                    <p className="text-black"><strong>Category:</strong> {productDetails.category}</p>
-                    <p className="text-black"><strong>Recyclability:</strong> {productDetails.recyclability}</p>
-                    <p className="text-black"><strong>Recoverable Metals:</strong> {productDetails.recoverableMetals}</p>
+        <>
+            <Navbar links={[{ label: "Home", href: "/" }]} />
+            <div className="min-h-screen flex flex-col items-center bg-gray-100">
+                <div className="relative flex flex-col items-center w-full max-w-2xl mt-[10px]">
+                    <Image
+                        src="/Cleaning Earth Environment.svg"
+                        alt="E-Waste Management"
+                        width={600}
+                        height={400}
+                        className="w-3/4 md:w-1/2 h-auto rounded-lg shadow-md"
+                    />
+                    {user && <h2 className="text-xl text-black font-semibold mt-2">Hello, {user.email || "User"}</h2>}
                 </div>
-            )}
 
-            <h2 className="text-xl text-black font-semibold mt-6">Scanned Products</h2>
-            <div className="w-full max-w-2xl mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                {scannedProducts.length > 0 ? (
-                    scannedProducts.map((product) => (
-                        <div key={product.id} className="bg-white shadow-lg rounded-xl p-4 border border-gray-300 w-full">
-                            <p className="text-black"><strong>Name:</strong> {product.name}</p>
-                            <p className="text-black"><strong>Serial Number:</strong> {product.serialNumber}</p>
-                            <p className="text-black"><strong>Category:</strong> {product.category}</p>
-                            <button onClick={() => deleteScannedProduct(user?.uid!, product.id)} className="mt-2 bg-red-600 text-white px-3 py-1 rounded">
-                                Delete
-                            </button>
-                        </div>
-                    ))
-                ) : (
-                    <p className="text-black">No scanned products yet.</p>
+                <h2 className="text-xl text-black font-semibold mt-4">Scan Product QR Code</h2>
+                <div ref={scannerRef} id="qr-reader" className="mt-4" style={{ color: "black" }}></div>
+                <button onClick={startQRScanner} className="bg-green-600 text-white px-4 py-2 mt-4 rounded">
+                    Start Scanner
+                </button>
+
+                {errorMessage && <p className="text-red-500 mt-4">{errorMessage}</p>}
+
+                {productDetails && (
+                    <div className="mt-6 w-full max-w-2xl bg-white shadow-lg rounded-xl p-6 border border-gray-300">
+                        <h3 className="text-lg text-black font-semibold border-b pb-2">Product Details</h3>
+                        <p className="text-black mt-2"><strong>Name:</strong> {productDetails.name}</p>
+                        <p className="text-black"><strong>Serial Number:</strong> {productDetails.serialNumber}</p>
+                        <p className="text-black"><strong>Category:</strong> {productDetails.category}</p>
+                        <p className="text-black"><strong>Recyclability:</strong> {productDetails.recyclability}</p>
+                        <p className="text-black"><strong>Recoverable Metals:</strong> {productDetails.recoverableMetals}</p>
+                    </div>
                 )}
+
+                <div className="mt-8 w-full max-w-2xl bg-white shadow-lg rounded-xl p-6 border border-gray-300">
+                    <h2 className="text-xl text-black font-semibold border-b pb-2">Your Scanned Products</h2>
+                    <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {scannedProducts.length > 0 ? (
+                            scannedProducts.map((product) => (
+                                <div key={product.id} className="bg-gray-100 shadow-md rounded-lg p-4 border border-gray-200 w-full">
+                                    <p className="text-black"><strong>Name:</strong> {product.name}</p>
+                                    <p className="text-black"><strong>Serial Number:</strong> {product.serialNumber}</p>
+                                    <p className="text-black"><strong>Category:</strong> {product.category}</p>
+                                    <button
+                                        onClick={() => {
+                                            if (user?.uid) {
+                                                if (product.id) {
+                                                    deleteScannedProduct(user.uid, product.id);
+                                                }
+                                            }
+                                        }}
+                                        className="mt-2 bg-red-600 text-white px-3 py-1 rounded"
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-black">No scanned products yet.</p>
+                        )}
+                    </div>
+                </div>
             </div>
-        </div>
-    </>
+        </>
     );
 };
 

@@ -48,8 +48,6 @@ const Home = () => {
     }
   };
   
-
-
   return (
     <div className="relative min-h-screen flex flex-col bg-[#f5f3f4]">
       <Navbar links={[{ label: "About Us", href: "/about" }]} />
