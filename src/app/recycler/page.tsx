@@ -192,7 +192,7 @@ const RecyclerPage = () => {
                   <p className="text-gray-600">Category: {product.category}</p>
                   <p className="text-gray-800">Price: ₹{product.price}</p>
                   <p className="text-green-600 font-bold">Total Price: {product.points}</p>
-                  <p className="text-gray-500 text-sm">{product.desc}</p>
+                  <p className="line-clamp-1 text-gray-500 text-sm">{product.desc}</p>
                 </div>
               </Link>
             ))
