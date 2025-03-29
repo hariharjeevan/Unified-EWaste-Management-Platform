@@ -117,7 +117,7 @@ const ProductDetails = () => {
           <>
             <h1 className="text-xl font-bold text-gray-800 mb-2">{product.productName}</h1>
             <p className="text-gray-600"><strong>Category:</strong> {product.category}</p>
-            <p className="text-gray-600"><strong>Price:</strong> ${product.price}</p>
+            <p className="text-gray-600"><strong>Price:</strong> ₹{product.price}</p>
             <p className="text-gray-600"><strong>Total Price:</strong> {product.points}</p>
             <p className="text-gray-600 break-words"><strong>Description:</strong> {product.desc}</p>
           </>
@@ -128,11 +128,11 @@ const ProductDetails = () => {
           <button onClick={() => router.back()} className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Go Back</button>
           {editMode ? (
             <>
-              <button onClick={handleSave} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Save</button>
+              <button onClick={handleSave} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
               <button onClick={handleCancel} className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Cancel</button>
             </>
           ) : (
-            <button onClick={handleEdit} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Edit</button>
+            <button onClick={handleEdit} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Edit</button>
           )}
         </div>
       </div>
