@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { FaIndustry, FaRecycle, FaLandmark } from "react-icons/fa6";
-import { BsPersonWorkspace } from "react-icons/bs";
+import { BsPersonWorkspace, BsGithub } from "react-icons/bs";
 import { auth, db } from "@/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -243,6 +243,20 @@ const Home = () => {
 
       <footer className="bg-[#000500] text-white p-4 text-center mt-12">
         <p>&copy; 2025 UEMP. All rights reserved.</p>
+        <div className="flex justify-center items-center mt-4">
+          <button
+            onClick={() => window.open("https://github.com/hariharjeevan/Unified-EWaste-Management-Platform.git", "_blank")}
+            className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-700 transition-all"
+          >
+            <BsGithub className="text-2xl" />
+            <span className="text-lg font-semibold">Github</span>
+          </button>
+        </div>
+        <p>
+          <a href="/googleb03e1dfec26f48ec.html" target="_blank" className="text-[#000500] text-sm">
+            Google Search Verification
+          </a>
+        </p>
       </footer>
     </div>
   );
