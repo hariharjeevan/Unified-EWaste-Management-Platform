@@ -6,6 +6,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/
 const firebaseConfig = {
   apiKey: "AIzaSyADfXP2LnYm4fI45QJoclpUCsmLcaYqlD8",
   authDomain: "uemp-aadde.firebaseapp.com",
+  databaseURL: "https://uemp-aadde-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "uemp-aadde",
   storageBucket: "uemp-aadde.firebasestorage.app",
   messagingSenderId: "882454100715",

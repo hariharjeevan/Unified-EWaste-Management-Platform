@@ -1,24 +1,51 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { db } from "@/firebaseConfig";
+import { collection, getDocs } from "firebase/firestore";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import Navbar from "@/components/Navbar";
-import { IoConstructSharp } from "react-icons/io5";
 
-const government = () => {
-    return (
-        <div className="relative min-h-screen flex flex-col bg-[#f5f3f4] overflow-x-hidden">
-            <Navbar links={[{ label: "About Us", href: "/about" }]} />
-            <div className="w-full h-screen flex flex-col items-center justify-center bg-[#f5f3f4] p-4">
-                <div className="flex justify-center mb-2">
-                    <IoConstructSharp size={60} className="font-bold text-[#000000]" />
-                </div>
-                <h1 className="text-black font-bold text-[28px] text-center">Currently under development</h1>
-            </div>
+const RecyclerGraph = () => {
+    const [recyclerData, setRecyclerData] = useState<{ name: string; acceptedQueries: number }[]>([]);
 
-            <footer className="bg-[#000500] text-white p-4 text-center mt-12 w-full">
-                <p>&copy; 2025 UEMP. All rights reserved.</p>
-            </footer>
-        </div>
-    )
+    useEffect(() => {
+        const fetchRecyclerData = async () => {
+            try {
+                const recyclersCollection = collection(db, "recyclers");
+                const recyclerSnapshot = await getDocs(recyclersCollection);
+                const recyclerList = recyclerSnapshot.docs.map(doc => ({
+                    name: doc.id,
+                    acceptedQueries: doc.data().acceptedQueries || 0
+                }));
+                setRecyclerData(recyclerList);
+            } catch (error) {
+                console.error("Error fetching recyclers:", error);
+            }
+        };
+
+        fetchRecyclerData();
+    }, []);
+
+    return (<>
+    <Navbar links={[{ label: "Home", href: "/" }]} />
+        <div className="w-full min-h-screen bg-white flex justify-center items-center text-black">
+    <div className="w-full max-w-4xl mt-10 bg-white p-6 rounded shadow-md">
+        <h3 className="text-lg font-semibold mb-4">Recycler Query Acceptance</h3>
+        <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={recyclerData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="acceptedQueries" fill="#8884d8" />
+            </BarChart>
+        </ResponsiveContainer>
+    </div>
+</div>
+</>
+    );
 }
 
-export default government;
+export default RecyclerGraph;
