@@ -49,7 +49,7 @@ const Home = () => {
         unsubscribe();
       };
     };
-  }, [setValue]);
+  }, [setValue, userId]);
 
   const handleLinkClick = (requiredUserType: string, href: string) => {
     if (!userType || !userId) {
@@ -85,8 +85,17 @@ const Home = () => {
       </div>
       <main className="p-6 flex flex-col items-center flex-grow">
         <h1 className={`${monaSans.className} font-sans`}>
-          <p className=" sm:text-3xl text-center md:text-4xl text-green-500 mb-4 relative z-10">Unified {value} Platform</p>
+            <p className="text-center text-4xl text-green-500 mb-1 relative z-10">
+              Unified{" "}
+              <span className="inline-block md:inline min-h-[2em]">
+              {value}
+              </span>
+              <span className="block md:inline"> Platform</span>
+            </p>
         </h1>
+        <h2 className={`${monaSans.className} font-sans text-xl text-center text-gray-700 mb-8`}>
+          &quot;Bringing accountability into perspective&quot;
+        </h2>
         <div className="max-w-4xl text-center mb-2 flex flex-col items-center justify-center relative z-10">
 
           <div className="md:w-2/3">

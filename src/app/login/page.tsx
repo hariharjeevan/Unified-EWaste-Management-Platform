@@ -2,13 +2,7 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "@/firebaseConfig";
 import { FirebaseError } from "firebase/app";
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  sendPasswordResetEmail,
-  onAuthStateChanged,
-  User
-} from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, User } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
@@ -28,22 +22,25 @@ const Login = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser: User | null) => {
-      if (currentUser) {
-        try {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            redirectToPage(userData.userType, currentUser.uid);
-          } else {
-            setError("User data not found. Please sign up again.");
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (currentUser: User | null) => {
+        if (currentUser) {
+          try {
+            const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              redirectToPage(userData.userType, currentUser.uid);
+            } else {
+              setError("User data not found. Please sign up again.");
+            }
+          } catch (err) {
+            console.error("Error fetching user data:", err);
+            setError("Failed to fetch user data.");
           }
-        } catch (err) {
-          console.error("Error fetching user data:", err);
-          setError("Failed to fetch user data.");
         }
       }
-    });
+    );
 
     return () => unsubscribe();
   }, [auth, router]);
@@ -51,16 +48,24 @@ const Login = () => {
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setSuccess(""); // Clear previous success messages
+    setSuccess("");
     setIsLoading(true);
 
     try {
       let user;
       if (isLogin) {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
         user = userCredential.user;
       } else {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          email,
+          password
+        );
         user = userCredential.user;
 
         await setDoc(doc(db, "users", user.uid), {
@@ -210,7 +215,11 @@ const Login = () => {
                 className="absolute right-3 top-3 text-gray-500"
                 onClick={() => setShowPassword(!showPassword)}
               >
-                {showPassword ? <AiOutlineEyeInvisible size={20} /> : <AiOutlineEye size={20} />}
+                {showPassword ? (
+                  <AiOutlineEyeInvisible size={20} />
+                ) : (
+                  <AiOutlineEye size={20} />
+                )}
               </button>
             </div>
 
@@ -225,14 +234,41 @@ const Login = () => {
 
             <button
               type="submit"
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition flex items-center justify-center"
               disabled={isLoading}
             >
-              {isLoading ? "Loading..." : isLogin ? "Login" : "Sign Up"}
+              {isLoading ? (
+                <svg
+                  className="animate-spin h-6 w-6 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  ></path>
+                </svg>
+              ) : isLogin ? (
+                "Login"
+              ) : (
+                "Sign Up"
+              )}
             </button>
           </form>
           <p className="text-center text-black mt-4">
-            {isLogin ? "Don't have an account yet? " : "Already have an account? "}
+            {isLogin
+              ? "Don't have an account yet? "
+              : "Already have an account? "}
             <span
               className="text-blue-500 cursor-pointer hover:underline"
               onClick={() => setIsLogin(!isLogin)}
@@ -240,7 +276,6 @@ const Login = () => {
               {isLogin ? "Sign Up" : "Login"}
             </span>
           </p>
-
         </div>
       </div>
     </div>
