@@ -9,6 +9,18 @@ import Navbar from "@/components/Navbar";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import Image from "next/image";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+
+const mapContainerStyle ={
+  width: "100%",
+  height: "400px",
+};
+
+const defaultCenter = {
+  lat: 28.7041,
+  lng: 77.1025,
+};
+
 
 const Consumer = () => {
   interface Product {
@@ -37,6 +49,8 @@ const Consumer = () => {
   const [scannedProducts, setScannedProducts] = useState<Product[]>([]);
   const [manufacturerUID, setManufacturerUID] = useState<string | null>(null);
   const [showProductDetails, setShowProductDetails] = useState<Product | null>(null);
+  const [facilityLocation, setFacilityLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [facilityAddress, setFacilityAddress] = useState<string | null>(null);
   const scannerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -208,6 +222,7 @@ const Consumer = () => {
         });
 
         alert("Product registered successfully!");
+        window.location.reload(); //reload the page after the message shows up
         setSecretKey("");
         await fetchScannedProducts(user.uid);
       } else {
@@ -247,6 +262,50 @@ const Consumer = () => {
     } catch (error) {
       console.error("Error deleting product:", error);
       setErrorMessage("Failed to delete product.");
+    }
+  };
+
+  const handleMapClick = async (event: google.maps.MapMouseEvent) => {
+    if (event.latLng) {
+      const selectedLocation = {
+        lat: event.latLng.lat(),
+        lng: event.latLng.lng(),
+      };
+      setFacilityLocation(selectedLocation);
+      await fetchAddressFromCoords(selectedLocation.lat, selectedLocation.lng);
+    }
+  };
+
+  const fetchAddressFromCoords = async (lat: number, lng: number) => {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+      console.error("Google Maps API key is missing.");
+      return;
+    }
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`
+      );
+      const data = await response.json();
+      if (data.status === "OK" && data.results.length > 0) {
+        setFacilityAddress(data.results[0].formatted_address);
+      }
+    } catch (error) {
+      console.error("Error fetching address:", error);
+    }
+  };
+
+  const saveFacilityLocation = async () => {
+    if (!user || !facilityLocation || !facilityAddress) return;
+    try {
+      await setDoc(
+        doc(db, "consumers", user.uid),
+        { location: facilityLocation, address: facilityAddress },
+        { merge: true }
+      );
+      alert("Facility location and address saved successfully!");
+    } catch (error) {
+      console.error("Error saving location:", error);
     }
   };
 
@@ -428,7 +487,20 @@ const Consumer = () => {
             </div>
           </div>
         )}
+              <div className="w-full max-w-4xl p-6 mt-6 bg-white shadow-md rounded-lg">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Set Your Recycling Facility Location</h2>
+        <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+          <GoogleMap mapContainerStyle={mapContainerStyle} center={facilityLocation || defaultCenter} zoom={10} onClick={handleMapClick}>
+            {facilityLocation && <Marker position={facilityLocation} />}
+          </GoogleMap>
+        </LoadScript>
+        {facilityAddress && <p className="text-gray-700 mt-3">Selected Address: {facilityAddress} </p>}
+        <button onClick={saveFacilityLocation} className="mt-3 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">
+          Save Location
+        </button>
       </div>
+      </div>
+
     </>
   );
 };
