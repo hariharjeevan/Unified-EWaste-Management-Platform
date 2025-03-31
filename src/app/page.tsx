@@ -85,13 +85,13 @@ const Home = () => {
       </div>
       <main className="p-6 flex flex-col items-center flex-grow">
         <h1 className={`${monaSans.className} font-sans`}>
-            <p className="text-center text-4xl text-green-500 mb-1 relative z-10">
-              Unified{" "}
-              <span className="inline-block md:inline min-h-[2em]">
+          <p className="text-center text-4xl text-green-500 mb-1 relative z-10">
+            Unified{" "}
+            <span className="inline-block md:inline min-h-[2em]">
               {value}
-              </span>
-              <span className="block md:inline"> Platform</span>
-            </p>
+            </span>
+            <span className="block md:inline"> Platform</span>
+          </p>
         </h1>
         <h2 className={`${monaSans.className} font-sans text-xl text-center text-gray-700 mb-8`}>
           &quot;Bringing accountability into perspective&quot;

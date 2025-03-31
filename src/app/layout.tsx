@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "UEMP",
+  title: "Unified E-Waste Management Platform (UEMP)",
   description: "A unified E-Waste Management Platform",
 };
 
