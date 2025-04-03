@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { auth, wdb } from "@/firebaseConfig";
 import { AiOutlineSearch } from "react-icons/ai";
@@ -8,7 +8,7 @@ import { collection, doc, getDocs, setDoc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
 
 const mapContainerStyle = {
   width: "100%",
@@ -42,6 +42,34 @@ const RecyclerPage = () => {
   const [facilityLocation, setFacilityLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [facilityAddress, setFacilityAddress] = useState<string | null>(null);
 
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    libraries: ['geometry', 'drawing'],
+  });
+
+  const fetchFacilityLocation = useCallback(async (userId: string) => {
+    if (!isLoaded) {
+      return <p>Loading Google Maps...</p>;
+    }
+    try {
+      const facilityDocRef = doc(wdb, "recyclers", userId);
+      const docSnapshot = await getDoc(facilityDocRef);
+
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        if (data?.location) {
+          setFacilityLocation(data.location);
+          setFacilityAddress(data.address || null);
+        }
+      } else {
+        console.log("No such document!");
+      }
+    } catch (error) {
+      console.error("Error fetching facility location:", error);
+    }
+  }, [isLoaded]);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
@@ -53,7 +81,7 @@ const RecyclerPage = () => {
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, fetchFacilityLocation]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,25 +108,6 @@ const RecyclerPage = () => {
 
     fetchData();
   }, [user]);
-
-  const fetchFacilityLocation = async (userId: string) => {
-    try {
-      const facilityDocRef = doc(wdb, "recyclers", userId);
-      const docSnapshot = await getDoc(facilityDocRef);
-
-      if (docSnapshot.exists()) {
-        const data = docSnapshot.data();
-        if (data?.location) {
-          setFacilityLocation(data.location);
-          setFacilityAddress(data.address || null);
-        }
-      } else {
-        console.log("No such document!");
-      }
-    } catch (error) {
-      console.error("Error fetching facility location:", error);
-    }
-  };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = event.target.value.toLowerCase();
@@ -164,6 +173,36 @@ const RecyclerPage = () => {
     }
   };
 
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="flex flex-col items-center">
+          <p className="text-white text-lg mb-4">Loading Google Maps...</p>
+          <svg
+            className="animate-spin h-8 w-8 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            ></path>
+          </svg>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <Navbar links={[{ label: "Home", href: "/" }]} />
@@ -210,11 +249,9 @@ const RecyclerPage = () => {
 
         <div className="w-full max-w-4xl p-6 mt-6 bg-white shadow-md rounded-lg">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Add Your Recycling Facility Address</h2>
-          <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
-            <GoogleMap mapContainerStyle={mapContainerStyle} center={facilityLocation || defaultCenter} zoom={10} onClick={handleMapClick}>
-              {facilityLocation && <Marker position={facilityLocation} />}
-            </GoogleMap>
-          </LoadScript>
+          <GoogleMap mapContainerStyle={mapContainerStyle} center={facilityLocation || defaultCenter} zoom={10} onClick={handleMapClick}>
+            {facilityLocation && <Marker position={facilityLocation} />}
+          </GoogleMap>
 
           {facilityAddress && <p className="text-gray-700 mt-3">Selected Address: {facilityAddress} </p>}
           <p className="text-gray-700"></p>

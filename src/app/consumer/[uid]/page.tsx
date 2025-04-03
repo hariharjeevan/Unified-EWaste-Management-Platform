@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { db, auth } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
@@ -9,9 +9,9 @@ import Navbar from "@/components/Navbar";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import Image from "next/image";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
 
-const mapContainerStyle ={
+const mapContainerStyle = {
   width: "100%",
   height: "400px",
 };
@@ -49,21 +49,17 @@ const Consumer = () => {
   const [scannedProducts, setScannedProducts] = useState<Product[]>([]);
   const [manufacturerUID, setManufacturerUID] = useState<string | null>(null);
   const [showProductDetails, setShowProductDetails] = useState<Product | null>(null);
-  const [facilityLocation, setFacilityLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [facilityAddress, setFacilityAddress] = useState<string | null>(null);
+  const [homeLocation, setHomeLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [homeAddress, setHomeAddress] = useState<string | null>(null);
   const scannerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        await fetchScannedProducts(currentUser.uid);
-      }
-    });
-    return () => unsubscribe();
-  }, []);
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
+    libraries: ['geometry', 'drawing'],
+  });
 
-  const fetchScannedProducts = async (userId: string) => {
+  const fetchScannedProducts = useCallback(async (userId: string) => {
     try {
       console.log("Fetching scanned products for user:", userId);
 
@@ -127,7 +123,35 @@ const Consumer = () => {
       console.error("Error fetching scanned products:", error);
       setErrorMessage("Failed to load registered products.");
     }
+  }, []);
+
+  const fetchHomeLocation = async (userId: string) => {
+    try {
+      const homeLocationRef = doc(db, "consumers", userId, "maps", "homeLocation");
+      const docSnapshot = await getDoc(homeLocationRef);
+
+      if (docSnapshot.exists()) {
+        const data = docSnapshot.data();
+        setHomeLocation(data.location || null);
+        setHomeAddress(data.address || null);
+      } else {
+        console.log("No home location found for this user.");
+      }
+    } catch (error) {
+      console.error("Error fetching home location:", error);
+    }
   };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        await fetchScannedProducts(currentUser.uid);
+        await fetchHomeLocation(currentUser.uid);
+      }
+    });
+    return () => unsubscribe();
+  }, [fetchScannedProducts]);
 
   const startQRScanner = () => {
     if (!scannerRef.current) return;
@@ -271,10 +295,40 @@ const Consumer = () => {
         lat: event.latLng.lat(),
         lng: event.latLng.lng(),
       };
-      setFacilityLocation(selectedLocation);
+      setHomeLocation(selectedLocation);
       await fetchAddressFromCoords(selectedLocation.lat, selectedLocation.lng);
     }
   };
+
+  if (!isLoaded) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="flex flex-col items-center">
+          <p className="text-white text-lg mb-4">Loading Google Maps...</p>
+          <svg
+            className="animate-spin h-8 w-8 text-white"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+            ></path>
+          </svg>
+        </div>
+      </div>
+    );
+  }
 
   const fetchAddressFromCoords = async (lat: number, lng: number) => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
@@ -288,24 +342,31 @@ const Consumer = () => {
       );
       const data = await response.json();
       if (data.status === "OK" && data.results.length > 0) {
-        setFacilityAddress(data.results[0].formatted_address);
+        setHomeAddress(data.results[0].formatted_address);
       }
     } catch (error) {
       console.error("Error fetching address:", error);
     }
   };
 
-  const saveFacilityLocation = async () => {
-    if (!user || !facilityLocation || !facilityAddress) return;
+  const saveHomeLocation = async () => {
+    if (!user || !homeLocation || !homeAddress) return;
+
     try {
+      // Save the location and address in the "consumers" collection
       await setDoc(
-        doc(db, "consumers", user.uid),
-        { location: facilityLocation, address: facilityAddress },
-        { merge: true }
+        doc(db, "consumers", user.uid, "maps", "homeLocation"),
+        {
+          location: homeLocation,
+          address: homeAddress,
+        },
+        { merge: true } // Merge to avoid overwriting existing data
       );
-      alert("Facility location and address saved successfully!");
+
+      alert("Home location and address saved successfully!");
     } catch (error) {
       console.error("Error saving location:", error);
+      alert("Failed to save location. Please try again.");
     }
   };
 
@@ -487,18 +548,26 @@ const Consumer = () => {
             </div>
           </div>
         )}
-              <div className="w-full max-w-4xl p-6 mt-6 bg-white shadow-md rounded-lg">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Set Your Recycling Facility Location</h2>
-        <LoadScript googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
-          <GoogleMap mapContainerStyle={mapContainerStyle} center={facilityLocation || defaultCenter} zoom={10} onClick={handleMapClick}>
-            {facilityLocation && <Marker position={facilityLocation} />}
+        <div className="w-full max-w-4xl p-6 mt-6 bg-white shadow-md rounded-lg">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Set Your Home Location</h2>
+          <GoogleMap
+            mapContainerStyle={mapContainerStyle}
+            center={homeLocation || defaultCenter}
+            zoom={10}
+            onClick={handleMapClick}
+          >
+            {homeLocation && <Marker position={homeLocation} />}
           </GoogleMap>
-        </LoadScript>
-        {facilityAddress && <p className="text-gray-700 mt-3">Selected Address: {facilityAddress} </p>}
-        <button onClick={saveFacilityLocation} className="mt-3 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">
-          Save Location
-        </button>
-      </div>
+          {homeAddress && (
+            <p className="text-gray-700 mt-3">Selected Address: {homeAddress}</p>
+          )}
+          <button
+            onClick={saveHomeLocation}
+            className="mt-3 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+          >
+            Save Location
+          </button>
+        </div>
       </div>
 
     </>
