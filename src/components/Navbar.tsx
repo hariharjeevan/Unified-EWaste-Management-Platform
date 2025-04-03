@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, db } from "@/firebaseConfig";
-import { RiLogoutBoxFill, RiAccountPinCircleFill } from "react-icons/ri";
+import { RiLogoutBoxFill } from "react-icons/ri";
+import { FaRegUserCircle } from "react-icons/fa";
 import { IoLogIn } from "react-icons/io5";
 import { doc, getDoc } from "firebase/firestore";
 import { Mona_Sans } from 'next/font/google';
@@ -41,7 +42,6 @@ const Navbar = ({ links = [] }: NavbarProps) => {
     return () => unsubscribe();
   }, []);
 
-  // Close menu if clicked outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -61,65 +61,68 @@ const Navbar = ({ links = [] }: NavbarProps) => {
   };
 
   return (
-    <nav className="bg-[#000500] text-white p-4 flex justify-between items-center shadow-md relative">
+    <nav className="bg-[#ffffff] text-[#000500] p-4 flex justify-between items-center shadow-md relative sticky top-0 z-50">
       {/* Left: User Icon */}
-      <div className="relative">
-        <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center space-x-2">
-          <RiAccountPinCircleFill size={40} className="cursor-pointer hover:text-green-400" />
-        </button>
+      <div
+      className="relative"
+      onMouseEnter={() => setMenuOpen(true)}
+      onMouseLeave={() => {}}
+      >
+      <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center space-x-2">
+        <FaRegUserCircle size={30} className="cursor-pointer hover:text-green-400 transition-colors duration-300" />
+      </button>
 
-        {/* Dropdown Menu */}
-        {menuOpen && (
-          <div
-            ref={menuRef}
-            className="absolute top-full left-0 mt-2 w-64 bg-white text-black shadow-lg rounded-lg border border-gray-200 z-50 p-4
-                       transition-opacity duration-300 opacity-100"
-          >
-            <p className="block text-gray-700 border-b border-gray-200 pb-2 text-lg font-semibold">
-              {userData?.name || "User"}
-            </p>
-            <p className="block text-gray-600 text-sm">{user?.email}</p>
-            {userData?.organization && (
-              <p className="block text-gray-500 text-sm mt-1 italic">{userData.organization}</p>
-            )}
-
-            <div className="mt-3">
-              {user ? (
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 transition-colors duration-200 rounded"
-                >
-                  <RiLogoutBoxFill size={25} className="mr-2" /> Logout
-                </button>
-              ) : (
-                <button
-                  onClick={() => router.push("/login")}
-                  className="flex items-center w-full text-left px-4 py-2 text-green-600 hover:bg-gray-100 transition-colors duration-200 rounded"
-                >
-                  <IoLogIn size={28} className="mr-2" /> Login
-                </button>
-              )}
-            </div>
-          </div>
+      {menuOpen && (
+        <div
+        ref={menuRef}
+        className="absolute top-full left-0 mt-2 w-64 bg-white text-black shadow-lg rounded-lg border border-gray-200 z-50 p-4
+           transition-opacity duration-300 opacity-100"
+        >
+        <p className="block text-gray-700 border-b border-gray-200 pb-2 text-lg font-semibold">
+          {userData?.name || "User"}
+        </p>
+        <p className="block text-gray-600 text-sm">{user?.email}</p>
+        {userData?.organization && (
+          <p className="block text-gray-500 text-sm mt-1 italic">{userData.organization}</p>
         )}
+
+        <div className="mt-3">
+          {user ? (
+          <button
+            onClick={handleLogout}
+            className="flex items-center w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 transition-colors duration-200 rounded"
+          >
+            <RiLogoutBoxFill size={25} className="mr-2" /> Logout
+          </button>
+          ) : (
+          <button
+            onClick={() => router.push("/login")}
+            className="flex items-center w-full text-left px-4 py-2 text-green-600 hover:bg-gray-100 transition-colors duration-200 rounded"
+          >
+            <IoLogIn size={28} className="mr-2" /> Login
+          </button>
+          )}
+        </div>
+        </div>
+      )}
       </div>
 
       {/* Center: Logo */}
       <h1 className={`${monaSans.className} font-sans`}>
-        <Link href="/" className="text-2xl">UEMP</Link>
+      <Link href="/" className="text-2xl">UEMP</Link>
       </h1>
 
       {/* Right: Navigation Links */}
       <div className="flex space-x-4">
-        {links.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            className="text-lg hover:text-green-400 transition-colors duration-300"
-          >
-            {link.label}
-          </Link>
-        ))}
+      {links.map((link) => (
+        <Link
+        key={link.href}
+        href={link.href}
+        className="text-lg hover:text-green-400 transition-colors duration-300"
+        >
+        {link.label}
+        </Link>
+      ))}
       </div>
     </nav>
   );

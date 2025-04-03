@@ -225,8 +225,8 @@ const Manufacturer = () => {
         )}
 
         {showProductDetails && (
-          <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+          <div className="fixed top-16 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50 overflow-y-auto">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-96 mb-10">
               <h3 className="text-lg text-white text-center bg-black font-semibold mb-6 rounded-full p-2">Product Details</h3>
               <p className="text-black"><strong>Name:</strong> {showProductDetails.name}</p>
               <p className="text-black"><strong>Serial Number:</strong> {showProductDetails.serialNumber}</p>
@@ -237,76 +237,76 @@ const Manufacturer = () => {
 
               {/* Secret Key Section */}
               <div className="flex items-center space-x-2 mt-2">
-                <p className="text-black font-bold">Secret Key:</p>
-                <span
-                  className="text-black border px-2 py-1 rounded bg-gray-200 w-[120px] text-center overflow-hidden"
-                  style={{ whiteSpace: "nowrap", textOverflow: "ellipsis" }}
-                >
-                  {showSecretKey ? showProductDetails.secretKey : "**********"}
-                </span>
-                <button
-                  onClick={() => setShowSecretKey(!showSecretKey)}
-                  className="text-blue-600 hover:text-blue-800 flex items-center"
-                >
-                  {showSecretKey ? <AiFillEyeInvisible size={20} /> : <AiFillEye size={20} />}
-                </button>
+          <p className="text-black font-bold">Secret Key:</p>
+          <span
+            className="text-black border px-2 py-1 rounded bg-gray-200 w-[120px] text-center overflow-hidden"
+            style={{ whiteSpace: "nowrap", textOverflow: "ellipsis" }}
+          >
+            {showSecretKey ? showProductDetails.secretKey : "**********"}
+          </span>
+          <button
+            onClick={() => setShowSecretKey(!showSecretKey)}
+            className="text-blue-600 hover:text-blue-800 flex items-center"
+          >
+            {showSecretKey ? <AiFillEyeInvisible size={20} /> : <AiFillEye size={20} />}
+          </button>
               </div>
 
               {/* QR Code */}
               <p className="text-red-500 text-center mt-4"><strong>Product QR Code</strong></p>
               <div className="mt-2 flex justify-center">
-                <QRCode value={showProductDetails.qrCode} size={100} bgColor="white" fgColor="black" />
+          <QRCode value={showProductDetails.qrCode} size={100} bgColor="white" fgColor="black" />
               </div>
 
               {/* Timeline */}
               <div className="mt-4">
-                <h4 className="text-red-500 text-center font-semibold mb-2">Product Timeline</h4>
-                <div className="relative">
-                  <div className="flex flex-col items-center space-y-4">
-                    {/* Created Date */}
-                    <div className="flex items-center space-x-4">
-                      <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                      <div className="text-black">
-                        Created:{" "}
-                        {showProductDetails.createdAt?.seconds
-                          ? new Date(showProductDetails.createdAt.seconds * 1000).toLocaleDateString()
-                          : "N/A"}
-                      </div>
-                    </div>
-
-                    {/* Time Since Creation */}
-                    <div className="flex items-center space-x-4">
-                      <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                      <div className="text-black">
-                        Time Since Creation:{" "}
-                        {showProductDetails.createdAt?.seconds
-                          ? (() => {
-                            const createdAtDate = new Date(showProductDetails.createdAt.seconds * 1000);
-                            const now = new Date();
-                            const timeDifference = Math.floor((now.getTime() - createdAtDate.getTime()) / (1000 * 60 * 60 * 24));
-                            return timeDifference > 0 ? `${timeDifference} days ago` : "Today";
-                          })()
-                          : "N/A"}
-                      </div>
-                    </div>
-
-                    {/* User Count */}
-                    <div className="flex items-center space-x-4">
-                      <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                      <div className="text-black">
-                        Users Count: {showProductDetails.userCount || 0}
-                      </div>
-                    </div>
-                  </div>
+          <h4 className="text-red-500 text-center font-semibold mb-2">Product Timeline</h4>
+          <div className="relative">
+            <div className="flex flex-col items-center space-y-4">
+              {/* Created Date */}
+              <div className="flex items-center space-x-4">
+                <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                <div className="text-black">
+            Created:{" "}
+            {showProductDetails.createdAt?.seconds
+              ? new Date(showProductDetails.createdAt.seconds * 1000).toLocaleDateString()
+              : "N/A"}
                 </div>
               </div>
 
-                <button
-                onClick={() => setShowProductDetails(null)}
-                className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 transition-all duration-200"
-                >
-                Close
-                </button>
+              {/* Time Since Creation */}
+              <div className="flex items-center space-x-4">
+                <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                <div className="text-black">
+            Time Since Creation:{" "}
+            {showProductDetails.createdAt?.seconds
+              ? (() => {
+                  const createdAtDate = new Date(showProductDetails.createdAt.seconds * 1000);
+                  const now = new Date();
+                  const timeDifference = Math.floor((now.getTime() - createdAtDate.getTime()) / (1000 * 60 * 60 * 24));
+                  return timeDifference > 0 ? `${timeDifference} days ago` : "Today";
+                })()
+              : "N/A"}
+                </div>
+              </div>
+
+              {/* User Count */}
+              <div className="flex items-center space-x-4">
+                <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                <div className="text-black">
+            Users Count: {showProductDetails.userCount || 0}
+                </div>
+              </div>
+            </div>
+          </div>
+              </div>
+
+              <button
+          onClick={() => setShowProductDetails(null)}
+          className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 transition-all duration-200"
+              >
+          Close
+              </button>
             </div>
           </div>
         )}
