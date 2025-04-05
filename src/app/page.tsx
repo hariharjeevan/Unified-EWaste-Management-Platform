@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
+import Chatbot from "@/components/Chatbot";
 import { FaIndustry, FaRecycle, FaLandmark } from "react-icons/fa6";
 import { BsPersonWorkspace, BsGithub } from "react-icons/bs";
 import { auth, db } from "@/firebaseConfig";
@@ -77,7 +78,7 @@ const Home = () => {
 
   return (
     <div className={`${monaSansN.className} relative min-h-screen flex flex-col bg-[#f5f3f4]`}>
-      <Navbar links={[{ label: "About Us", href: "/about" }]} />
+      <Navbar links={[{ label: "Docs", href: "/docs" },{ label: "About", href: "/about" }]} />
       <main className="p-0 flex flex-col items-center flex-grow w-full">
 
         {/* Hero Section */}
@@ -280,6 +281,7 @@ const Home = () => {
               </p>
             </button>
           </div>
+          <div><Chatbot /></div>
         </div>
 
       </main>

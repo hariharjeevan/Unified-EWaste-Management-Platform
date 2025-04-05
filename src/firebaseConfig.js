@@ -1,8 +1,9 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { getFunctions } from "firebase/functions"; 
 
-// Your Firebase config (replace with your own)
+// Your Firebase config
 const firebaseConfig = {
   apiKey: "AIzaSyADfXP2LnYm4fI45QJoclpUCsmLcaYqlD8",
   authDomain: "uemp-aadde.firebaseapp.com",
@@ -21,4 +22,6 @@ const provider = new GoogleAuthProvider();
 export const db = getFirestore(app); 
 export const rdb = getFirestore(app);
 export const wdb = getFirestore(app);
-export { auth, provider, signInWithPopup, signOut };
+const functions = getFunctions(app); 
+
+export { auth, provider, signInWithPopup, signOut, app, functions };
