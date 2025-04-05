@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import Chatbot from "@/components/Chatbot";
 import { FaIndustry, FaRecycle, FaLandmark } from "react-icons/fa6";
-import { BsPersonWorkspace, BsGithub } from "react-icons/bs";
+import { BsPersonWorkspace } from "react-icons/bs";
 import { auth, db } from "@/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
@@ -267,7 +268,7 @@ const Home = () => {
           </div>
 
           {/* Buttons for larger screens (only the Government button) */}
-          <div className="hidden md:flex justify-center mt-6">
+          <div className="hidden md:flex justify-center mt-6 mb-6">
             <button
               onClick={() => handleLinkClick("Government", "/government")}
               className="bg-red-500 p-8 w-[280px] rounded-lg text-center shadow-md transition-transform transform hover:scale-105 border border-[#000500]"
@@ -283,21 +284,8 @@ const Home = () => {
           </div>
           <div><Chatbot /></div>
         </div>
-
       </main>
-
-      <footer className="bg-[#000500] text-white p-4 text-center mt-12 w-full">
-        <p>&copy; 2025 UEMP. All rights reserved.</p>
-        <div className="flex justify-center items-center mt-4">
-          <button
-            onClick={() => window.open("https://github.com/hariharjeevan/Unified-EWaste-Management-Platform.git", "_blank")}
-            className="flex items-center gap-2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-700 transition-all"
-          >
-            <BsGithub className="text-2xl" />
-            <span className="text-lg font-semibold">Github</span>
-          </button>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

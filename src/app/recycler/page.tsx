@@ -8,6 +8,7 @@ import { collection, doc, getDocs, setDoc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
 
 const mapContainerStyle = {
@@ -247,7 +248,7 @@ const RecyclerPage = () => {
           Add Product
         </button>
 
-        <div className="w-full max-w-4xl p-6 mt-6 bg-white shadow-md rounded-lg">
+        <div className="w-full max-w-4xl p-6 mt-6 mb-6 bg-white shadow-md rounded-lg">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Add Your Recycling Facility Address</h2>
           <GoogleMap mapContainerStyle={mapContainerStyle} center={facilityLocation || defaultCenter} zoom={10} onClick={handleMapClick}>
             {facilityLocation && <Marker position={facilityLocation} />}
@@ -260,6 +261,7 @@ const RecyclerPage = () => {
             Save Location
           </button>
         </div>
+        <Footer />
       </div>
     </>
   );

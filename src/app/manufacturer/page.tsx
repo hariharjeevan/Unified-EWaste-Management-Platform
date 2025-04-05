@@ -6,6 +6,7 @@ import { collection, doc, setDoc, getDoc, getDocs, deleteDoc, serverTimestamp } 
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { QRCodeCanvas as QRCode } from "qrcode.react";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { IoMdInformationCircleOutline } from "react-icons/io";
@@ -311,6 +312,7 @@ const Manufacturer = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

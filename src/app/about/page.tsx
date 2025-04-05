@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 
 const AboutUs = () => {
   return (
@@ -19,6 +20,7 @@ const AboutUs = () => {
           <h3 className="mt-4 text-xl font-semibold text-black text-center">Aventra</h3>
         </div>
       </div>
+      <Footer />
     </div>
   );
 };

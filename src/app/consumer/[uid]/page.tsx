@@ -5,8 +5,9 @@ import { db, auth } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { getFunctions, httpsCallable, HttpsCallableResult } from "firebase/functions";
-import Navbar from "@/components/Navbar";
 import { Html5QrcodeScanner } from "html5-qrcode";
+import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import Image from "next/image";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
@@ -372,7 +373,7 @@ const Consumer = () => {
 
   return (
     <>
-      <Navbar links={[{ label: "Home", href: "/" }]} />
+      <Navbar links={[{ label: "Docs", href: "/docs" }]} />
       <div className="min-h-screen flex flex-col items-center bg-gray-100">
         <div className="relative flex flex-col items-center w-full max-w-2xl mt-[10px]">
           <Image
@@ -548,7 +549,7 @@ const Consumer = () => {
             </div>
           </div>
         )}
-        <div className="w-full max-w-4xl p-6 mt-6 bg-white shadow-md rounded-lg">
+        <div className="w-full max-w-4xl p-6 mt-6 mb-6 bg-white shadow-md rounded-lg">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Set Your Home Location</h2>
           <GoogleMap
             mapContainerStyle={mapContainerStyle}
@@ -568,6 +569,7 @@ const Consumer = () => {
             Save Location
           </button>
         </div>
+        <Footer />
       </div>
 
     </>

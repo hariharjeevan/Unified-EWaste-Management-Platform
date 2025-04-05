@@ -1,9 +1,25 @@
 "use client";
 
+import { useState } from "react";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import Image from "next/image";
+import { IoIosCloseCircle } from "react-icons/io";
 
 const DocsPage = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImage, setModalImage] = useState<string | null>(null);
+
+  const openModal = (imageSrc: string) => {
+    setModalImage(imageSrc);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalImage(null);
+    setIsModalOpen(false);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f3f4]">
       
@@ -42,17 +58,42 @@ const DocsPage = () => {
               <strong>Recycler Registration:</strong> Manufacturers with recycling capabilities can register as recyclers and specify their recycling specialization.
             </li>
           </ul>
-            <div className="flex items-center justify-center mt-4">
-              <Image
+            <div className="flex items-center justify-center mt-4 hover:cursor-pointer transition-transform transform hover:scale-105">
+            <Image
               src="/documentation/manufacturer.gif"
               alt="Manufacturer Dashboard"
               width={600}
               height={400}
-              className="mt-4 shadow-md w-full max-w-lg h-auto"
-              />
-            </div>
+              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
+              unoptimized
+              onClick={() => openModal("/documentation/manufacturer.gif")} // Open modal on click
+            />
+          </div>
         </section>
 
+        {/* Modal for Enlarged Image */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+            <div className="relative bg-white rounded-lg shadow-lg p-8">
+              <button
+                onClick={closeModal}
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              >
+                <IoIosCloseCircle size={25}/>
+              </button>
+              {modalImage && (
+                <Image
+                  src={modalImage}
+                  alt="Enlarged Image"
+                  width={800}
+                  height={600}
+                  className="rounded-lg"
+                  unoptimized
+                />
+              )}
+            </div>
+          </div>
+        )}
         <section className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md mb-8">
           <h2 className="text-2xl font-bold text-[#000500] mb-4">Recycler</h2>
           <p className="text-gray-700 mb-4">
@@ -122,10 +163,7 @@ const DocsPage = () => {
           </ul>
         </section>
       </main>
-
-      <footer className="bg-[#000500] text-white p-4 text-center">
-        <p>&copy; 2025 UEMP. All rights reserved.</p>
-      </footer>
+      <Footer />
     </div>
   );
 };

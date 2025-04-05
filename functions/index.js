@@ -3,7 +3,9 @@ const admin = require("firebase-admin");
 const {VertexAI} = require("@google-cloud/vertexai");
 
 admin.initializeApp();
+const firestore = admin.firestore();
 
+{/* Product Registration Function */}
 exports.verifyAndRegisterConsumer = functions.https.onCall(
     async (data, context) => {
       if (!context.auth) {
@@ -36,9 +38,6 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
       }
 
       try {
-        console.log("Starting product registration for consumer:", consumerUid);
-
-        const firestore = admin.firestore();
         const productRef = firestore
             .collection("manufacturers")
             .doc(manufacturerId)
@@ -52,7 +51,10 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
             .doc(productId);
 
         await firestore.runTransaction(async (transaction) => {
-          const productSnap = await transaction.get(productRef);
+          const [productSnap, consumerSnap] = await Promise.all([
+            transaction.get(productRef),
+            transaction.get(consumerRef),
+          ]);
 
           if (!productSnap.exists) {
             throw new functions.https.HttpsError(
@@ -61,8 +63,14 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
             );
           }
 
-          const productData = productSnap.data();
+          if (consumerSnap.exists) {
+            throw new functions.https.HttpsError(
+                "already-exists",
+                "Product already scanned by this user.",
+            );
+          }
 
+          const productData = productSnap.data();
           if (!productData) {
             throw new functions.https.HttpsError(
                 "data-loss",
@@ -99,9 +107,6 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
           });
         });
 
-        console.log(
-            "Product registered successfully for consumer:", consumerUid,
-        );
         return {success: true, message: "Product registered successfully!"};
       } catch (error) {
         console.error("Error during product registration:", error);
@@ -113,6 +118,7 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
     },
 );
 
+{/* Product Deletion Handler */}
 exports.onProductDeletion = functions.firestore
     .document("consumers/{consumerUid}/scannedProducts/{productId}")
     .onDelete(async (snap, context) => {
@@ -177,7 +183,7 @@ exports.onProductDeletion = functions.firestore
       }
     });
 
-{/* ChatBot functionality: Vertex AI */}
+{/* Vertex AI Chatbot */}
 const vertexAI = new VertexAI({
   project: "uemp-aadde",
   location: "us-central1",
@@ -188,25 +194,41 @@ const model = vertexAI.getGenerativeModel({
 });
 
 exports.askGemini = functions.https.onCall(async (data, context) => {
-  const userMessage = data.message;
+  const userMessage = (data.message || "").trim();
 
   if (!userMessage) {
     throw new functions.https.HttpsError(
-        "invalid-argument", "Message is required.",
+        "invalid-argument",
+        "Message is required.",
     );
   }
 
   try {
+    const fetchAllFields = async (docPath) => {
+      const docSnap = await firestore.doc(docPath).get();
+      if (!docSnap.exists) return "";
+      const fields = docSnap.data();
+      return Object.keys(fields)
+          .sort((a, b) => Number(a) - Number(b))
+          .map((key) => fields[key])
+          .join("\n\n");
+    };
+
+    const context1 = await
+    fetchAllFields("chatbotKnowledge/overview/intro/intro");
+    const context2 = await
+    fetchAllFields("chatbotKnowledge/qr_code_use/qrcodeuse/qruse");
+
+    const combinedContext = `${context1}\n\n${context2}`;
+
     const result = await model.generateContent({
       contents: [
         {
           role: "user",
           parts: [
             {
-              text: `You are a helpful assistant for the 
-              Unified E-Waste Management Platform (UEMP). 
-              Answer the user's question based on the
-               platform's features.\n\nUser: ${userMessage}`,
+              text: `[CONTEXT START]\n${combinedContext}\n
+              [CONTEXT END]\n\n[USER QUESTION]\n${userMessage}\n\n[ANSWER]`,
             },
           ],
         },
@@ -214,18 +236,12 @@ exports.askGemini = functions.https.onCall(async (data, context) => {
     });
 
     const responseText =
-          (result.response &&
-           result.response.candidates &&
-           result.response.candidates[0] &&
-           result.response.candidates[0].content &&
-           result.response.candidates[0].content.parts &&
-           result.response.candidates[0].content.parts[0] &&
-           result.response.candidates[0].content.parts[0].text) ||
-           "No response.";
+      result.response?.candidates?.[0]?.
+          content?.parts?.[0]?.text || "No response.";
     return {response: responseText};
   } catch (error) {
-    console.error("Gemini error:", error);
-    throw new functions.https.HttpsError("internal",
-        "Failed to get Gemini response.");
+    console.error("Gemini error (detailed):", error);
+    throw new functions.https.
+        HttpsError("internal", `Gemini Error: ${error.message}`);
   }
 });
