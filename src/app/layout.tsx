@@ -14,7 +14,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Unified E-Waste Management Platform (UEMP)",
-  description: "A unified E-Waste Management Platform",
+  description: "Unified E-Waste Management Platform (UEMP) is a comprehensive digital platform that optimizes the entire lifecycle of electronic products— "+
+  "from manufacturing to consumer use and responsible recycling. By assigning unique QR codes to each product, "+
+  "UEMP enables seamless tracking, secure registration by consumers, and effortless verification by recyclers, "+
+  "ensuring the efficient and eco-friendly disposal of e-waste.",
 };
 
 export default function RootLayout({

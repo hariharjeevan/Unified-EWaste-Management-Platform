@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import GitHubEmbed from "@/components/GitHubEmbed";
 import Image from "next/image";
 import { IoIosCloseCircle } from "react-icons/io";
 
@@ -22,7 +23,7 @@ const DocsPage = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f3f4]">
-      
+
       {/* Navbar */}
       <Navbar links={[{ label: "", href: "" }]} />
 
@@ -47,6 +48,13 @@ const DocsPage = () => {
           <p className="text-gray-700 mb-4">
             Manufacturers play a key role in the platform by generating QR codes for their products and tracking their lifecycle.
           </p>
+          <h2 className="text-2xl font-bold text-[#000500] mb-4">Technical Details</h2>
+          <GitHubEmbed
+            githubBlobUrl="https://github.com/hariharjeevan/Unified-EWaste-Management-Platform/blob/main/src/app/manufacturer/page.tsx"
+            rawUrl="https://raw.githubusercontent.com/hariharjeevan/Unified-EWaste-Management-Platform/main/src/app/manufacturer/page.tsx"
+            initialLines={12}
+          />
+          
           <ul className="list-disc list-inside text-gray-700">
             <li>
               <strong>QR Code Generation:</strong> Manufacturers can generate unique QR codes for their products, embedding details like product type, recyclability, and material composition.
@@ -58,7 +66,7 @@ const DocsPage = () => {
               <strong>Recycler Registration:</strong> Manufacturers with recycling capabilities can register as recyclers and specify their recycling specialization.
             </li>
           </ul>
-            <div className="flex items-center justify-center mt-4 hover:cursor-pointer transition-transform transform hover:scale-105">
+          <div className="flex items-center justify-center mt-4 hover:cursor-pointer transition-transform transform hover:scale-105">
             <Image
               src="/documentation/manufacturer.gif"
               alt="Manufacturer Dashboard"
@@ -79,7 +87,7 @@ const DocsPage = () => {
                 onClick={closeModal}
                 className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
               >
-                <IoIosCloseCircle size={25}/>
+                <IoIosCloseCircle size={25} />
               </button>
               {modalImage && (
                 <Image

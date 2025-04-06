@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import { Mona_Sans } from 'next/font/google';
 import { useDencrypt } from "use-dencrypt-effect";
 import Image from "next/image";
+import Head from "next/head";
 
 const monaSansB = Mona_Sans({
   subsets: ['latin'],
@@ -45,8 +46,7 @@ const Home = () => {
 
         }
       }
-    }
-    );
+    });
     {
       const loop = async () => {
         await new Promise((resolve) => setTimeout(resolve, 5));
@@ -79,25 +79,45 @@ const Home = () => {
 
   return (
     <div className={`${monaSansN.className} relative min-h-screen flex flex-col bg-[#f5f3f4]`}>
-      <Navbar links={[{ label: "Docs", href: "/docs" },{ label: "About", href: "/about" }]} />
+      <Navbar links={[{ label: "Docs", href: "/docs" }, { label: "About", href: "/about" }]} />
+      <Head>
+        <title>Unified E-Waste Management Platform</title>
+        <meta name="description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, 
+        promoting sustainable recycling practices, and minimizing environmental impact." />
+        
+        {/* Open Graph tags */}
+        <meta property="og:title" content="Unified E-Waste Management Platform" />
+        <meta property="og:description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, 
+        promoting sustainable recycling practices, and minimizing environmental impact." />
+        <meta property="og:image" content={`/screenshot.png`} />
+        <meta property="og:url" content="https://unified-e-waste-management-platform.vercel.app" />
+        <meta property="og:type" content="website" />
+
+        {/* Twitter card meta tags (optional, if you want to add Twitter integration) */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Unified E-Waste Management Platform" />
+        <meta name="twitter:description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, 
+        promoting sustainable recycling practices, and minimizing environmental impact." />
+        <meta name="twitter:image" content={`/screenshot.png`} />
+      </Head>
       <main className="p-0 flex flex-col items-center flex-grow w-full">
 
         {/* Hero Section */}
         <div className="hero">
-            <div className="bg-white bg-opacity-5 backdrop-blur-sm rounded-xl p-8 shadow-lg m-0 md:m-4 w-full md:w-auto">
+          <div className="bg-white bg-opacity-5 backdrop-blur-sm rounded-xl p-8 shadow-lg m-0 md:m-4 w-full md:w-auto">
             <h1 className={`${monaSansB.className} font-sans`}>
               <p className="text-center text-[#071D10] text-3xl md:text-4xl mb-1 relative z-10">
-          <span className="block md:inline">Unified</span>
-          <br className="hidden md:block" />
-          <span className="inline-block min-h-[2em] md:inline min-h-[2em] w-full md:w-auto">
-            {value && window.innerWidth >= 768 ? (
-              <span style={{ visibility: value ? "visible" : "hidden", display: "inline-block", width: "auto", whiteSpace: "nowrap", overflow: "hidden", padding:"0 0 0 0" }}>{value}</span>
-            ) : (
-              "E-Waste Management"
-            )}
-          </span>
-          <br className="hidden md:block" />
-          <span className="block md:inline">Platform</span>
+                <span className="block md:inline">Unified</span>
+                <br className="hidden md:block" />
+                <span className="inline-block min-h-[2em] md:inline min-h-[2em] w-full md:w-auto">
+                  {value && window.innerWidth >= 768 ? (
+                    <span style={{ visibility: value ? "visible" : "hidden", display: "inline-block", width: "auto", whiteSpace: "nowrap", overflow: "hidden", padding: "0 0 0 0" }}>{value}</span>
+                  ) : (
+                    "E-Waste Management"
+                  )}
+                </span>
+                <br className="hidden md:block" />
+                <span className="block md:inline">Platform</span>
               </p>
             </h1>
             <h2 className={`${monaSansB.className} font-sans text-lg md:text-xl text-center text-[#2F2F2F] mb-8`}>
@@ -105,27 +125,27 @@ const Home = () => {
             </h2>
             <div className="max-w-4xl text-center mb-2 flex flex-col items-center justify-center relative z-10">
               <div className="w-full md:w-2/3">
-          <p className="text-sm md:text-xl mb-6 font-semibold relative z-10">
-            Every year, millions of tons of e-waste are discarded. Our platform helps recover valuable materials and protect our planet through efficient recycling.
-          </p>
+                <p className="text-sm md:text-xl mb-6 font-semibold relative z-10">
+                  Every year, millions of tons of e-waste are discarded. Our platform helps recover valuable materials and protect our planet through efficient recycling.
+                </p>
               </div>
             </div>
             <div className="flex justify-center">
               <button
-          className="
+                className="
           relative px-6 py-3 md:px-8 md:py-4 text-lg md:text-xl font-bold rounded-full shadow-md transition-all 
           bg-white text-green-700 border-2 border-green-700 hover:shadow-lg hover:scale-105 
           before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent 
           before:via-green-700 before:to-transparent before:opacity-10 before:animate-glow mb-8
           "
-          onClick={() => {
-            document.getElementById("links-section")?.scrollIntoView({ behavior: "smooth" });
-          }}
+                onClick={() => {
+                  document.getElementById("links-section")?.scrollIntoView({ behavior: "smooth" });
+                }}
               >
-          Get Started
+                Get Started
               </button>
             </div>
-            </div>
+          </div>
         </div>
 
         {/* Why Choose UEMP Section */}
@@ -184,17 +204,17 @@ const Home = () => {
           </h1>
           {error && <p className="bg-black p-1 text-red-500 font-[Consolas]">{error}</p>}
 
-            {/* Buttons for smaller screens (2 in a row) */}
-            <div className="mt-4 grid grid-cols-2 gap-4 md:hidden">
+          {/* Buttons for smaller screens (2 in a row) */}
+          <div className="mt-4 grid grid-cols-2 gap-4 md:hidden">
             <button
               onClick={() => handleLinkClick("Manufacturer", "/manufacturer")}
               className="bg-blue-500 p-6 w-full rounded-lg text-center shadow-md transition-transform transform hover:scale-105 border border-[#000500]"
             >
               <div className="flex justify-center mb-2">
-              <FaIndustry size={50} className="font-bold text-[#ffffff]" />
+                <FaIndustry size={50} className="font-bold text-[#ffffff]" />
               </div>
               <h2 className="text-sm font-bold text-[#ffffff] border border-dashed mb-3 px-2">
-              Manufacturer
+                Manufacturer
               </h2>
             </button>
             <button
@@ -202,10 +222,10 @@ const Home = () => {
               className="bg-green-500 p-6 w-full rounded-lg text-center shadow-md transition-transform transform hover:scale-105 border border-[#000500]"
             >
               <div className="flex justify-center mb-2">
-              <FaRecycle size={50} className="font-bold text-[#ffffff]" />
+                <FaRecycle size={50} className="font-bold text-[#ffffff]" />
               </div>
               <h2 className="text-sm font-bold text-[#ffffff] border border-dashed mb-3 px-2">
-              Recycler
+                Recycler
               </h2>
             </button>
             <button
@@ -213,10 +233,10 @@ const Home = () => {
               className="bg-yellow-500 p-6 w-full rounded-lg text-center shadow-md transition-transform transform hover:scale-105 border border-[#000500]"
             >
               <div className="flex justify-center mb-2">
-              <BsPersonWorkspace size={50} className="font-bold text-[#ffffff]" />
+                <BsPersonWorkspace size={50} className="font-bold text-[#ffffff]" />
               </div>
               <h2 className="text-sm font-bold text-[#ffffff] border border-dashed mb-3 px-2">
-              Consumer
+                Consumer
               </h2>
             </button>
             <button
@@ -224,13 +244,13 @@ const Home = () => {
               className="bg-red-500 p-6 w-full rounded-lg text-center shadow-md transition-transform transform hover:scale-105 border border-[#000500]"
             >
               <div className="flex justify-center mb-2">
-              <FaLandmark size={50} className="font-bold text-[#ffffff]" />
+                <FaLandmark size={50} className="font-bold text-[#ffffff]" />
               </div>
               <h2 className="text-sm font-bold text-[#ffffff] border border-dashed mb-3 px-2">
-              Government
+                Government
               </h2>
             </button>
-            </div>
+          </div>
 
           {/* Buttons for larger screens (3 in a row) */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl relative mt-8 z-10">
@@ -240,7 +260,7 @@ const Home = () => {
               className="bg-blue-500 p-8 w-[280px] rounded-lg text-center shadow-md transition-transform transform hover:scale-105 border border-[#000500] md:block hidden"
             >
               <div className="flex justify-center mb-2">
-          <FaIndustry size={60} className="font-bold text-[#ffffff]" />
+                <FaIndustry size={60} className="font-bold text-[#ffffff]" />
               </div>
               <h2 className="text-2xl font-bold text-[#ffffff] border-2 border-dashed mb-5">Manufacturer</h2>
               <p className="text-lg text-[#ffffff]">Generate QR codes for your products and ensure responsible recycling.</p>
@@ -250,7 +270,7 @@ const Home = () => {
               className="bg-green-500 p-8 w-[280px] rounded-lg text-center shadow-md transition-transform transform hover:scale-105 border border-[#000500] md:block hidden"
             >
               <div className="flex justify-center mb-2">
-          <FaRecycle size={60} className="font-bold text-[#ffffff]" />
+                <FaRecycle size={60} className="font-bold text-[#ffffff]" />
               </div>
               <h2 className="text-2xl font-bold text-[#ffffff] border-2 border-dashed mb-5">Recycler</h2>
               <p className="text-lg text-[#ffffff]">Register your recycling facility and join our network of responsible recyclers.</p>
@@ -260,7 +280,7 @@ const Home = () => {
               className="bg-yellow-500 p-8 w-[280px] rounded-lg text-center shadow-md transition-transform transform hover:scale-105 border border-[#000500] md:block hidden"
             >
               <div className="flex justify-center mb-2">
-          <BsPersonWorkspace size={60} className="font-bold text-[#ffffff]" />
+                <BsPersonWorkspace size={60} className="font-bold text-[#ffffff]" />
               </div>
               <h2 className="text-2xl font-bold text-[#ffffff] border-2 border-dashed mb-5">Consumer</h2>
               <p className="text-lg text-[#ffffff]">Find ways to recycle your electronic products responsibly and easily.</p>
@@ -274,11 +294,11 @@ const Home = () => {
               className="bg-red-500 p-8 w-[280px] rounded-lg text-center shadow-md transition-transform transform hover:scale-105 border border-[#000500]"
             >
               <div className="flex justify-center mb-2">
-          <FaLandmark size={60} className="font-bold text-[#ffffff]" />
+                <FaLandmark size={60} className="font-bold text-[#ffffff]" />
               </div>
               <h2 className="text-2xl font-bold text-[#ffffff] border-2 border-dashed mb-5">Government</h2>
               <p className="text-lg text-[#ffffff]">
-          Support e-waste regulations, oversee recycling initiatives, and promote sustainability.
+                Support e-waste regulations, oversee recycling initiatives, and promote sustainability.
               </p>
             </button>
           </div>
