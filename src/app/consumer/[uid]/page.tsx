@@ -1,13 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { db, auth } from "@/firebaseConfig";
+import { db, wdb, rdb,  auth } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { getFunctions, httpsCallable, HttpsCallableResult } from "firebase/functions";
-import { Html5QrcodeScanner } from "html5-qrcode";
 import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import { Html5QrcodeScanner } from "html5-qrcode";
 import Image from "next/image";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
@@ -34,12 +33,27 @@ const Consumer = () => {
     secretKey: string;
     manufacturerId: string;
     registered?: boolean;
+    location?: { lat: number; lng: number };
+    price?: number;
+    points?: number;
+    productName?: string;
+    desc?: string;
+    userId?: string;
   }
 
   interface RegisterResponse {
     success: boolean;
     message?: string;
   }
+
+  type RecyclerInfo = {
+    userId: string;
+    lat: number;
+    lng: number;
+    distance: number;
+    products: Product[];
+    organization: string;
+  };
 
   const [user, setUser] = useState<User | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -51,14 +65,160 @@ const Consumer = () => {
   const [manufacturerUID, setManufacturerUID] = useState<string | null>(null);
   const [showProductDetails, setShowProductDetails] = useState<Product | null>(null);
   const [homeLocation, setHomeLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [consumerLocation, setConsumerLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [nearbyRecyclers, setNearbyRecyclers] = useState<RecyclerInfo[]>([]);
   const [homeAddress, setHomeAddress] = useState<string | null>(null);
   const scannerRef = useRef<HTMLDivElement>(null);
+  const maxDistance = 50000; // Maximum distance in kmx
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries: ['geometry', 'drawing'],
   });
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        await fetchConsumerLocation(currentUser.uid);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (consumerLocation) {
+      fetchNearbyRecyclers();
+    }
+  }, [consumerLocation]);
+
+  const fetchConsumerLocation = async (uid: string) => {
+    try {
+      const consumerDocRef = doc(wdb, "consumers", uid , "maps", "homeLocation");
+      const consumerDoc = await getDoc(consumerDocRef);
+
+      if (consumerDoc.exists()) {
+        const data = consumerDoc.data();
+        if (data.location) {
+          setConsumerLocation({ lat: data.location.lat, lng: data.location.lng });
+          console.log("Fetched consumer location:", data.location);
+        }
+      } else {
+        console.warn("No consumer document found.");
+      }
+    } catch (error) {
+      console.error("Error fetching consumer location:", error);
+    }
+  };
+
+  const toRadians = (angle: number) => (angle * Math.PI) / 180;
+
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
+    const R = 6371 * 1000; // Earth’s radius in meters
+    const dLat = toRadians(lat2 - lat1);
+    const dLng = toRadians(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  };
+
+const fetchNearbyRecyclers = async () => {
+  try {
+    const recyclerSnapshot = await getDocs(collection(wdb, "recyclers"));
+    const filtered: RecyclerInfo[] = [];
+
+    recyclerSnapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data.location && consumerLocation) {
+        const distance = calculateDistance(
+          consumerLocation.lat,
+          consumerLocation.lng,
+          data.location.lat,
+          data.location.lng
+        );
+
+        if (distance <= maxDistance) {
+          filtered.push({
+            userId: docSnap.id,
+            lat: data.location.lat,
+            lng: data.location.lng,
+            distance,
+            products: [],      // Optional: placeholder to match type
+            organization: "",  // Placeholder for recycler name
+          });
+        }
+      }
+    });
+
+    filtered.sort((a, b) => a.distance - b.distance);
+
+    const fullRecyclerList = await Promise.all(
+      filtered.map(async (recycler) => {
+        const [products, organization] = await Promise.all([
+          fetchRecyclerProducts(recycler.userId),
+          fetchNameofRecycler(recycler.userId)
+        ]);
+
+        return {
+          ...recycler,
+          products,
+          organization,
+        };
+      })
+    );
+
+    setNearbyRecyclers(fullRecyclerList);
+    console.log("Nearby recyclers with products and names:", fullRecyclerList);
+  } catch (error) {
+    console.error("Error fetching recyclers:", error);
+  }
+};
+
+
+  
+  const fetchRecyclerProducts = async (userId: string): Promise<Product[]> => {
+    try {
+      const productsRef = collection(wdb, "recyclers", userId, "products");
+      const productsSnap = await getDocs(productsRef);
+  
+      const products: Product[] = productsSnap.docs.map((doc) => ({
+        id: doc.id,
+        ...(doc.data() as Omit<Product, "id">),
+      }));
+  
+      console.log(`Products for recycler ${userId}:`, products);
+      return products;
+    } catch (error) {
+      console.error(`Error fetching products for recycler ${userId}:`, error);
+      return [];
+    }
+  };
+
+  const fetchNameofRecycler = async (userId: string) => {
+    try {
+      const recyclerRef = doc(rdb, "users", userId);
+      const docSnap = await getDoc(recyclerRef);
+  
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+  
+        if (data && data.organization) {
+          console.log("Recycler name:", data.organization);
+          return data.organization;
+        }
+      }
+  
+      console.warn("No recycler document found or missing organization field.");
+      return null;
+    } catch (error) {
+      console.error("Error fetching recycler name:", error);
+      return null;
+    }
+  };
+  
 
   const fetchScannedProducts = useCallback(async (userId: string) => {
     try {
@@ -153,7 +313,7 @@ const Consumer = () => {
     });
     return () => unsubscribe();
   }, [fetchScannedProducts]);
-
+  
   const startQRScanner = () => {
     if (!scannerRef.current) return;
 
@@ -370,10 +530,10 @@ const Consumer = () => {
       alert("Failed to save location. Please try again.");
     }
   };
-
+  
   return (
     <>
-      <Navbar links={[{ label: "Docs", href: "/docs" }]} />
+      <Navbar links={[{ label: "Home", href: "/" }]} />
       <div className="min-h-screen flex flex-col items-center bg-gray-100">
         <div className="relative flex flex-col items-center w-full max-w-2xl mt-[10px]">
           <Image
@@ -407,8 +567,7 @@ const Consumer = () => {
                 </p>
                 <button
                   onClick={() => handleDeleteProduct(product.id!)}
-                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
-                >
+                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
                   Delete
                 </button>
               </div>
@@ -429,8 +588,7 @@ const Consumer = () => {
         <div ref={scannerRef} id="qr-reader" className="mt-4"></div>
         <button
           onClick={startQRScanner}
-          className="bg-green-600 text-white px-4 py-2 mt-4 rounded"
-        >
+          className="bg-green-600 text-white px-4 py-2 mt-4 rounded">
           Start Scanner
         </button>
         {showProductDetails && (
@@ -459,8 +617,7 @@ const Consumer = () => {
               </p>
               <button
                 onClick={() => setShowProductDetails(null)}
-                className="mt-4 bg-red-600 text-white px-4 py-2 rounded w-full hover:bg-red-700"
-              >
+                className="mt-4 bg-red-600 text-white px-4 py-2 rounded w-full hover:bg-red-700">
                 Close
               </button>
             </div>
@@ -549,7 +706,7 @@ const Consumer = () => {
             </div>
           </div>
         )}
-        <div className="w-full max-w-4xl p-6 mt-6 mb-6 bg-white shadow-md rounded-lg">
+        <div className="w-full max-w-4xl p-6 mt-6 bg-white shadow-md rounded-lg">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Set Your Home Location</h2>
           <GoogleMap
             mapContainerStyle={mapContainerStyle}
@@ -569,9 +726,47 @@ const Consumer = () => {
             Save Location
           </button>
         </div>
-        <Footer />
-      </div>
+{nearbyRecyclers.length === 0 ? (
+  <p className="text-gray-500 text-center mt-4">No nearby recyclers found.</p>
+) : (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+    {nearbyRecyclers.map((recycler) => (
+      <div
+        key={recycler.userId}
+        className="bg-white shadow-md rounded-2xl p-4 border hover:shadow-lg transition duration-300"
+      >
+        <h2 className="text-xl font-semibold mb-2 text-green-700">
+        Recycler Name: {recycler.organization || "Unknown"}
+        </h2>
 
+        <p className="text-sm text-gray-500 mb-3">
+          Distance: {recycler.distance.toFixed(2)} km
+        </p>
+
+        <h3 className="font-medium text-gray-800 mb-1">Products:</h3>
+        {recycler.products.length === 0 ? (
+          <p className="text-sm text-red-400">No products listed.</p>
+        ) : (
+          <ul className="list-disc ml-5 space-y-1">
+            {recycler.products.map((product: Product, index: number) => (
+
+              <li key={index} className="text-sm text-gray-700">
+                <strong>{product.name}</strong>
+                {product.price && <> – ₹{product.price}</>}
+                {product.desc && (
+                  <div className="text-xs text-gray-500 break-words">
+                    {product.desc}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    ))}
+  </div>
+)}
+      </div>
     </>
   );
 };
