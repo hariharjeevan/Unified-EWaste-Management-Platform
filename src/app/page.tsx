@@ -82,24 +82,22 @@ const Home = () => {
       <Navbar links={[{ label: "Docs", href: "/docs" }, { label: "About", href: "/about" }]} />
       <Head>
         <title>Unified E-Waste Management Platform</title>
-        <meta name="description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, 
-        promoting sustainable recycling practices, and minimizing environmental impact." />
-        
+        <meta name="description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, promoting sustainable recycling practices, and minimizing environmental impact." />
+
         {/* Open Graph tags */}
         <meta property="og:title" content="Unified E-Waste Management Platform" />
-        <meta property="og:description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, 
-        promoting sustainable recycling practices, and minimizing environmental impact." />
-        <meta property="og:image" content={`/screenshot.png`} />
+        <meta property="og:description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, promoting sustainable recycling practices, and minimizing environmental impact." />
+        <meta property="og:image" content="https://unified-e-waste-management-platform.vercel.app/screenshot.png" />
         <meta property="og:url" content="https://unified-e-waste-management-platform.vercel.app" />
         <meta property="og:type" content="website" />
 
-        {/* Twitter card meta tags (optional, if you want to add Twitter integration) */}
+        {/* Twitter card meta tags */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Unified E-Waste Management Platform" />
-        <meta name="twitter:description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, 
-        promoting sustainable recycling practices, and minimizing environmental impact." />
-        <meta name="twitter:image" content={`/screenshot.png`} />
+        <meta name="twitter:description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, promoting sustainable recycling practices, and minimizing environmental impact." />
+        <meta name="twitter:image" content="https://unified-e-waste-management-platform.vercel.app/screenshot.png" />
       </Head>
+
       <main className="p-0 flex flex-col items-center flex-grow w-full">
 
         {/* Hero Section */}
