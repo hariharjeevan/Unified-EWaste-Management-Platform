@@ -77,7 +77,7 @@ const ServicePage = () => {
 
   return (
     <>
-      <Navbar links={[{ label: "Recycler", href: "/recycler" }]} />
+      <Navbar links={[{ label: "Recycler", href: "/recycler", tooltip:"Visit the recycler dashboard" }]} />
       <div className="flex justify-center items-center h-screen bg-white p-4">
         <div className="w-80 bg-white p-4 rounded-lg shadow-lg">
           <input type="text" placeholder="Enter Product ID" value={productId} onChange={(e) => setProductId(e.target.value)} required className="w-full p-2 mb-2 border border-gray-300 rounded text-black" />
