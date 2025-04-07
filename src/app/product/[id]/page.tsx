@@ -100,7 +100,7 @@ const ProductDetails = () => {
   return (
     <div className="min-h-screen bg-white text-black">
     <>
-      <Navbar links={[{ label: "Home", href: "/" }]} />
+      <Navbar links={[{ label: "Home", href: "/", tooltip:"" }]} />
       <div className="w-screen h-screen p-6 item-center justify-center border rounded-lg bg-white shadow-md">
         {editMode ? (
           <div className="text-center mb-4">
