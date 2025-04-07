@@ -1,3 +1,4 @@
+//Login Page
 "use client";
 import { useState, useEffect } from "react";
 import { auth, db } from "@/firebaseConfig";
@@ -191,7 +192,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar links={[{ label: "About Us", href: "/about" }]} />
+      <Navbar links={[{ label: "Docs", href: "/docs", tooltip:"Refer to the website's documentation" }, { label: "About", href: "/about", tooltip:"About the team behind UEMP" }]} />
       <div className="flex flex-col items-center justify-center min-h-screen px-4">
         <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md mt-6">
           <h1 className="text-2xl font-bold mb-4 text-center text-green-700">
@@ -333,14 +334,14 @@ const Login = () => {
         <div className="flex flex-wrap justify-center gap-4 mt-6 mb-6">
           <button
             onClick={handleDemoManufacturerLogin}
-            className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 
+            className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 
             focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-200 w-full sm:w-1/2 md:w-1/3"
           >
             Manufacturer Login
           </button>
           <button
             onClick={handleDemoRecyclerLogin}
-            className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 
+            className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 
             focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-200 w-full sm:w-1/2 md:w-1/3"
           >
             Recycler Login

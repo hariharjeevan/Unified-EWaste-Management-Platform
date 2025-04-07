@@ -1,3 +1,4 @@
+//Footer Component
 import { BsGithub} from "react-icons/bs";
 
 const Footer = () => {

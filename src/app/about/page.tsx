@@ -1,3 +1,4 @@
+//About Page
 "use client";
 
 import Image from "next/image";
@@ -8,7 +9,7 @@ const AboutUs = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f3f4]">
       {/* Navbar */}
-      <Navbar links={[{ label: "", href: "" }]} />
+      <Navbar links={[{ label: "", href: "", tooltip:"" }]} />
       <div className="bg-gray-100 min-h-screen flex flex-col items-center pt-16">
         <h2 className="text-3xl font-bold text-black mt-6">About Us</h2>
         <p className="text-lg text-gray-700 text-center max-w-2xl mt-4">
