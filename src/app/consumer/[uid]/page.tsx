@@ -3,9 +3,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { db, wdb, rdb,  auth } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { onAuthStateChanged, User , getAuth } from "firebase/auth";
 import { getFunctions, httpsCallable, HttpsCallableResult } from "firebase/functions";
 import Navbar from "@/components/Navbar";
+import Link from "next/link";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import Image from "next/image";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
@@ -23,6 +24,10 @@ const defaultCenter = {
 
 
 const Consumer = () => {
+
+  const auth = getAuth();
+  const consumerId = auth.currentUser?.uid;
+
   interface Product {
     id?: string;
     name: string;
@@ -53,6 +58,7 @@ const Consumer = () => {
     distance: number;
     products: Product[];
     organization: string;
+    address: string; // Added address field
   };
 
   const [user, setUser] = useState<User | null>(null);
@@ -116,7 +122,7 @@ const Consumer = () => {
   const toRadians = (angle: number) => (angle * Math.PI) / 180;
 
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
-    const R = 6371 * 1000; // Earth’s radius in meters
+    const R = 6371; // Earth’s radius in kmx
     const dLat = toRadians(lat2 - lat1);
     const dLng = toRadians(lng2 - lng1);
     const a =
@@ -146,8 +152,9 @@ const fetchNearbyRecyclers = async () => {
             lat: data.location.lat,
             lng: data.location.lng,
             distance,
-            products: [],      // Optional: placeholder to match type
-            organization: "",  // Placeholder for recycler name
+            address: data.address,
+            products: [],
+            organization: "",
           });
         }
       }
@@ -155,11 +162,16 @@ const fetchNearbyRecyclers = async () => {
 
     filtered.sort((a, b) => a.distance - b.distance);
 
+    if (!consumerId) {
+      alert("Consumer Not Logged In.");
+      return;
+    }
+
     const fullRecyclerList = await Promise.all(
       filtered.map(async (recycler) => {
         const [products, organization] = await Promise.all([
-          fetchRecyclerProducts(recycler.userId),
-          fetchNameofRecycler(recycler.userId)
+          fetchRecyclerProducts(recycler.userId, consumerId),
+          fetchNameofRecycler(recycler.userId),
         ]);
 
         return {
@@ -171,31 +183,88 @@ const fetchNearbyRecyclers = async () => {
     );
 
     setNearbyRecyclers(fullRecyclerList);
-    console.log("Nearby recyclers with products and names:", fullRecyclerList);
+    console.log("Nearby recyclers with products, names, and addresses:", fullRecyclerList);
   } catch (error) {
     console.error("Error fetching recyclers:", error);
   }
 };
 
-
-  
-  const fetchRecyclerProducts = async (userId: string): Promise<Product[]> => {
+  const fetchRecyclerProducts = async (
+    recyclerId: string,
+    consumerId: string
+  ): Promise<Product[]> => {
     try {
-      const productsRef = collection(wdb, "recyclers", userId, "products");
+      const scannedRef = collection(wdb, "consumers", consumerId, "scannedProducts");
+      const scannedSnap = await getDocs(scannedRef);
+
+      const scannedNames = scannedSnap.docs.map((doc) => {
+        const data = doc.data();
+        return data.name?.toLowerCase().trim() || "";
+      }).filter(name => name);
+  
+      console.log("Scanned Names: ", scannedNames);
+  
+      const productsRef = collection(wdb, "recyclers", recyclerId, "products");
       const productsSnap = await getDocs(productsRef);
+
+      const allProducts: Product[] = productsSnap.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.productName || "",
+          serialNumber: data.serialNumber || "",
+          category: data.category || "Unknown",
+          recyclability: data.recyclability || "Unknown",
+          recoverableMetals: data.recoverableMetals || "Unknown",
+          secretKey: data.secretKey || "",
+          manufacturerId: data.manufacturerId || "",
+          registered: data.registered ?? false,
+          location: data.location || { lat: 0, lng: 0 },
+          price: data.price || 0,
+          points: data.points || 0,
+          productName: data.productName || "",
+          desc: data.desc || "",
+          userId: data.userId || "",
+        };
+      });
   
-      const products: Product[] = productsSnap.docs.map((doc) => ({
-        id: doc.id,
-        ...(doc.data() as Omit<Product, "id">),
-      }));
+      console.log("All Recycler Products:", allProducts);
   
-      console.log(`Products for recycler ${userId}:`, products);
-      return products;
+      const getStringSimilarity = (str1: string, str2: string): number => {
+        let commonChars = 0;
+        const minLength = Math.min(str1.length, str2.length);
+  
+        for (let i = 0; i < minLength; i++) {
+          if (str1[i] === str2[i]) {
+            commonChars++;
+          }
+        }
+  
+        return commonChars / Math.max(str1.length, str2.length);
+      };
+  
+      const similarityThreshold = 0.10;
+  
+      const matchingProducts = allProducts.filter((product) => {
+        const productName = product.productName?.toLowerCase() || "";
+  
+        return scannedNames.some((scanned) => {
+
+          const similarity = getStringSimilarity(scanned, productName);
+          
+          // If the similarity score is above the threshold, consider it a match
+          return similarity >= similarityThreshold;
+        });
+      });
+  
+      console.log(`Matching products for recycler ${recyclerId}:`, matchingProducts);
+      return matchingProducts;
     } catch (error) {
-      console.error(`Error fetching products for recycler ${userId}:`, error);
+      console.error(`Error fetching products for recycler ${recyclerId}:`, error);
       return [];
     }
   };
+  
 
   const fetchNameofRecycler = async (userId: string) => {
     try {
@@ -726,18 +795,37 @@ const fetchNearbyRecyclers = async () => {
             Save Location
           </button>
         </div>
+        <div className="text-black">
+          {loading?(
+            <p className="text-gray-600">Loading nearby recyclers...</p>
+          ) : (
+            <h2 className="text-xl font-bold text-center text-gray-900 mt-6">
+              Nearby Recyclers
+            </h2>
+          )}
 {nearbyRecyclers.length === 0 ? (
   <p className="text-gray-500 text-center mt-4">No nearby recyclers found.</p>
 ) : (
   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
     {nearbyRecyclers.map((recycler) => (
-      <div
-        key={recycler.userId}
-        className="bg-white shadow-md rounded-2xl p-4 border hover:shadow-lg transition duration-300"
-      >
+      <Link
+      href={{
+        pathname: "/listofproducts",
+        query: {
+          recyclerId: recycler.userId,
+          ids: recycler.products.map((p) => p.id).join(","),
+        },
+      }}
+      passHref
+      key={recycler.userId}
+      className="bg-white shadow-md rounded-2xl p-4 border hover:shadow-lg transition duration-300"
+    >
+    
         <h2 className="text-xl font-semibold mb-2 text-green-700">
         Recycler Name: {recycler.organization || "Unknown"}
         </h2>
+
+        <p className="text-sm text-gray-600">{recycler.address}</p>
 
         <p className="text-sm text-gray-500 mb-3">
           Distance: {recycler.distance.toFixed(2)} km
@@ -745,7 +833,7 @@ const fetchNearbyRecyclers = async () => {
 
         <h3 className="font-medium text-gray-800 mb-1">Products:</h3>
         {recycler.products.length === 0 ? (
-          <p className="text-sm text-red-400">No products listed.</p>
+          <p className="text-sm text-red-400">No Product Matches your Scanned Products.</p>
         ) : (
           <ul className="list-disc ml-5 space-y-1">
             {recycler.products.map((product: Product, index: number) => (
@@ -753,19 +841,15 @@ const fetchNearbyRecyclers = async () => {
               <li key={index} className="text-sm text-gray-700">
                 <strong>{product.name}</strong>
                 {product.price && <> – ₹{product.price}</>}
-                {product.desc && (
-                  <div className="text-xs text-gray-500 break-words">
-                    {product.desc}
-                  </div>
-                )}
               </li>
             ))}
           </ul>
         )}
-      </div>
+      </Link>
     ))}
   </div>
 )}
+</div>
       </div>
     </>
   );
