@@ -602,7 +602,7 @@ const fetchNearbyRecyclers = async () => {
   
   return (
     <>
-      <Navbar links={[{ label: "Home", href: "/" }]} />
+      <Navbar links={[{ label: "Docs", href: "/docs", tooltip:"Refer to the website's documentation" }, { label: "About", href: "/about", tooltip:"About the team behind UEMP" }]} />
       <div className="min-h-screen flex flex-col items-center bg-gray-100">
         <div className="relative flex flex-col items-center w-full max-w-2xl mt-[10px]">
           <Image
