@@ -6,6 +6,12 @@
 <img src="docs/GSC.png">
 </div>
 
+<div align="center">
+
+[Read the Full Documentation here 👀](https://unified-e-waste-management-platform.vercel.app/docs)
+
+</div>
+
 ## **Overview**
 The **Unified E-Waste Management Platform (UEMP)** aims to streamline e-waste tracking and recycling through a unified digital solution. It connects **manufacturers, recyclers, and consumers** to promote responsible e-waste management and lifecycle tracking of electronic products.
 

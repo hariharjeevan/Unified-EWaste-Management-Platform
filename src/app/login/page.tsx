@@ -1,3 +1,4 @@
+//Login Page
 "use client";
 import { useState, useEffect } from "react";
 import { auth, db } from "@/firebaseConfig";
@@ -120,6 +121,51 @@ const Login = () => {
     }
   };
 
+  // Function to handle demo login based on user type
+  const handleDemoLogin = (userEmail: string, userPassword: string, userType: string) => {
+    signInWithEmailAndPassword(auth, userEmail, userPassword)
+      .then((userCredential) => {
+        const user = userCredential.user;
+        redirectToPage(userType, user.uid);
+      })
+      .catch((error) => {
+        console.error("Error logging in with demo account:", error);
+        setError("Failed to log in as demo user.");
+      });
+  };
+
+  const handleDemoManufacturerLogin = () => {
+    handleDemoLogin(
+      process.env.NEXT_PUBLIC_DEMO_MANUFACTURER_EMAIL!,
+      process.env.NEXT_PUBLIC_DEMO_MANUFACTURER_PASSWORD!,
+      "Manufacturer"
+    );
+  };
+
+  const handleDemoRecyclerLogin = () => {
+    handleDemoLogin(
+      process.env.NEXT_PUBLIC_DEMO_RECYCLER_EMAIL!,
+      process.env.NEXT_PUBLIC_DEMO_RECYCLER_PASSWORD!,
+      "Recycler"
+    );
+  };
+
+  const handleDemoConsumerLogin = () => {
+    handleDemoLogin(
+      process.env.NEXT_PUBLIC_DEMO_CONSUMER_EMAIL!,
+      process.env.NEXT_PUBLIC_DEMO_CONSUMER_PASSWORD!,
+      "Consumer"
+    );
+  };
+
+  const handleDemoGovernmentLogin = () => {
+    handleDemoLogin(
+      process.env.NEXT_PUBLIC_DEMO_GOVERNMENT_EMAIL!,
+      process.env.NEXT_PUBLIC_DEMO_GOVERNMENT_PASSWORD!,
+      "Government"
+    );
+  };
+
   const redirectToPage = (userType: string, userId: string) => {
     if (!userType) {
       setError("User type is undefined. Please try logging in again.");
@@ -146,9 +192,9 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar links={[{ label: "About Us", href: "/about" }]} />
+      <Navbar links={[{ label: "Docs", href: "/docs", tooltip:"Refer to the website's documentation" }, { label: "About", href: "/about", tooltip:"About the team behind UEMP" }]} />
       <div className="flex flex-col items-center justify-center min-h-screen px-4">
-        <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+        <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md mt-6">
           <h1 className="text-2xl font-bold mb-4 text-center text-green-700">
             {isLogin ? "Login" : "Sign Up"}
           </h1>
@@ -277,6 +323,43 @@ const Login = () => {
               {isLogin ? "Sign Up" : "Login"}
             </span>
           </p>
+        </div>
+
+        {/* Title for Demo Logins */}
+        <h2 className="text-2xl font-bold text-center text-green-700 mt-8">
+          Try our Demo Logins
+        </h2>
+
+        {/* Demo Login Buttons */}
+        <div className="flex flex-wrap justify-center gap-4 mt-6 mb-6">
+          <button
+            onClick={handleDemoManufacturerLogin}
+            className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 
+            focus:outline-none focus:ring-2 focus:ring-green-400 transition duration-200 w-full sm:w-1/2 md:w-1/3"
+          >
+            Manufacturer Login
+          </button>
+          <button
+            onClick={handleDemoRecyclerLogin}
+            className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 
+            focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-200 w-full sm:w-1/2 md:w-1/3"
+          >
+            Recycler Login
+          </button>
+          <button
+            onClick={handleDemoConsumerLogin}
+            className="bg-yellow-500 text-white px-6 py-3 rounded-lg hover:bg-yellow-600 
+            focus:outline-none focus:ring-2 focus:ring-yellow-400 transition duration-200 w-full sm:w-1/2 md:w-1/3"
+          >
+            Consumer Login
+          </button>
+          <button
+            onClick={handleDemoGovernmentLogin}
+            className="bg-red-500 text-white px-6 py-3 rounded-lg hover:bg-red-600 
+            focus:outline-none focus:ring-2 focus:ring-red-400 transition duration-200 w-full sm:w-1/2 md:w-1/3"
+          >
+            Government Login
+          </button>
         </div>
       </div>
       <Footer />

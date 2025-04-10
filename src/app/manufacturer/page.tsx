@@ -1,3 +1,4 @@
+//Manufacturer Page
 "use client";
 
 import { useState, useEffect } from "react";
@@ -136,12 +137,14 @@ const Manufacturer = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#f5f3f4]">
-      <Navbar links={[{ label: "", href: "" }]} />
+      <Navbar links={[{ label: "Docs", href: "/docs", tooltip:"Refer to the website's documentation" }, { label: "About", href: "/about", tooltip:"About the team behind UEMP" }]} />
       <div className="bg-gray-100 min-h-screen flex flex-col items-center pt-16">
         <h2 className="text-xl text-black font-semibold mt-4">Manufacturer Dashboard</h2>
         <div className="flex space-x-4 mt-4">
-          <button onClick={fetchProducts} className="bg-blue-600 text-white px-4 py-2 rounded">View Products</button>
-          <button onClick={() => setShowDialog(true)} className="bg-green-600 text-white px-4 py-2 rounded">Create Product</button>
+          <button onClick={fetchProducts} className="bg-blue-600 text-white px-4 py-2 
+          rounded">View Products</button>
+          <button onClick={() => setShowDialog(true)} className="bg-green-600 text-white 
+          px-4 py-2 rounded">Create Product</button>
         </div>
 
         {showProducts && (
@@ -156,17 +159,21 @@ const Manufacturer = () => {
                       <li key={product.id} className="border-b p-3 text-black flex justify-between items-center">
                         <div className="flex items-center space-x-3 relative group">
                           <span
-                            className="cursor-pointer text-blue-600 hover:underline hover:text-blue-800 transition-all duration-200"
+                            className="cursor-pointer text-blue-600 hover:underline hover:text-blue-800 
+                            transition-all duration-200"
                             onClick={() => setShowProductDetails(product)}
                           >
                             {product.name}
                           </span>
                           <span className="text-gray-700">({product.serialNumber})</span>
-                          <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20">
+                          <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 
+                          shadow-lg rounded opacity-0 invisible group-hover:opacity-100 
+                          group-hover:visible transition-opacity duration-300 z-20">
                             <QRCode value={product.qrCode} size={100} bgColor="white" fgColor="black" />
                           </div>
                         </div>
-                        <button onClick={() => deleteProduct(product.id)} className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded text-sm transition-all duration-200">
+                        <button onClick={() => deleteProduct(product.id)} className="bg-red-500 hover:bg-red-700 
+                        text-white px-4 py-2 rounded text-sm transition-all duration-200">
                           Delete
                         </button>
                       </li>
@@ -198,12 +205,19 @@ const Manufacturer = () => {
                         size={20}
                         className="text-gray-500 cursor-pointer hover:text-gray-700"
                       />
-                      <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
-                        {field === "name" && <p className="text-sm text-gray-700">Enter the product&apos;s name (e.g., &quot;Samsung Galaxy S25&quot;).</p>}
-                        {field === "serialNumber" && <p className="text-sm text-gray-700">Enter the unique serial number for the product.</p>}
-                        {field === "category" && <p className="text-sm text-gray-700">Enter the product category (e.g., &quot;Electronics&quot;).</p>}
-                        {field === "recyclability" && <p className="text-sm text-gray-700">Enter the recyclability percentage (e.g., &quot;80%&quot;).</p>}
-                        {field === "recoverableMetals" && <p className="text-sm text-gray-700">Enter the recoverable metals (e.g., &quot;Gold, Silver&quot;).</p>}
+                      <div className="absolute left-0 top-8 p-2 bg-white border 
+                      border-gray-300 shadow-lg rounded opacity-0 invisible 
+                      group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
+                        {field === "name" && <p className="text-sm text-gray-700">
+                          Enter the product&apos;s name (e.g., &quot;Samsung Galaxy S25&quot;).</p>}
+                        {field === "serialNumber" && <p className="text-sm text-gray-700">
+                          Enter the unique serial number for the product.</p>}
+                        {field === "category" && <p className="text-sm text-gray-700">
+                          Enter the product category (e.g., &quot;Electronics&quot;).</p>}
+                        {field === "recyclability" && <p className="text-sm text-gray-700">
+                          Enter the recyclability percentage (e.g., &quot;80%&quot;).</p>}
+                        {field === "recoverableMetals" && <p className="text-sm text-gray-700">
+                          Enter the recoverable metals (e.g., &quot;Gold, Silver&quot;).</p>}
                       </div>
                     </div>
                   </div>
@@ -226,7 +240,8 @@ const Manufacturer = () => {
         )}
 
         {showProductDetails && (
-          <div className="fixed top-16 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50 overflow-y-auto">
+          <div className="fixed top-16 left-0 w-full h-full flex justify-center items-center 
+          bg-black bg-opacity-50 overflow-y-auto">
             <div className="bg-white p-6 rounded-lg shadow-lg w-96 mb-10">
               <h3 className="text-lg text-white text-center bg-black font-semibold mb-6 rounded-full p-2">Product Details</h3>
               <p className="text-black"><strong>Name:</strong> {showProductDetails.name}</p>
@@ -284,7 +299,8 @@ const Manufacturer = () => {
               ? (() => {
                   const createdAtDate = new Date(showProductDetails.createdAt.seconds * 1000);
                   const now = new Date();
-                  const timeDifference = Math.floor((now.getTime() - createdAtDate.getTime()) / (1000 * 60 * 60 * 24));
+                  const timeDifference = Math.floor((now.getTime() - 
+                  createdAtDate.getTime()) / (1000 * 60 * 60 * 24));
                   return timeDifference > 0 ? `${timeDifference} days ago` : "Today";
                 })()
               : "N/A"}
@@ -304,7 +320,8 @@ const Manufacturer = () => {
 
               <button
           onClick={() => setShowProductDetails(null)}
-          className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 transition-all duration-200"
+          className="mt-4 bg-red-500 text-white px-4 py-2 rounded
+          hover:bg-red-700 transition-all duration-200"
               >
           Close
               </button>

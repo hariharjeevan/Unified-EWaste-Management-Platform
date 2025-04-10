@@ -1,3 +1,4 @@
+//UEMP Home Page
 "use client";
 
 import { useState, useEffect } from "react";
@@ -79,7 +80,7 @@ const Home = () => {
 
   return (
     <div className={`${monaSansN.className} relative min-h-screen flex flex-col bg-[#f5f3f4]`}>
-      <Navbar links={[{ label: "Docs", href: "/docs" }, { label: "About", href: "/about" }]} />
+      <Navbar links={[{ label: "Docs", href: "/docs", tooltip:"Refer to the website's documentation" }, { label: "About", href: "/about", tooltip:"About the team behind UEMP" }]} />
       <Head>
         <title>Unified E-Waste Management Platform</title>
         <meta name="description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, promoting sustainable recycling practices, and minimizing environmental impact." />
