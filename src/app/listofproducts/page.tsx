@@ -1,3 +1,4 @@
+//List of products page
 "use client";
 
 import { useEffect, useState } from "react";
@@ -47,7 +48,7 @@ const ListOfProducts = () => {
 
   return (
     <>
-      <Navbar links={[{ label: "Home", href: "/" }]} />
+      <Navbar links={[{ label: "Docs", href: "/docs", tooltip:"Refer to the website's documentation" }]} />
       <div className="min-h-screen flex flex-col items-center bg-gray-100 text-black">
         <h1 className="text-3xl font-semibold mb-6">List of Products</h1>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

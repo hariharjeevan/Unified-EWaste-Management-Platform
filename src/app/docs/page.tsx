@@ -23,7 +23,7 @@ const DocsPage = () => {
     <div className="min-h-screen flex flex-col bg-[#f5f3f4]">
 
       {/* Navbar */}
-      <Navbar links={[{ label: "", href: "", tooltip: "" }]} />
+      <Navbar links={[{ label: "About", href: "/about", tooltip:"About the team behind UEMP" }]} />
 
       <main className="flex flex-col items-center p-8">
         <h1 className="text-4xl font-bold text-[#000500] mb-2">Documentation</h1>
