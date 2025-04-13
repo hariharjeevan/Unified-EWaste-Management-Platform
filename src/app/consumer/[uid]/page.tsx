@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { db, wdb, rdb, auth } from "@/firebaseConfig";
+import { db, wdb, rdb } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged, User, getAuth } from "firebase/auth";
 import { getFunctions, httpsCallable, HttpsCallableResult } from "firebase/functions";
@@ -10,7 +10,8 @@ import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import Image from "next/image";
-import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { AiOutlineEye, AiOutlineEyeInvisible , AiFillBell} from "react-icons/ai";
+
 import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
 import Footer from "@/components/Footer";
 
@@ -76,14 +77,19 @@ const Consumer = () => {
   const [consumerLocation, setConsumerLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [nearbyRecyclers, setNearbyRecyclers] = useState<RecyclerInfo[]>([]);
   const [homeAddress, setHomeAddress] = useState<string | null>(null);
+  const [showQueryModal, setShowQueryModal] = useState(false);
   const scannerRef = useRef<HTMLDivElement>(null);
-  const maxDistance = 50000; // Maximum distance in kmx
+  const maxDistance = 500; // Maximum distance in kmx
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries: ['geometry', 'drawing'],
   });
+
+  const toggleQueryModal = () => {
+    setShowQueryModal((prev) => !prev);
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -605,6 +611,14 @@ const Consumer = () => {
   return (
     <>
       <Navbar links={[{ label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" }, { label: "About", href: "/about", tooltip: "About the team behind UEMP" }]} />
+      <button
+      onClick={toggleQueryModal}
+      className="fixed bottom-6 right-6 bg-green-600 hover:bg-green-700 text-white p-4 rounded-full shadow-lg z-50"
+      aria-label="Show Query Details"
+      >
+      <AiFillBell size={24} />
+      </button>
+      
       <div className="min-h-screen flex flex-col items-center bg-gray-100">
         <div className="relative flex flex-col items-center w-full max-w-2xl mt-[10px]">
           <Image
