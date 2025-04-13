@@ -131,7 +131,7 @@ const Navbar = ({ links = [] }: NavbarProps) => {
 
       {/* Center: Logo */}
       <h1 className={`${monaSans.className} font-sans`}>
-        <Link href="/" className="text-2xl">UEMP</Link>
+        <Link href="/" className="text-2xl ml-[85px]">UEMP</Link>
       </h1>
 
       {/* Right: Navigation Links */}
