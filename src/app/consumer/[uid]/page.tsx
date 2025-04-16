@@ -322,21 +322,20 @@ const fetchRecyclerProducts = useCallback(
         const data = doc.data();
         if (!data || Object.keys(data).length === 0) {
           console.warn(`Skipping empty or invalid document: ${doc.id}`);
-          return null; // Skip invalid or empty documents
+          return null;
         }
         return {
           id: doc.id,
           ...data,
         } as Product;
-      }).filter((product) => product !== null) as Product[]; // Filter out null values
+      }).filter((product) => product !== null) as Product[];
 
       const verifiedProducts: Product[] = [];
 
       for (const product of products) {
-        // Validate manufacturerId and serialNumber
         if (!product.manufacturerId || !product.serialNumber) {
           console.error("Invalid product data:", product);
-          continue; // Skip invalid products
+          continue;
         }
 
         const manufacturerRef = doc(
@@ -350,10 +349,8 @@ const fetchRecyclerProducts = useCallback(
         const manufacturerSnap = await getDoc(manufacturerRef);
 
         if (manufacturerSnap.exists()) {
-          // Product exists in the manufacturer database, add to verified list
           verifiedProducts.push(product);
         } else {
-          // Product does not exist in the manufacturer database, delete it
           console.warn(
             `Product ${product.serialNumber} not found in manufacturer database. Deleting from consumer database.`
           );
@@ -498,7 +495,7 @@ const fetchRecyclerProducts = useCallback(
         });
 
         alert("Product registered successfully!");
-        window.location.reload(); //reload the page after the message shows up
+        window.location.reload();
         setSecretKey("");
         await fetchScannedProducts(user.uid);
       } else {
@@ -521,7 +518,6 @@ const fetchRecyclerProducts = useCallback(
     }
 
     try {
-      // Reference to the product in the consumer database
       const productRef = doc(
         db,
         "consumers",
@@ -530,11 +526,10 @@ const fetchRecyclerProducts = useCallback(
         productId
       );
 
-      // Delete the product from the consumer database
       await deleteDoc(productRef);
 
       alert("Product deleted successfully!");
-      await fetchScannedProducts(user.uid); // Refresh the list of scanned products
+      await fetchScannedProducts(user.uid);
     } catch (error) {
       console.error("Error deleting product:", error);
       setErrorMessage("Failed to delete product.");
@@ -605,14 +600,13 @@ const fetchRecyclerProducts = useCallback(
     if (!user || !homeLocation || !homeAddress) return;
 
     try {
-      // Save the location and address in the "consumers" collection
       await setDoc(
         doc(db, "consumers", user.uid, "maps", "homeLocation"),
         {
           location: homeLocation,
           address: homeAddress,
         },
-        { merge: true } // Merge to avoid overwriting existing data
+        { merge: true }
       );
 
       alert("Home location and address saved successfully!");
@@ -662,7 +656,7 @@ const fetchRecyclerProducts = useCallback(
               >
                 <p
                   className="text-black cursor-pointer underline"
-                  onClick={() => setShowProductDetails(product)} // Set the selected product
+                  onClick={() => setShowProductDetails(product)}
                 >
                   <strong>{product.name}</strong> - {product.serialNumber}
                 </p>
