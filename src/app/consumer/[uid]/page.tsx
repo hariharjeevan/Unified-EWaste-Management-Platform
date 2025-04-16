@@ -76,8 +76,10 @@ const Consumer = () => {
   const [nearbyRecyclers, setNearbyRecyclers] = useState<RecyclerInfo[]>([]);
   const [homeAddress, setHomeAddress] = useState<string | null>(null);
   const [showQueryModal, setShowQueryModal] = useState(false);
+  const [scannerStarted, setScannerStarted] = useState(false);
   const [consumerName, setConsumerName] = useState<string>("User");
-  const scannerRef = useRef<HTMLDivElement>(null);
+  const qrContainerRef = useRef<HTMLDivElement | null>(null);
+  const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const maxDistance = 500; // Maximum distance in kmx
 
   const { isLoaded } = useJsApiLoader({
@@ -403,7 +405,7 @@ const fetchRecyclerProducts = useCallback(
   }, [fetchScannedProducts , auth]);
 
   const startQRScanner = () => {
-    if (!scannerRef.current) return;
+    if (!qrContainerRef.current) return;
 
     const scanner = new Html5QrcodeScanner(
       "qr-reader",
@@ -413,7 +415,8 @@ const fetchRecyclerProducts = useCallback(
 
     scanner.render(
       async (decodedText: string) => {
-        scanner.clear();
+        await scanner.clear();
+        setScannerStarted(false);
         setErrorMessage(null);
         setProductDetails(null);
 
@@ -451,6 +454,21 @@ const fetchRecyclerProducts = useCallback(
         console.warn("QR Scan failed:", errorMessage);
       }
     );
+
+    scannerRef.current = scanner;
+    setScannerStarted(true);
+  };
+
+  const stopQRScanner = async () => {
+    if (scannerRef.current) {
+      try {
+        await scannerRef.current.clear()
+        setScannerStarted(false);
+        scannerRef.current = null;
+      } catch (error) {
+        console.error("Failed to stop QR scanner:", error);
+      }
+    }
   };
 
   const handleRegisterProduct = async () => {
@@ -681,12 +699,25 @@ const fetchRecyclerProducts = useCallback(
         <h2 className="text-xl text-black font-semibold mt-4">
           Scan Product QR Code
         </h2>
-        <div ref={scannerRef} id="qr-reader" className="mt-4"></div>
+        <div className="flex flex-col gap-4 items-center">
+      <div ref={qrContainerRef} id="qr-reader" className="mt-2 text-black"></div>
+      {!scannerStarted ? (
         <button
           onClick={startQRScanner}
-          className="bg-green-600 text-white px-4 py-2 mt-4 rounded">
+          className="bg-green-600 text-white px-4 py-2 rounded"
+        >
           Start Scanner
         </button>
+      ) : (
+        <button
+          onClick={stopQRScanner}
+          className="bg-red-600 text-white px-4 py-2 rounded mt-[30px]"
+        >
+          Stop Scanner
+        </button>
+      )}
+    </div>
+
         {showProductDetails && (
           <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-6 rounded-lg shadow-lg w-96">
