@@ -24,6 +24,16 @@ const Login = () => {
   const router = useRouter();
 
   useEffect(() => {
+    const redirectToPage = (userType: string, uid: string) => {
+      if (userType === "consumer") {
+        router.push(`/consumer/${uid}`);
+      } else if (userType === "recycler") {
+        router.push(`/recycler/${uid}`);
+      } else {
+        setError("Unknown user type.");
+      }
+    };
+  
     const unsubscribe = onAuthStateChanged(
       auth,
       async (currentUser: User | null) => {
@@ -43,10 +53,10 @@ const Login = () => {
         }
       }
     );
-
+  
     return () => unsubscribe();
-  }, [auth, router]);
-
+  }, [router]);
+  
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
