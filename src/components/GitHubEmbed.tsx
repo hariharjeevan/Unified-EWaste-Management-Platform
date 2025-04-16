@@ -67,7 +67,18 @@ const GitHubEmbed: React.FC<GitHubEmbedProps> = ({
       containerRef.current.innerHTML = ''; // Clear container
       containerRef.current.appendChild(script);
     }
-  }, [isModalOpen, githubBlobUrl]);
+  }, [
+    isModalOpen,
+    githubBlobUrl,
+    style,
+    type,
+    showBorder,
+    showLineNumbers,
+    showFileMeta,
+    showFullPath,
+    showCopy,
+  ]);
+  
 
   // Modal for showing full code
   const Modal = () => (
