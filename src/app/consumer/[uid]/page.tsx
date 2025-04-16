@@ -11,7 +11,6 @@ import Link from "next/link";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import Image from "next/image";
 import { AiOutlineEye, AiOutlineEyeInvisible , AiFillBell} from "react-icons/ai";
-
 import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
 import Footer from "@/components/Footer";
 
@@ -24,7 +23,6 @@ const defaultCenter = {
   lat: 28.7041,
   lng: 77.1025,
 };
-
 
 const Consumer = () => {
 
@@ -82,7 +80,6 @@ const Consumer = () => {
   const scannerRef = useRef<HTMLDivElement>(null);
   const maxDistance = 500; // Maximum distance in kmx
 
-
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
@@ -113,9 +110,8 @@ const Consumer = () => {
     };
   
     fetchName(consumerId!);
-  }, [consumerId]);
+  }, [consumerId,auth]);
   
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
@@ -125,13 +121,7 @@ const Consumer = () => {
     });
 
     return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (consumerLocation) {
-      fetchNearbyRecyclers();
-    }
-  }, [consumerLocation]);
+  }, [auth]);
 
   const fetchConsumerLocation = async (uid: string) => {
     try {
@@ -152,80 +142,20 @@ const Consumer = () => {
     }
   };
 
-  const toRadians = (angle: number) => (angle * Math.PI) / 180;
+const toRadians = (angle: number) => (angle * Math.PI) / 180;
 
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number) => {
-    const R = 6371; // Earth’s radius in kmx
-    const dLat = toRadians(lat2 - lat1);
-    const dLng = toRadians(lng2 - lng1);
-    const a =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
-    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-  };
+const calculateDistance = useCallback((lat1: number, lng1: number, lat2: number, lng2: number) => {
+  const R = 6371; // Earth’s radius in km
+  const dLat = toRadians(lat2 - lat1);
+  const dLng = toRadians(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}, []);
 
-  const fetchNearbyRecyclers = async () => {
-    try {
-      const recyclerSnapshot = await getDocs(collection(db, "recyclers"));
-      const filtered: RecyclerInfo[] = [];
-
-      recyclerSnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        if (data.location && consumerLocation) {
-          const distance = calculateDistance(
-            consumerLocation.lat,
-            consumerLocation.lng,
-            data.location.lat,
-            data.location.lng
-          );
-
-          if (distance <= maxDistance) {
-            filtered.push({
-              userId: docSnap.id,
-              lat: data.location.lat,
-              lng: data.location.lng,
-              distance,
-              address: data.address,
-              products: [],
-              organization: "",
-            });
-          }
-        }
-      });
-
-      filtered.sort((a, b) => a.distance - b.distance);
-
-      if (!consumerId) {
-        alert("Consumer Not Logged In.");
-        return;
-      }
-
-      const fullRecyclerList = await Promise.all(
-        filtered.map(async (recycler) => {
-          const [products, organization] = await Promise.all([
-            fetchRecyclerProducts(recycler.userId, consumerId),
-            fetchNameofRecycler(recycler.userId),
-          ]);
-
-          return {
-            ...recycler,
-            products,
-            organization,
-          };
-        })
-      );
-
-      setNearbyRecyclers(fullRecyclerList);
-      console.log("Nearby recyclers with products, names, and addresses:", fullRecyclerList);
-    } catch (error) {
-      console.error("Error fetching recyclers:", error);
-    }
-  };
-
-  const fetchRecyclerProducts = async (
-    recyclerId: string,
-    consumerId: string
-  ): Promise<Product[]> => {
+const fetchRecyclerProducts = useCallback(
+  async (recyclerId: string, consumerId: string): Promise<Product[]> => {
     try {
       const scannedRef = collection(db, "consumers", consumerId, "scannedProducts");
       const scannedSnap = await getDocs(scannedRef);
@@ -234,8 +164,6 @@ const Consumer = () => {
         const data = doc.data();
         return data.name?.toLowerCase().trim() || "";
       }).filter(name => name);
-
-      console.log("Scanned Names: ", scannedNames);
 
       const productsRef = collection(db, "recyclers", recyclerId, "products");
       const productsSnap = await getDocs(productsRef);
@@ -261,8 +189,6 @@ const Consumer = () => {
         };
       });
 
-      console.log("All Recycler Products:", allProducts);
-
       const getStringSimilarity = (str1: string, str2: string): number => {
         let commonChars = 0;
         const minLength = Math.min(str1.length, str2.length);
@@ -282,21 +208,84 @@ const Consumer = () => {
         const productName = product.productName?.toLowerCase() || "";
 
         return scannedNames.some((scanned) => {
-
           const similarity = getStringSimilarity(scanned, productName);
-
-          // If the similarity score is above the threshold, consider it a match
           return similarity >= similarityThreshold;
         });
       });
 
-      console.log(`Matching products for recycler ${recyclerId}:`, matchingProducts);
       return matchingProducts;
     } catch (error) {
       console.error(`Error fetching products for recycler ${recyclerId}:`, error);
       return [];
     }
-  };
+  },
+  []
+);
+
+
+  const fetchNearbyRecyclers = useCallback(async () => {
+    try {
+      const recyclerSnapshot = await getDocs(collection(db, "recyclers"));
+      const filtered: RecyclerInfo[] = [];
+  
+      recyclerSnapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        if (data.location && consumerLocation) {
+          const distance = calculateDistance(
+            consumerLocation.lat,
+            consumerLocation.lng,
+            data.location.lat,
+            data.location.lng
+          );
+  
+          if (distance <= maxDistance) {
+            filtered.push({
+              userId: docSnap.id,
+              lat: data.location.lat,
+              lng: data.location.lng,
+              distance,
+              address: data.address,
+              products: [],
+              organization: "",
+            });
+          }
+        }
+      });
+  
+      filtered.sort((a, b) => a.distance - b.distance);
+  
+      if (!consumerId) {
+        alert("Consumer Not Logged In.");
+        return;
+      }
+  
+      const fullRecyclerList = await Promise.all(
+        filtered.map(async (recycler) => {
+          const [products, organization] = await Promise.all([
+            fetchRecyclerProducts(recycler.userId, consumerId),
+            fetchNameofRecycler(recycler.userId),
+          ]);
+  
+          return {
+            ...recycler,
+            products,
+            organization,
+          };
+        })
+      );
+  
+      setNearbyRecyclers(fullRecyclerList);
+      console.log("Nearby recyclers with products, names, and addresses:", fullRecyclerList);
+    } catch (error) {
+      console.error("Error fetching recyclers:", error);
+    }
+  }, [consumerLocation, consumerId, calculateDistance, fetchRecyclerProducts]);
+
+  useEffect(() => {
+    if (consumerLocation) {
+      fetchNearbyRecyclers();
+    }
+  }, [consumerLocation, fetchNearbyRecyclers]);
 
 
   const fetchNameofRecycler = async (userId: string) => {
@@ -414,7 +403,7 @@ const Consumer = () => {
       }
     });
     return () => unsubscribe();
-  }, [fetchScannedProducts]);
+  }, [fetchScannedProducts , auth]);
 
   const startQRScanner = () => {
     if (!scannerRef.current) return;
