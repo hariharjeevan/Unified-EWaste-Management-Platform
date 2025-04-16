@@ -3,7 +3,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { auth, wdb } from "@/firebaseConfig";
+import { auth, db } from "@/firebaseConfig";
 import { AiOutlineSearch } from "react-icons/ai";
 import { collection, doc, getDocs, setDoc, getDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
@@ -55,7 +55,7 @@ const RecyclerPage = () => {
       return <p>Loading Google Maps...</p>;
     }
     try {
-      const facilityDocRef = doc(wdb, "recyclers", userId);
+      const facilityDocRef = doc(db, "recyclers", userId);
       const docSnapshot = await getDoc(facilityDocRef);
 
       if (docSnapshot.exists()) {
@@ -91,7 +91,7 @@ const RecyclerPage = () => {
       setLoading(true);
 
       try {
-        const productsRef = collection(wdb, "recyclers", user.uid, "products");
+        const productsRef = collection(db, "recyclers", user.uid, "products");
         const querySnapshot = await getDocs(productsRef);
 
         const products: Product[] = querySnapshot.docs.map((doc) => ({
@@ -165,7 +165,7 @@ const RecyclerPage = () => {
 
     try {
       await setDoc(
-        doc(wdb, "recyclers", user.uid),
+        doc(db, "recyclers", user.uid),
         { location: facilityLocation, address: facilityAddress },
         { merge: true }
       );

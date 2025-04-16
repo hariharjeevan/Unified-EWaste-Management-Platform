@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
-import { auth, rdb } from "@/firebaseConfig";
+import { auth, db } from "@/firebaseConfig";
 import Navbar from "@/components/Navbar";
 import { onAuthStateChanged, User } from "firebase/auth";
 
@@ -42,7 +42,7 @@ const ProductDetails = () => {
     const fetchProduct = async () => {
       setLoading(true);
       try {
-        const productRef = doc(rdb, "recyclers", user.uid, "products", id);
+        const productRef = doc(db, "recyclers", user.uid, "products", id);
         const productSnap = await getDoc(productRef);
 
         if (productSnap.exists()) {
@@ -78,7 +78,7 @@ const ProductDetails = () => {
   const handleSave = async () => {
     if (!user || !id || !updatedProduct) return;
     try {
-      const productRef = doc(rdb, "recyclers", user.uid, "products", id);
+      const productRef = doc(db, "recyclers", user.uid, "products", id);
       await updateDoc(productRef, {
         productName: updatedProduct.productName,
         category: updatedProduct.category,

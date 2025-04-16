@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { auth, wdb } from "@/firebaseConfig";
+import { auth, db } from "@/firebaseConfig";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import Navbar from "@/components/Navbar";
@@ -39,7 +39,7 @@ const ServicePage = () => {
     }
 
     try {
-      const docRef = doc(wdb, "recyclers", user.uid, "products", productId);
+      const docRef = doc(db, "recyclers", user.uid, "products", productId);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
