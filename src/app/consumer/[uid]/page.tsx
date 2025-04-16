@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { db, wdb, rdb } from "@/firebaseConfig";
+import { db } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged, User, getAuth } from "firebase/auth";
 import { getFunctions, httpsCallable, HttpsCallableResult } from "firebase/functions";
@@ -61,7 +61,7 @@ const Consumer = () => {
     distance: number;
     products: Product[];
     organization: string;
-    address: string; // Added address field
+    address: string;
   };
 
   const [user, setUser] = useState<User | null>(null);
@@ -78,8 +78,10 @@ const Consumer = () => {
   const [nearbyRecyclers, setNearbyRecyclers] = useState<RecyclerInfo[]>([]);
   const [homeAddress, setHomeAddress] = useState<string | null>(null);
   const [showQueryModal, setShowQueryModal] = useState(false);
+  const [consumerName, setConsumerName] = useState<string>("User");
   const scannerRef = useRef<HTMLDivElement>(null);
   const maxDistance = 500; // Maximum distance in kmx
+
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -90,6 +92,29 @@ const Consumer = () => {
   const toggleQueryModal = () => {
     setShowQueryModal((prev) => !prev);
   };
+  
+  useEffect(() => {
+    const fetchName = async (consumerId: string) => {
+      if (!consumerId) return;
+  
+      try {
+        const userDocRef = doc(db, "users", consumerId);
+        const userDoc = await getDoc(userDocRef);
+  
+        if (userDoc.exists()) {
+          const data = userDoc.data();
+          if (data?.name) {
+            setConsumerName(data.name);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching consumer name:", err);
+      }
+    };
+  
+    fetchName(consumerId!);
+  }, [consumerId]);
+  
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -110,7 +135,7 @@ const Consumer = () => {
 
   const fetchConsumerLocation = async (uid: string) => {
     try {
-      const consumerDocRef = doc(wdb, "consumers", uid, "maps", "homeLocation");
+      const consumerDocRef = doc(db, "consumers", uid, "maps", "homeLocation");
       const consumerDoc = await getDoc(consumerDocRef);
 
       if (consumerDoc.exists()) {
@@ -141,7 +166,7 @@ const Consumer = () => {
 
   const fetchNearbyRecyclers = async () => {
     try {
-      const recyclerSnapshot = await getDocs(collection(wdb, "recyclers"));
+      const recyclerSnapshot = await getDocs(collection(db, "recyclers"));
       const filtered: RecyclerInfo[] = [];
 
       recyclerSnapshot.forEach((docSnap) => {
@@ -202,7 +227,7 @@ const Consumer = () => {
     consumerId: string
   ): Promise<Product[]> => {
     try {
-      const scannedRef = collection(wdb, "consumers", consumerId, "scannedProducts");
+      const scannedRef = collection(db, "consumers", consumerId, "scannedProducts");
       const scannedSnap = await getDocs(scannedRef);
 
       const scannedNames = scannedSnap.docs.map((doc) => {
@@ -212,7 +237,7 @@ const Consumer = () => {
 
       console.log("Scanned Names: ", scannedNames);
 
-      const productsRef = collection(wdb, "recyclers", recyclerId, "products");
+      const productsRef = collection(db, "recyclers", recyclerId, "products");
       const productsSnap = await getDocs(productsRef);
 
       const allProducts: Product[] = productsSnap.docs.map((doc) => {
@@ -276,7 +301,7 @@ const Consumer = () => {
 
   const fetchNameofRecycler = async (userId: string) => {
     try {
-      const recyclerRef = doc(rdb, "users", userId);
+      const recyclerRef = doc(db, "users", userId);
       const docSnap = await getDoc(recyclerRef);
 
       if (docSnap.exists()) {
@@ -630,7 +655,7 @@ const Consumer = () => {
           />
           {user && (
             <h2 className="text-xl text-black font-semibold mt-2">
-              Hello, {user.email || "User"}
+              Hello, {consumerName}
             </h2>
           )}
         </div>
