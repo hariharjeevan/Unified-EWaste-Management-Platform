@@ -81,6 +81,9 @@ const Consumer = () => {
   const qrContainerRef = useRef<HTMLDivElement | null>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const maxDistance = 500; // Maximum distance in kmx
+  const recyclerSectionRef = useRef<HTMLDivElement | null>(null);
+
+
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -634,6 +637,10 @@ const fetchRecyclerProducts = useCallback(
     }
   };
 
+  const exploreRecyclers = () => {
+    recyclerSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  
   return (
     <>
       <Navbar links={[{ label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" }, { label: "About", href: "/about", tooltip: "About the team behind UEMP" }]} />
@@ -695,28 +702,40 @@ const fetchRecyclerProducts = useCallback(
           </div>
         )}
 
-        {/* Qr code scanner */}
-        <h2 className="text-xl text-black font-semibold mt-4">
-          Scan Product QR Code
-        </h2>
         <div className="flex flex-col gap-4 items-center">
-      <div ref={qrContainerRef} id="qr-reader" className="mt-2 text-black"></div>
-      {!scannerStarted ? (
-        <button
-          onClick={startQRScanner}
-          className="bg-green-600 text-white px-4 py-2 rounded"
-        >
-          Start Scanner
-        </button>
-      ) : (
-        <button
-          onClick={stopQRScanner}
-          className="bg-red-600 text-white px-4 py-2 rounded mt-[30px]"
-        >
-          Stop Scanner
-        </button>
-      )}
-    </div>
+          <div ref={qrContainerRef} id="qr-reader" className="mt-2 text-black"></div>
+
+          {!scannerStarted ? (
+            <div className="flex gap-16 items-start mt-2">
+              <div className="flex flex-col items-center gap-2">
+                <h1 className="text-black font-bold text-lg">Scan QR</h1>
+                <button
+                  onClick={startQRScanner}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+                >
+                  Start Scanner
+                </button>
+              </div>
+
+              <div className="flex flex-col items-center gap-2">
+                <h2 className="text-black font-bold text-lg">Explore Recyclers</h2>
+                <button
+                  onClick={exploreRecyclers}
+                  className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded"
+                >
+                  Explore Recyclers
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={stopQRScanner}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded mt-[30px]"
+            >
+              Stop Scanner
+            </button>
+          )}
+        </div>
 
         {showProductDetails && (
           <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50 z-50">
@@ -856,7 +875,9 @@ const fetchRecyclerProducts = useCallback(
         </div>
 
         {/* Nearby Recyclers Section */}
-        <div className="text-black px-4 md:px-8 mb-6">
+        <div 
+         ref={recyclerSectionRef}
+        className="text-black px-4 md:px-8 mb-6">
             {loading ? (
             <p className="text-gray-600 text-center text-lg mt-6">Loading nearby recyclers...</p>
             ) : (
