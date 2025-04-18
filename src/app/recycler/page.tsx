@@ -22,6 +22,8 @@ const defaultCenter = {
   lng: 77.1025,
 };
 
+const libraries = ["geometry", "drawing"] as any[];
+
 const RecyclerPage = () => {
   const router = useRouter();
 
@@ -47,7 +49,7 @@ const RecyclerPage = () => {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-    libraries: ['geometry', 'drawing'],
+    libraries,
   });
 
   const fetchFacilityLocation = useCallback(async (userId: string) => {
@@ -207,7 +209,7 @@ const RecyclerPage = () => {
 
   return (
     <>
-      <Navbar links={[{ label: "Docs", href: "/docs", tooltip:"Refer to the website's documentation" }]} />
+      <Navbar links={[{ label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" }]} />
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
         <div className="relative w-full max-w-2xl p-4">
           <div className="flex items-center border rounded-lg shadow-md bg-white p-2">
@@ -251,8 +253,11 @@ const RecyclerPage = () => {
 
         <div className="w-full max-w-4xl p-6 mt-6 mb-6 bg-white shadow-md rounded-lg">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Add Your Recycling Facility Address</h2>
-          <GoogleMap mapContainerStyle={mapContainerStyle} center={facilityLocation || defaultCenter} zoom={10} onClick={handleMapClick}>
-            {facilityLocation && <Marker position={facilityLocation} />}
+          <GoogleMap 
+          mapContainerStyle={mapContainerStyle} 
+          center={facilityLocation || defaultCenter} 
+          zoom={10} onClick={handleMapClick}>
+          {facilityLocation && <Marker position={facilityLocation} />}
           </GoogleMap>
 
           {facilityAddress && <p className="text-gray-700 mt-3">Selected Address: {facilityAddress} </p>}

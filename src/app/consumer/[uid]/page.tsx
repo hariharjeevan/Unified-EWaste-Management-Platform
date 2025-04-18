@@ -1,7 +1,8 @@
 //Consumer Page
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef} from "react";
+import { useRouter } from "next/navigation";
 import { db } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged, User, getAuth } from "firebase/auth";
@@ -10,7 +11,7 @@ import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import Image from "next/image";
-import { AiOutlineEye, AiOutlineEyeInvisible , AiFillBell} from "react-icons/ai";
+import { AiOutlineEye, AiOutlineEyeInvisible, AiFillBell } from "react-icons/ai";
 import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
 import Footer from "@/components/Footer";
 
@@ -23,6 +24,8 @@ const defaultCenter = {
   lat: 28.7041,
   lng: 77.1025,
 };
+
+const libraries = ["geometry", "drawing"] as any[];
 
 const Consumer = () => {
 
@@ -63,6 +66,7 @@ const Consumer = () => {
   };
 
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [productDetails, setProductDetails] = useState<Product | null>(null);
   const [secretKey, setSecretKey] = useState("");
@@ -83,50 +87,16 @@ const Consumer = () => {
   const maxDistance = 500; // Maximum distance in kmx
   const recyclerSectionRef = useRef<HTMLDivElement | null>(null);
 
-
-
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
-    libraries: ['geometry', 'drawing'],
+    libraries,
   });
-
+  
   const toggleQueryModal = () => {
     setShowQueryModal((prev) => !prev);
   };
-  
-  useEffect(() => {
-    const fetchName = async (consumerId: string) => {
-      if (!consumerId) return;
-  
-      try {
-        const userDocRef = doc(db, "users", consumerId);
-        const userDoc = await getDoc(userDocRef);
-  
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          if (data?.name) {
-            setConsumerName(data.name);
-          }
-        }
-      } catch (err) {
-        console.error("Error fetching consumer name:", err);
-      }
-    };
-  
-    fetchName(consumerId!);
-  }, [consumerId,auth]);
-  
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        await fetchConsumerLocation(currentUser.uid);
-      }
-    });
 
-    return () => unsubscribe();
-  }, [auth]);
 
   const fetchConsumerLocation = async (uid: string) => {
     try {
@@ -137,7 +107,6 @@ const Consumer = () => {
         const data = consumerDoc.data();
         if (data.location) {
           setConsumerLocation({ lat: data.location.lat, lng: data.location.lng });
-          console.log("Fetched consumer location:", data.location);
         }
       } else {
         console.warn("No consumer document found.");
@@ -147,92 +116,91 @@ const Consumer = () => {
     }
   };
 
-const toRadians = (angle: number) => (angle * Math.PI) / 180;
+  const toRadians = (angle: number) => (angle * Math.PI) / 180;
 
-const calculateDistance = useCallback((lat1: number, lng1: number, lat2: number, lng2: number) => {
-  const R = 6371; // Earth’s radius in km
-  const dLat = toRadians(lat2 - lat1);
-  const dLng = toRadians(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-}, []);
+  const calculateDistance = useCallback((lat1: number, lng1: number, lat2: number, lng2: number) => {
+    const R = 6371; // Earth’s radius in km
+    const dLat = toRadians(lat2 - lat1);
+    const dLng = toRadians(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+  }, []);
 
-const fetchRecyclerProducts = useCallback(
-  async (recyclerId: string, consumerId: string): Promise<Product[]> => {
-    try {
-      const scannedRef = collection(db, "consumers", consumerId, "scannedProducts");
-      const scannedSnap = await getDocs(scannedRef);
+  const fetchRecyclerProducts = useCallback(
+    async (recyclerId: string, consumerId: string): Promise<Product[]> => {
+      try {
+        const scannedRef = collection(db, "consumers", consumerId, "scannedProducts");
+        const scannedSnap = await getDocs(scannedRef);
 
-      const scannedNames = scannedSnap.docs.map((doc) => {
-        const data = doc.data();
-        return data.name?.toLowerCase().trim() || "";
-      }).filter(name => name);
+        const scannedNames = scannedSnap.docs.map((doc) => {
+          const data = doc.data();
+          return data.name?.toLowerCase().trim() || "";
+        }).filter(name => name);
 
-      const productsRef = collection(db, "recyclers", recyclerId, "products");
-      const productsSnap = await getDocs(productsRef);
+        const productsRef = collection(db, "recyclers", recyclerId, "products");
+        const productsSnap = await getDocs(productsRef);
 
-      const allProducts: Product[] = productsSnap.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          name: data.productName || "",
-          serialNumber: data.serialNumber || "",
-          category: data.category || "Unknown",
-          recyclability: data.recyclability || "Unknown",
-          recoverableMetals: data.recoverableMetals || "Unknown",
-          secretKey: data.secretKey || "",
-          manufacturerId: data.manufacturerId || "",
-          registered: data.registered ?? false,
-          location: data.location || { lat: 0, lng: 0 },
-          price: data.price || 0,
-          points: data.points || 0,
-          productName: data.productName || "",
-          desc: data.desc || "",
-          userId: data.userId || "",
-        };
-      });
-
-      const getStringSimilarity = (str1: string, str2: string): number => {
-        let commonChars = 0;
-        const minLength = Math.min(str1.length, str2.length);
-
-        for (let i = 0; i < minLength; i++) {
-          if (str1[i] === str2[i]) {
-            commonChars++;
-          }
-        }
-
-        return commonChars / Math.max(str1.length, str2.length);
-      };
-
-      const similarityThreshold = 0.10;
-
-      const matchingProducts = allProducts.filter((product) => {
-        const productName = product.productName?.toLowerCase() || "";
-
-        return scannedNames.some((scanned) => {
-          const similarity = getStringSimilarity(scanned, productName);
-          return similarity >= similarityThreshold;
+        const allProducts: Product[] = productsSnap.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.productName || "",
+            serialNumber: data.serialNumber || "",
+            category: data.category || "Unknown",
+            recyclability: data.recyclability || "Unknown",
+            recoverableMetals: data.recoverableMetals || "Unknown",
+            secretKey: data.secretKey || "",
+            manufacturerId: data.manufacturerId || "",
+            registered: data.registered ?? false,
+            location: data.location || { lat: 0, lng: 0 },
+            price: data.price || 0,
+            points: data.points || 0,
+            productName: data.productName || "",
+            desc: data.desc || "",
+            userId: data.userId || "",
+          };
         });
-      });
 
-      return matchingProducts;
-    } catch (error) {
-      console.error(`Error fetching products for recycler ${recyclerId}:`, error);
-      return [];
-    }
-  },
-  []
-);
+        const getStringSimilarity = (str1: string, str2: string): number => {
+          let commonChars = 0;
+          const minLength = Math.min(str1.length, str2.length);
 
+          for (let i = 0; i < minLength; i++) {
+            if (str1[i] === str2[i]) {
+              commonChars++;
+            }
+          }
+
+          return commonChars / Math.max(str1.length, str2.length);
+        };
+
+        const similarityThreshold = 0.10;
+
+        const matchingProducts = allProducts.filter((product) => {
+          const productName = product.productName?.toLowerCase() || "";
+
+          return scannedNames.some((scanned) => {
+            const similarity = getStringSimilarity(scanned, productName);
+            return similarity >= similarityThreshold;
+          });
+        });
+
+        return matchingProducts;
+      } catch (error) {
+        console.error(`Error fetching products for recycler ${recyclerId}:`, error);
+        return [];
+      }
+    },
+    []
+  );
 
   const fetchNearbyRecyclers = useCallback(async () => {
     try {
       const recyclerSnapshot = await getDocs(collection(db, "recyclers"));
       const filtered: RecyclerInfo[] = [];
-  
+
       recyclerSnapshot.forEach((docSnap) => {
         const data = docSnap.data();
         if (data.location && consumerLocation) {
@@ -242,7 +210,7 @@ const fetchRecyclerProducts = useCallback(
             data.location.lat,
             data.location.lng
           );
-  
+
           if (distance <= maxDistance) {
             filtered.push({
               userId: docSnap.id,
@@ -256,21 +224,21 @@ const fetchRecyclerProducts = useCallback(
           }
         }
       });
-  
+
       filtered.sort((a, b) => a.distance - b.distance);
-  
+
       if (!consumerId) {
         alert("Consumer Not Logged In.");
         return;
       }
-  
+
       const fullRecyclerList = await Promise.all(
         filtered.map(async (recycler) => {
           const [products, organization] = await Promise.all([
             fetchRecyclerProducts(recycler.userId, consumerId),
             fetchNameofRecycler(recycler.userId),
           ]);
-  
+
           return {
             ...recycler,
             products,
@@ -278,20 +246,12 @@ const fetchRecyclerProducts = useCallback(
           };
         })
       );
-  
+
       setNearbyRecyclers(fullRecyclerList);
-      console.log("Nearby recyclers with products, names, and addresses:", fullRecyclerList);
     } catch (error) {
       console.error("Error fetching recyclers:", error);
     }
   }, [consumerLocation, consumerId, calculateDistance, fetchRecyclerProducts]);
-
-  useEffect(() => {
-    if (consumerLocation) {
-      fetchNearbyRecyclers();
-    }
-  }, [consumerLocation, fetchNearbyRecyclers]);
-
 
   const fetchNameofRecycler = async (userId: string) => {
     try {
@@ -302,7 +262,6 @@ const fetchRecyclerProducts = useCallback(
         const data = docSnap.data();
 
         if (data && data.organization) {
-          console.log("Recycler name:", data.organization);
           return data.organization;
         }
       }
@@ -315,11 +274,8 @@ const fetchRecyclerProducts = useCallback(
     }
   };
 
-
   const fetchScannedProducts = useCallback(async (userId: string) => {
     try {
-      console.log("Fetching scanned products for user:", userId);
-
       const userScansRef = collection(db, "consumers", userId, "scannedProducts");
       const snapshot = await getDocs(userScansRef);
 
@@ -370,8 +326,6 @@ const fetchRecyclerProducts = useCallback(
         }
       }
 
-      console.log("Verified products:", verifiedProducts);
-
       setScannedProducts(verifiedProducts);
     } catch (error) {
       console.error("Error fetching scanned products:", error);
@@ -397,15 +351,38 @@ const fetchRecyclerProducts = useCallback(
   };
 
   useEffect(() => {
+    if (consumerLocation && consumerId) {
+      fetchNearbyRecyclers();
+    }
+  }, [consumerLocation, consumerId, fetchNearbyRecyclers]);
+
+  useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
         await fetchScannedProducts(currentUser.uid);
         await fetchHomeLocation(currentUser.uid);
+      } else {
+        
+        router.push("/login");
+  
+        setConsumerLocation(null);
+        setScannedProducts([]);
+        setNearbyRecyclers([]);
+        setHomeLocation(null);
+        setHomeAddress(null);
       }
     });
+  
     return () => unsubscribe();
-  }, [fetchScannedProducts , auth]);
+  }, [auth, fetchScannedProducts, router]);
+  
+
+  useEffect(() => {
+    if (consumerId) {
+      fetchConsumerLocation(consumerId);
+    }
+  }, [consumerId]);
 
   const startQRScanner = () => {
     if (!qrContainerRef.current) return;
@@ -563,6 +540,7 @@ const fetchRecyclerProducts = useCallback(
         lat: event.latLng.lat(),
         lng: event.latLng.lng(),
       };
+
       setHomeLocation(selectedLocation);
       await fetchAddressFromCoords(selectedLocation.lat, selectedLocation.lng);
     }
@@ -640,18 +618,18 @@ const fetchRecyclerProducts = useCallback(
   const exploreRecyclers = () => {
     recyclerSectionRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-  
+
   return (
     <>
       <Navbar links={[{ label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" }, { label: "About", href: "/about", tooltip: "About the team behind UEMP" }]} />
       <button
-      onClick={toggleQueryModal}
-      className="fixed bottom-6 right-6 bg-green-600 hover:bg-green-700 text-white p-4 rounded-full shadow-lg z-50"
-      aria-label="Show Query Details"
+        onClick={toggleQueryModal}
+        className="fixed bottom-6 right-6 bg-green-600 hover:bg-green-700 text-white p-4 rounded-full shadow-lg z-50"
+        aria-label="Show Query Details"
       >
-      <AiFillBell size={24} />
+        <AiFillBell size={24} />
       </button>
-      
+
       <div className="min-h-screen flex flex-col items-center bg-gray-100">
         <div className="relative flex flex-col items-center w-full max-w-2xl mt-[10px]">
           <Image
@@ -660,6 +638,7 @@ const fetchRecyclerProducts = useCallback(
             width={600}
             height={400}
             className="w-3/4 md:w-1/2 h-auto rounded-lg shadow-md"
+            priority
           />
           {user && (
             <h2 className="text-xl text-black font-semibold mt-2">
@@ -770,7 +749,7 @@ const fetchRecyclerProducts = useCallback(
           </div>
         )}
         {errorMessage && <p className="text-red-500 mt-4">{errorMessage}</p>}
-        
+
         {/* Product Details Section */}
         {productDetails && (
           <div className="mt-6 w-full max-w-2xl bg-white shadow-lg rounded-xl p-6 border border-gray-300">
@@ -855,17 +834,25 @@ const fetchRecyclerProducts = useCallback(
         )}
         <div className="w-full max-w-4xl p-6 mt-6 bg-white shadow-md rounded-lg">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Set Your Home Location</h2>
+          <div style={{ position: "relative", zIndex: 1, pointerEvents: "auto" }}>
           <GoogleMap
             mapContainerStyle={mapContainerStyle}
             center={homeLocation || defaultCenter}
             zoom={10}
             onClick={handleMapClick}
+            options={{
+              disableDefaultUI: false,
+              gestureHandling: "auto",
+              draggable: true,
+            }}
           >
             {homeLocation && <Marker position={homeLocation} />}
           </GoogleMap>
           {homeAddress && (
             <p className="text-gray-700 mt-3">Selected Address: {homeAddress}</p>
           )}
+          </div>
+          
           <button
             onClick={saveHomeLocation}
             className="mt-3 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
@@ -875,19 +862,19 @@ const fetchRecyclerProducts = useCallback(
         </div>
 
         {/* Nearby Recyclers Section */}
-        <div 
-         ref={recyclerSectionRef}
-        className="text-black px-4 md:px-8 mb-6">
-            {loading ? (
+        <div
+          ref={recyclerSectionRef}
+          className="text-black px-4 md:px-8 mb-6">
+          {loading ? (
             <p className="text-gray-600 text-center text-lg mt-6">Loading nearby recyclers...</p>
-            ) : (
+          ) : (
             <>
               <h2 className="text-2xl font-bold text-center text-gray-900 mt-6">
-              Nearby Recyclers
+                Nearby Recyclers
               </h2>
               <p className="text-gray-600 text-center text-sm mt-1">(based on your location and registered products)</p>
             </>
-            )}
+          )}
           {nearbyRecyclers.length === 0 ? (
             <p className="text-gray-500 text-center mt-6 text-base">
               No nearby recyclers found.

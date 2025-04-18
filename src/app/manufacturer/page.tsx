@@ -254,12 +254,12 @@ const Manufacturer = () => {
               {/* Secret Key Section */}
               <div className="flex items-center space-x-2 mt-2">
           <p className="text-black font-bold">Secret Key:</p>
-          <span
-            className="text-black border px-2 py-1 rounded bg-gray-200 w-[120px] text-center overflow-hidden"
+            <span
+            className="text-black border px-2 py-1 rounded bg-gray-200 w-[150px] text-center overflow-hidden"
             style={{ whiteSpace: "nowrap", textOverflow: "ellipsis" }}
-          >
+            >
             {showSecretKey ? showProductDetails.secretKey : "**********"}
-          </span>
+            </span>
           <button
             onClick={() => setShowSecretKey(!showSecretKey)}
             className="text-blue-600 hover:text-blue-800 flex items-center"

@@ -1,6 +1,6 @@
 //Login Page
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { auth, db } from "@/firebaseConfig";
 import { FirebaseError } from "firebase/app";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, User } from "firebase/auth";
@@ -23,17 +23,31 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
+  const redirectToPage = useCallback((userType: string, userId: string) => {
+    if (!userType) {
+      setError("User type is undefined. Please try logging in again.");
+      return;
+    }
+
+    switch (userType) {
+      case "Manufacturer":
+        router.push("/manufacturer");
+        break;
+      case "Recycler":
+        router.push("/recycler");
+        break;
+      case "Consumer":
+        router.push(`/consumer/${userId}`);
+        break;
+      case "Government":
+        router.push("/government");
+        break;
+      default:
+        setError("Invalid user type. Please contact support.");
+    }
+  }, [router]);
+
   useEffect(() => {
-    const redirectToPage = (userType: string, uid: string) => {
-      if (userType === "consumer") {
-        router.push(`/consumer/${uid}`);
-      } else if (userType === "recycler") {
-        router.push(`/recycler/${uid}`);
-      } else {
-        setError("Unknown user type.");
-      }
-    };
-  
     const unsubscribe = onAuthStateChanged(
       auth,
       async (currentUser: User | null) => {
@@ -53,10 +67,10 @@ const Login = () => {
         }
       }
     );
-  
+
     return () => unsubscribe();
-  }, [router]);
-  
+  }, [redirectToPage]);
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -174,30 +188,6 @@ const Login = () => {
       process.env.NEXT_PUBLIC_DEMO_GOVERNMENT_PASSWORD!,
       "Government"
     );
-  };
-
-  const redirectToPage = (userType: string, userId: string) => {
-    if (!userType) {
-      setError("User type is undefined. Please try logging in again.");
-      return;
-    }
-
-    switch (userType) {
-      case "Manufacturer":
-        router.push("/manufacturer");
-        break;
-      case "Recycler":
-        router.push("/recycler");
-        break;
-      case "Consumer":
-        router.push(`/consumer/${userId}`);
-        break;
-      case "Government":
-        router.push("/government");
-        break;
-      default:
-        setError("Invalid user type. Please contact support.");
-    }
   };
 
   return (
