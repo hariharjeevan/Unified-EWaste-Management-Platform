@@ -94,41 +94,51 @@ const ListOfProductsClient = () => {
     details: { name: string; phone: string; address: string }
   ): Promise<void> => {
     if (!productId || !recyclerId || !consumerId) return;
-
+  
     try {
-      const existingQuerySnapshot = await getDocs(
-        query(
-          collection(db, "Queries", "cqueries", consumerId),
-          where("productId", "==", productId)
-        )
+      const recyclerDocRef = doc(db, "Queries", recyclerId);
+      const recyclerDocSnap = await getDoc(recyclerDocRef);
+  
+      const existingData = recyclerDocSnap.exists() ? recyclerDocSnap.data() : {};
+      const queries = existingData.queries || {};
+  
+      // Check if request already exists for this product by this user
+      const alreadySent = Object.values(queries).some(
+        (query: any) =>
+          query.productId === productId && query.consumerId === consumerId
       );
-
-      if (!existingQuerySnapshot.empty) {
+  
+      if (alreadySent) {
         alert("You’ve already sent a request for this product.");
         return;
       }
-
+  
       const product = products.find((p) => p.id === productId);
       if (!product) return;
-
+  
       const queryId = uuidv4();
-      const consumerQueryRef = doc(db, "Queries", "cqueries", consumerId, queryId);
-
-      const queryPayload = {
+  
+      const newQuery = {
         productId,
         productName: product.productName,
         category: product.category,
         price: product.price,
         status: "pending",
         timestamp: serverTimestamp(),
-        recyclerId,
         consumerId,
         consumerName: details.name,
         consumerPhone: details.phone,
         consumerAddress: details.address,
       };
-
-      await setDoc(consumerQueryRef, queryPayload);
+  
+      // Update the queries map
+      const updatedQueries = {
+        ...queries,
+        [queryId]: newQuery,
+      };
+  
+      await setDoc(recyclerDocRef, { queries: updatedQueries }, { merge: true });
+  
       alert("Request sent successfully");
     } catch (error) {
       console.error("Error in sendrequest():", error);

@@ -1,11 +1,11 @@
-//Recycler page
+//Recycler Page
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/firebaseConfig";
 import { AiOutlineSearch } from "react-icons/ai";
-import { collection, doc, getDocs, setDoc, getDoc } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -18,7 +18,7 @@ const mapContainerStyle = {
 };
 
 const defaultCenter = {
-  lat: 28.7041, // Default to New Delhi
+  lat: 28.7041,
   lng: 77.1025,
 };
 
@@ -38,24 +38,35 @@ const RecyclerPage = () => {
     location?: { lat: number; lng: number };
   }
 
+  interface QueryDetails {
+    id: string;
+    productId: string;
+    productName: string;
+    category: string;
+    status: string;
+    timestamp?: any;
+    consumerName: string;
+    consumerPhone: string;
+    consumerAddress: string;
+    recyclerId: string;
+  }
+
   const [user, setUser] = useState<User | null>(null);
   const [productArray, setProductArray] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [facilityLocation, setFacilityLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [queries, setQueries] = useState<QueryDetails[]>([]);
   const [facilityAddress, setFacilityAddress] = useState<string | null>(null);
 
   const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
+    id: "google-map-script",
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries,
   });
 
   const fetchFacilityLocation = useCallback(async (userId: string) => {
-    if (!isLoaded) {
-      return <p>Loading Google Maps...</p>;
-    }
     try {
       const facilityDocRef = doc(db, "recyclers", userId);
       const docSnapshot = await getDoc(facilityDocRef);
@@ -66,13 +77,11 @@ const RecyclerPage = () => {
           setFacilityLocation(data.location);
           setFacilityAddress(data.address || null);
         }
-      } else {
-        console.log("No such document!");
       }
     } catch (error) {
       console.error("Error fetching facility location:", error);
     }
-  }, [isLoaded]);
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -113,6 +122,38 @@ const RecyclerPage = () => {
     fetchData();
   }, [user]);
 
+  useEffect(() => {
+    const fetchQueries = async () => {
+      if (!user) return;
+  
+      try {
+        // Reference the document using the recycler's user ID
+        const docRef = doc(db, "Queries", user.uid);
+        const docSnap = await getDoc(docRef);
+  
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          const fetchedQueries: QueryDetails[] = Object.entries(data.queries || {}).map(
+            ([queryId, queryData]: [string, any]) => ({
+              id: queryId, // Use the key as the queryId
+              ...queryData, // Spread the rest of the query data
+            })
+          );
+  
+          setQueries(fetchedQueries);
+        } else {
+          console.error("No such document!");
+        }
+      } catch (error) {
+        console.error("Error fetching queries:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchQueries();
+  }, [user]);
+
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = event.target.value.toLowerCase();
     setSearchTerm(searchValue);
@@ -140,10 +181,7 @@ const RecyclerPage = () => {
 
   const fetchAddressFromCoords = async (lat: number, lng: number) => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey) {
-      console.error("Google Maps API key is missing.");
-      return;
-    }
+    if (!apiKey) return;
 
     try {
       const response = await fetch(
@@ -152,10 +190,7 @@ const RecyclerPage = () => {
       const data = await response.json();
 
       if (data.status === "OK" && data.results.length > 0) {
-        const formattedAddress = data.results[0].formatted_address;
-        setFacilityAddress(formattedAddress);
-      } else {
-        console.error("Geocoding failed:", data.status);
+        setFacilityAddress(data.results[0].formatted_address);
       }
     } catch (error) {
       console.error("Error fetching address:", error);
@@ -177,32 +212,50 @@ const RecyclerPage = () => {
     }
   };
 
+  const updateQueryStatus = async (queryId: string, newStatus: "accepted" | "rejected") => {
+    if (!user || !queryId) {
+      console.error("Invalid user or queryId:", { user, queryId });
+      alert("Failed to update query status. Invalid user or query ID.");
+      return;
+    }
+  
+    try {
+      // Reference the document using the recycler's user ID
+      const docRef = doc(db, "Queries", user.uid);
+  
+      console.log("Updating Firestore document:", {
+        userId: user.uid,
+        queryId,
+        newStatus,
+      });
+  
+      // Update the specific query inside the `queries` object
+      await updateDoc(docRef, {
+        [`queries.${queryId}.status`]: newStatus, // Use dot notation to update nested fields
+      });
+      console.log(`Firestore updated: Query ${queryId} set to ${newStatus}`);
+  
+      // Update the local state
+      setQueries((prevQueries) =>
+        prevQueries.map((q) =>
+          q.id === queryId ? { ...q, status: newStatus } : q
+        )
+      );
+  
+      // Show success alert
+      alert(`Query ${newStatus === "accepted" ? "accepted" : "rejected"} successfully!`);
+    } catch (error) {
+      console.error("Error updating query status:", error);
+  
+      // Show error alert
+      alert("Failed to update query status. Please try again.");
+    }
+  };
+  
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center h-screen">
-        <div className="flex flex-col items-center">
-          <p className="text-white text-lg mb-4">Loading Google Maps...</p>
-          <svg
-            className="animate-spin h-8 w-8 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-            ></path>
-          </svg>
-        </div>
+        <p className="text-white text-lg">Loading Google Maps...</p>
       </div>
     );
   }
@@ -210,7 +263,7 @@ const RecyclerPage = () => {
   return (
     <>
       <Navbar links={[{ label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" }]} />
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 text-black">
         <div className="relative w-full max-w-2xl p-4">
           <div className="flex items-center border rounded-lg shadow-md bg-white p-2">
             <AiOutlineSearch className="text-gray-600 mx-2" />
@@ -224,29 +277,30 @@ const RecyclerPage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 px-4">
+        {/* Products */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 w-full mx-4 px-4">
           {loading ? (
-            <p className="text-gray-600">Loading products...</p>
+            <p>Loading products...</p>
           ) : filteredProducts.length > 0 ? (
             filteredProducts.map((product) => (
               <Link key={product.id} href={`/product/${product.id}`} passHref>
-                <div className="p-4 bg-white rounded-lg shadow-md cursor-pointer hover:shadow-lg transition">
-                  <h3 className="text-lg font-semibold text-gray-900">{product.productName}</h3>
-                  <p className="text-gray-600">Category: {product.category}</p>
-                  <p className="text-gray-800">Price: ₹{product.price}</p>
-                  <p className="text-green-600 font-bold">Total Price: {product.points}</p>
-                  <p className="line-clamp-1 text-gray-500 text-sm">{product.desc}</p>
-                </div>
+          <div className="p-4 bg-white rounded shadow hover:shadow-lg cursor-pointer">
+            <h3 className="font-bold text-lg">{product.productName}</h3>
+            <p>Category: {product.category}</p>
+            <p>Price: ₹{product.price}</p>
+            <p>Points: {product.points}</p>
+            <p className="line-clamp-1 text-gray-500">{product.desc}</p>
+          </div>
               </Link>
             ))
           ) : (
-            <p className="text-gray-600">No products found.</p>
+            <p>No products found.</p>
           )}
         </div>
 
         <button
           onClick={() => router.push("/service")}
-          className="mt-4 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
+          className="mt-6 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
         >
           Add Product
         </button>
@@ -259,14 +313,54 @@ const RecyclerPage = () => {
           zoom={10} onClick={handleMapClick}>
           {facilityLocation && <Marker position={facilityLocation} />}
           </GoogleMap>
-
-          {facilityAddress && <p className="text-gray-700 mt-3">Selected Address: {facilityAddress} </p>}
-          <p className="text-gray-700"></p>
-
-          <button onClick={saveFacilityLocation} className="mt-3 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition">
+          {facilityAddress && (
+            <p className="mt-3 text-gray-700">Selected Address: {facilityAddress}</p>
+          )}
+          <button
+            onClick={saveFacilityLocation}
+            className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
             Save Location
           </button>
         </div>
+
+        {/* Queries */}
+        <div className="w-full max-w-4xl bg-white p-6 mt-10 mb-10 rounded shadow text-black">
+          <h2 className="text-xl font-bold mb-4">Recycling Requests: </h2>
+          {loading ? (
+            <p>Loading...</p>
+          ) : queries.length === 0 ? (
+            <p>No queries found.</p>
+          ) : (
+            <ul className="space-y-4">
+              {queries.map((query) => (
+                <li key={query.id || query.productId} className="p-4 border rounded shadow">
+                  <p><strong>Product:</strong> {query.productName}</p>
+                  <p><strong>Category:</strong> {query.category}</p>
+                  <p><strong>Consumer:</strong> {query.consumerName}</p>
+                  <p><strong>Phone:</strong> {query.consumerPhone}</p>
+                  <p><strong>Address:</strong> {query.consumerAddress}</p>
+                  <p><strong>Status:</strong> {query.status}</p>
+                  <div className="mt-2 space-x-2">
+                    <button
+                      onClick={() => updateQueryStatus(query.id, "accepted")}
+                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => updateQueryStatus(query.id, "rejected")}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
         <Footer />
       </div>
     </>
