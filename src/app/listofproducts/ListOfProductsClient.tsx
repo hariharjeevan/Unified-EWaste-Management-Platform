@@ -4,8 +4,8 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getAuth } from "firebase/auth";
-import {doc , getDoc , setDoc , serverTimestamp , query , where , getDocs , collection} from "firebase/firestore";
-import { v4 as uuidv4 } from "uuid";
+import { doc, getDoc } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { db } from "@/firebaseConfig";
 import Navbar from "@/components/Navbar";
 
@@ -17,13 +17,24 @@ interface Product {
   desc: string;
 }
 
+interface SendRequestResponse {
+  success: boolean;
+  message?: string;
+}
+
 const ListOfProductsClient = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const searchParams = useSearchParams();
   const [consumerId, setConsumerId] = useState<string | null>(null);
 
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [consumerDetails, setConsumerDetails] = useState({ name: "", phone: "", address: "" });
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    null
+  );
+  const [consumerDetails, setConsumerDetails] = useState({
+    name: "",
+    phone: "",
+    address: "",
+  });
   const [showModal, setShowModal] = useState(false);
 
   const recyclerId = searchParams.get("recyclerId");
@@ -63,7 +74,6 @@ const ListOfProductsClient = () => {
 
       setProducts(fetched);
     };
-
     fetchProducts();
   }, [recyclerId, idsParam]);
 
@@ -72,77 +82,78 @@ const ListOfProductsClient = () => {
     setShowModal(true);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
     setConsumerDetails((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmitDetails = async () => {
     if (!selectedProductId) return;
-    if (!consumerDetails.name || !consumerDetails.phone || !consumerDetails.address) {
+    if (
+      !consumerDetails.name ||
+      !consumerDetails.phone ||
+      !consumerDetails.address
+    ) {
       alert("Please fill in all the fields.");
       return;
     }
 
-    await sendrequest(selectedProductId, consumerDetails);
+    await sendRequestCloudFunction(selectedProductId, consumerDetails);
     setShowModal(false);
     setConsumerDetails({ name: "", phone: "", address: "" });
   };
 
-  const sendrequest = async (
+  const sendRequestCloudFunction = async (
     productId: string,
     details: { name: string; phone: string; address: string }
   ): Promise<void> => {
-    if (!productId || !recyclerId || !consumerId) return;
-  
+    if (!productId || !recyclerId || !consumerId) {
+      alert("Missing Recycler or Consumer Details");
+      return;
+    }
+
     try {
-      const recyclerDocRef = doc(db, "Queries", recyclerId);
-      const recyclerDocSnap = await getDoc(recyclerDocRef);
-  
-      const existingData = recyclerDocSnap.exists() ? recyclerDocSnap.data() : {};
-      const queries = existingData.queries || {};
-  
-      // Check if request already exists for this product by this user
-      const alreadySent = Object.values(queries).some(
-        (query: any) =>
-          query.productId === productId && query.consumerId === consumerId
+      const functions = getFunctions();
+      const sendRecyclerRequest = httpsCallable(
+        functions,
+        "sendRecyclerRequest"
       );
-  
-      if (alreadySent) {
-        alert("You’ve already sent a request for this product.");
+
+      const product = products.find((p) => p.id === productId);
+      if (!product) {
+        alert("Product not found.");
         return;
       }
-  
-      const product = products.find((p) => p.id === productId);
-      if (!product) return;
-  
-      const queryId = uuidv4();
-  
-      const newQuery = {
+
+      const result = await sendRecyclerRequest({
+        recyclerId,
         productId,
+        details,
         productName: product.productName,
         category: product.category,
         price: product.price,
-        status: "pending",
-        timestamp: serverTimestamp(),
-        consumerId,
-        consumerName: details.name,
-        consumerPhone: details.phone,
-        consumerAddress: details.address,
-      };
-  
-      // Update the queries map
-      const updatedQueries = {
-        ...queries,
-        [queryId]: newQuery,
-      };
-  
-      await setDoc(recyclerDocRef, { queries: updatedQueries }, { merge: true });
-  
-      alert("Request sent successfully");
-    } catch (error) {
-      console.error("Error in sendrequest():", error);
-      alert("Failed to send request.");
+      });
+
+      const data = result.data as SendRequestResponse;
+
+      if (data && data.success) {
+        alert("Request sent successfully");
+      } else {
+        alert(data?.message || "Failed to send request.");
+      }
+    } catch (error: any) {
+      if (
+        error.code === "already-exists" ||
+        error.code === "functions/already-exists"
+      ) {
+        alert("You’ve already sent a request for this product.");
+      } else if (error.message) {
+        alert(error.message);
+      } else {
+        alert("Failed to send request.");
+      }
     }
   };
 
@@ -150,7 +161,11 @@ const ListOfProductsClient = () => {
     <>
       <Navbar
         links={[
-          { label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" },
+          {
+            label: "Docs",
+            href: "/docs",
+            tooltip: "Refer to the website's documentation",
+          },
         ]}
       />
       <div className="min-h-screen flex flex-col items-center bg-gray-100 text-black px-4 py-8">
@@ -164,9 +179,15 @@ const ListOfProductsClient = () => {
                 key={product.id}
                 className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition duration-300"
               >
-                <h3 className="text-xl font-bold text-green-700 mb-2">{product.productName}</h3>
-                <p className="text-sm text-gray-600 mb-1">Category: {product.category}</p>
-                <p className="text-sm text-gray-600 mb-1">Price: ₹{product.price}</p>
+                <h3 className="text-xl font-bold text-green-700 mb-2">
+                  {product.productName}
+                </h3>
+                <p className="text-sm text-gray-600 mb-1">
+                  Category: {product.category}
+                </p>
+                <p className="text-sm text-gray-600 mb-1">
+                  Price: ₹{product.price}
+                </p>
                 <p className="text-sm text-gray-700">{product.desc}</p>
 
                 <button
@@ -184,7 +205,9 @@ const ListOfProductsClient = () => {
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 text-black">
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4 text-gray-800">Enter Your Details</h2>
+            <h2 className="text-xl font-bold mb-4 text-gray-800">
+              Enter Your Details
+            </h2>
             <input
               type="text"
               name="name"

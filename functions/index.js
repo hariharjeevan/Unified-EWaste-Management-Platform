@@ -4,6 +4,7 @@ const {VertexAI} = require("@google-cloud/vertexai");
 
 admin.initializeApp();
 const firestore = admin.firestore();
+const {v4: uuidv4} = require("uuid");
 
 {/* Product Registration Function */}
 exports.verifyAndRegisterConsumer = functions.https.onCall(
@@ -182,6 +183,90 @@ exports.onProductDeletion = functions.firestore
         );
       }
     });
+
+{/*Query Handling ffunction*/}
+exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+        "unauthenticated",
+        "User must be logged in.",
+    );
+  }
+
+  const consumerId = context.auth.uid;
+  const {
+    recyclerId,
+    productId,
+    details, // { name, phone, address }
+  } = data;
+
+  if (
+    !recyclerId ||
+    !productId ||
+    !details?.name ||
+    !details?.phone ||
+    !details?.address
+  ) {
+    throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Missing required fields.",
+    );
+  }
+
+  try {
+    const recyclerDocRef = firestore.collection("Queries").doc(recyclerId);
+    const recyclerDocSnap = await recyclerDocRef.get();
+    const existingData = recyclerDocSnap.exists ? recyclerDocSnap.data() : {};
+    const queries = existingData.queries || {};
+
+
+    const alreadySent = Object.values(queries).some(
+        (query) =>
+          query.productId === productId && query.consumerId === consumerId,
+    );
+
+    if (alreadySent) {
+      throw new functions.https.HttpsError(
+          "already-exists",
+          "You’ve already sent a request for this product.",
+      );
+    }
+
+    const productName = data.productName || "";
+    const category = data.category || "";
+    const price = data.price || null;
+
+    const queryId = uuidv4();
+
+    const newQuery = {
+      productId,
+      productName,
+      category,
+      price,
+      status: "pending",
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      consumerId,
+      consumerName: details.name,
+      consumerPhone: details.phone,
+      consumerAddress: details.address,
+    };
+
+    const updatedQueries = {
+      ...queries,
+      [queryId]: newQuery,
+    };
+
+    await recyclerDocRef.set({queries: updatedQueries}, {merge: true});
+
+    return {success: true, message: "Request sent successfully"};
+  } catch (error) {
+    console.error("Error in sendRecyclerRequest():", error);
+    throw new functions.https.HttpsError(
+        "internal",
+        error.message || "Failed to send request.",
+    );
+  }
+});
 
 {/* Vertex AI Chatbot */}
 const vertexAI = new VertexAI({
