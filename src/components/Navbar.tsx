@@ -84,7 +84,7 @@ const Navbar = ({ links = [] }: NavbarProps) => {
   };
 
   return (
-    <nav className="bg-[#ffffff] text-[#000500] p-4 flex justify-between items-center shadow-md relative sticky top-0 z-50">
+    <nav className="bg-[#ffffff] text-[#000500] p-4 flex justify-between items-center shadow-md sticky top-0 z-50">
       {/* Left: User Icon */}
       <div
         className="relative"
@@ -130,10 +130,12 @@ const Navbar = ({ links = [] }: NavbarProps) => {
       </div>
 
       {/* Center: Logo */}
-      <h1 className={`${monaSans.className} font-sans`}>
-        <Link href="/" className="text-2xl ml-[85px]">UEMP</Link>
-      </h1>
-
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <h1 className={`${monaSans.className} font-sans`}>
+          <Link href="/" className="text-2xl pointer-events-auto select-auto">UEMP</Link>
+        </h1>
+      </div>
+      
       {/* Right: Navigation Links */}
       <div className="hidden lg:flex items-center space-x-4">
         {links.map((link) => (
