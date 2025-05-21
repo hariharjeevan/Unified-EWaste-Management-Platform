@@ -188,8 +188,8 @@ exports.onProductDeletion = functions.firestore
 exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
-        "unauthenticated",
-        "User must be logged in.",
+      "unauthenticated",
+      "User must be logged in."
     );
   }
 
@@ -198,6 +198,7 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
     recyclerId,
     productId,
     details, // { name, phone, address }
+    productName,
   } = data;
 
   if (
@@ -205,11 +206,12 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
     !productId ||
     !details?.name ||
     !details?.phone ||
-    !details?.address
+    !details?.address ||
+    !productName
   ) {
     throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Missing required fields.",
+      "invalid-argument",
+      "Missing required fields."
     );
   }
 
@@ -219,30 +221,24 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
     const existingData = recyclerDocSnap.exists ? recyclerDocSnap.data() : {};
     const queries = existingData.queries || {};
 
-
+    // Check if request already exists for this product by this user
     const alreadySent = Object.values(queries).some(
-        (query) =>
-          query.productId === productId && query.consumerId === consumerId,
+      (query) =>
+        query.productId === productId && query.consumerId === consumerId
     );
 
     if (alreadySent) {
       throw new functions.https.HttpsError(
-          "already-exists",
-          "You’ve already sent a request for this product.",
+        "already-exists",
+        "You’ve already sent a request for this product."
       );
     }
-
-    const productName = data.productName || "";
-    const category = data.category || "";
-    const price = data.price || null;
 
     const queryId = uuidv4();
 
     const newQuery = {
       productId,
       productName,
-      category,
-      price,
       status: "pending",
       timestamp: admin.firestore.FieldValue.serverTimestamp(),
       consumerId,
@@ -256,14 +252,14 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
       [queryId]: newQuery,
     };
 
-    await recyclerDocRef.set({queries: updatedQueries}, {merge: true});
+    await recyclerDocRef.set({ queries: updatedQueries }, { merge: true });
 
-    return {success: true, message: "Request sent successfully"};
+    return { success: true, message: "Request sent successfully" };
   } catch (error) {
     console.error("Error in sendRecyclerRequest():", error);
     throw new functions.https.HttpsError(
-        "internal",
-        error.message || "Failed to send request.",
+      "internal",
+      error.message || "Failed to send request."
     );
   }
 });

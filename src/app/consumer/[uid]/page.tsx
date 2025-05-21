@@ -136,8 +136,12 @@ const Consumer = () => {
 
         const scannedNames = scannedSnap.docs.map((doc) => {
           const data = doc.data();
-          return data.name?.toLowerCase().trim() || "";
-        }).filter(name => name);
+          return{name : data.name?.toLowerCase().trim() || "" ,
+            category : data.category?.toLowerCase().trim()|| "" ,
+          };
+        }).filter(
+          (item) => item.name && item.category
+        );
 
         const productsRef = collection(db, "recyclers", recyclerId, "products");
         const productsSnap = await getDocs(productsRef);
@@ -180,10 +184,12 @@ const Consumer = () => {
 
         const matchingProducts = allProducts.filter((product) => {
           const productName = product.productName?.toLowerCase() || "";
+          const productCategory = product.category?.toLowerCase() || "";
 
           return scannedNames.some((scanned) => {
-            const similarity = getStringSimilarity(scanned, productName);
-            return similarity >= similarityThreshold;
+            const Namesimilarity = getStringSimilarity(scanned.name, productName);
+            const categorySimilarity = getStringSimilarity(scanned.category, productCategory);
+            return Namesimilarity >= similarityThreshold && categorySimilarity >= 1;
           });
         });
 

@@ -1,10 +1,10 @@
-//ListOfProductsClient.tsx
+// //ListOfProductsClient.tsx
 "use client";
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { getAuth } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { db } from "@/firebaseConfig";
 import Navbar from "@/components/Navbar";
@@ -22,41 +22,40 @@ interface SendRequestResponse {
   message?: string;
 }
 
+const auth = getAuth();
+
 const ListOfProductsClient = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const searchParams = useSearchParams();
-  const [consumerId, setConsumerId] = useState<string | null>(null);
-
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(
-    null
-  );
+  const [consumerId, setConsumerId] = useState<string | null>(auth.currentUser?.uid || null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [consumerDetails, setConsumerDetails] = useState({
     name: "",
     phone: "",
     address: "",
   });
   const [showModal, setShowModal] = useState(false);
+  const [scannedProducts, setScannedProducts] = useState<{ id: string; name: string }[]>([]);
 
   const recyclerId = searchParams.get("recyclerId");
   const idsParam = searchParams.get("ids");
 
+  // Keep consumerId in sync with auth state
   useEffect(() => {
     const unsubscribe = getAuth().onAuthStateChanged((user) => {
       if (user) {
         setConsumerId(user.uid);
       }
     });
-
     return () => unsubscribe();
   }, []);
 
+  // Fetch products for recycler
   useEffect(() => {
     const fetchProducts = async () => {
       if (!recyclerId || !idsParam) return;
-
       const ids = idsParam.split(",").map((id) => id.trim());
       const fetched: Product[] = [];
-
       await Promise.all(
         ids.map(async (id) => {
           try {
@@ -71,17 +70,34 @@ const ListOfProductsClient = () => {
           }
         })
       );
-
       setProducts(fetched);
     };
     fetchProducts();
   }, [recyclerId, idsParam]);
 
-  const handleSendRequestClick = (productId: string) => {
-    setSelectedProductId(productId);
-    setShowModal(true);
-  };
+  // Fetch scanned products for dropdown
+  useEffect(() => {
+    const fetchScannedProducts = async () => {
+      if (!consumerId) return;
+      try {
+        const scannedRef = collection(db, "consumers", consumerId, "scannedProducts");
+        const scannedSnap = await getDocs(scannedRef);
+        const scanned: { id: string; name: string }[] = scannedSnap.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: data.name || "Unnamed Product",
+          };
+        });
+        setScannedProducts(scanned);
+      } catch (error) {
+        console.error("Error fetching scanned products:", error);
+      }
+    };
+    fetchScannedProducts();
+  }, [consumerId]);
 
+  // Handle input changes
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -89,73 +105,77 @@ const ListOfProductsClient = () => {
     setConsumerDetails((prev) => ({ ...prev, [name]: value }));
   };
 
+  // Open modal and reset fields
+  const handleSendRequestClick = () => {
+    setShowModal(true);
+    setConsumerDetails({ name: "", phone: "", address: "" });
+    setSelectedProductId(null);
+  };
+
+  // Handle dropdown change
+  const handleDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedProductId(e.target.value);
+  };
+
+  // Submit details and send request
   const handleSubmitDetails = async () => {
-    if (!selectedProductId) return;
     if (
+      !selectedProductId ||
       !consumerDetails.name ||
       !consumerDetails.phone ||
       !consumerDetails.address
     ) {
-      alert("Please fill in all the fields.");
+      alert("Please fill in all the fields and select a product.");
       return;
     }
-
     await sendRequestCloudFunction(selectedProductId, consumerDetails);
     setShowModal(false);
     setConsumerDetails({ name: "", phone: "", address: "" });
+    setSelectedProductId(null);
   };
 
-  const sendRequestCloudFunction = async (
-    productId: string,
-    details: { name: string; phone: string; address: string }
-  ): Promise<void> => {
-    if (!productId || !recyclerId || !consumerId) {
-      alert("Missing Recycler or Consumer Details");
+const sendRequestCloudFunction = async (
+  productId: string,
+  details: { name: string; phone: string; address: string }
+): Promise<void> => {
+  if (!productId || !recyclerId || !consumerId) {
+    alert("Missing Recycler or Consumer Details");
+    return;
+  }
+  try {
+    const functions = getFunctions();
+    const sendRecyclerRequest = httpsCallable(functions, "sendRecyclerRequest");
+    // Get the scanned product by id
+    const scannedProduct = scannedProducts.find((p) => p.id === productId);
+    if (!scannedProduct) {
+      alert("Product not found in your scanned products.");
       return;
     }
-
-    try {
-      const functions = getFunctions();
-      const sendRecyclerRequest = httpsCallable(
-        functions,
-        "sendRecyclerRequest"
-      );
-
-      const product = products.find((p) => p.id === productId);
-      if (!product) {
-        alert("Product not found.");
-        return;
-      }
-
-      const result = await sendRecyclerRequest({
-        recyclerId,
-        productId,
-        details,
-        productName: product.productName,
-        category: product.category,
-        price: product.price,
-      });
-
-      const data = result.data as SendRequestResponse;
-
-      if (data && data.success) {
-        alert("Request sent successfully");
-      } else {
-        alert(data?.message || "Failed to send request.");
-      }
-    } catch (error: any) {
-      if (
-        error.code === "already-exists" ||
-        error.code === "functions/already-exists"
-      ) {
-        alert("You’ve already sent a request for this product.");
-      } else if (error.message) {
-        alert(error.message);
-      } else {
-        alert("Failed to send request.");
-      }
+    const result = await sendRecyclerRequest({
+      recyclerId,
+      productId: scannedProduct.id,
+      details,
+      productName: scannedProduct.name,
+    });
+    const data = result.data as SendRequestResponse;
+    if (data && data.success) {
+      alert("Request sent successfully");
+    } else {
+      alert(data?.message || "Failed to send request.");
     }
-  };
+  } catch (error: any) {
+    if (
+      error.code === "already-exists" ||
+      error.code === "functions/already-exists"
+    ) {
+      alert("You’ve already sent a request for this product.");
+    } else if (error.message) {
+      alert(error.message);
+    } else {
+      alert("Failed to send request.");
+    }
+  }
+};
 
   return (
     <>
@@ -189,10 +209,9 @@ const ListOfProductsClient = () => {
                   Price: ₹{product.price}
                 </p>
                 <p className="text-sm text-gray-700">{product.desc}</p>
-
                 <button
                   className="mt-4 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300"
-                  onClick={() => handleSendRequestClick(product.id)}
+                  onClick={handleSendRequestClick}
                 >
                   Send Request
                 </button>
@@ -208,6 +227,20 @@ const ListOfProductsClient = () => {
             <h2 className="text-xl font-bold mb-4 text-gray-800">
               Enter Your Details
             </h2>
+            <select
+              className="w-full mb-3 px-3 py-2 border rounded"
+              value={selectedProductId || ""}
+              onChange={handleDropdownChange}
+            >
+              <option value="" disabled>
+                Select a scanned product
+              </option>
+              {scannedProducts.map((prod) => (
+                <option key={prod.id} value={prod.id}>
+                  {prod.name} ({prod.id})
+                </option>
+              ))}
+            </select>
             <input
               type="text"
               name="name"
