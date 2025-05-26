@@ -184,12 +184,12 @@ exports.onProductDeletion = functions.firestore
       }
     });
 
-{/*Query Handling ffunction*/}
+{/* Query Handling ffunction*/}
 exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
-      "unauthenticated",
-      "User must be logged in."
+        "unauthenticated",
+        "User must be logged in.",
     );
   }
 
@@ -210,8 +210,8 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
     !productName
   ) {
     throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Missing required fields."
+        "invalid-argument",
+        "Missing required fields.",
     );
   }
 
@@ -223,14 +223,14 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
 
     // Check if request already exists for this product by this user
     const alreadySent = Object.values(queries).some(
-      (query) =>
-        query.productId === productId && query.consumerId === consumerId
+        (query) =>
+          query.productId === productId && query.consumerId === consumerId,
     );
 
     if (alreadySent) {
       throw new functions.https.HttpsError(
-        "already-exists",
-        "You’ve already sent a request for this product."
+          "already-exists",
+          "You’ve already sent a request for this product.",
       );
     }
 
@@ -252,14 +252,14 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
       [queryId]: newQuery,
     };
 
-    await recyclerDocRef.set({ queries: updatedQueries }, { merge: true });
+    await recyclerDocRef.set({queries: updatedQueries}, {merge: true});
 
-    return { success: true, message: "Request sent successfully" };
+    return {success: true, message: "Request sent successfully"};
   } catch (error) {
     console.error("Error in sendRecyclerRequest():", error);
     throw new functions.https.HttpsError(
-      "internal",
-      error.message || "Failed to send request."
+        "internal",
+        error.message || "Failed to send request.",
     );
   }
 });

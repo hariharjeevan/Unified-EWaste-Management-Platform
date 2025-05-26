@@ -36,6 +36,7 @@ const RecyclerPage = () => {
     userId: string;
     desc: string;
     location?: { lat: number; lng: number };
+    manufacturerId?: string;
   }
 
   interface QueryDetails {
@@ -59,6 +60,9 @@ const RecyclerPage = () => {
   const [facilityLocation, setFacilityLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [queries, setQueries] = useState<QueryDetails[]>([]);
   const [facilityAddress, setFacilityAddress] = useState<string | null>(null);
+  const [showRecycleDialog, setShowRecycleDialog] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedConsumer, setSelectedConsumer] = useState<string | null>(null);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -125,12 +129,12 @@ const RecyclerPage = () => {
   useEffect(() => {
     const fetchQueries = async () => {
       if (!user) return;
-  
+
       try {
         // Reference the document using the recycler's user ID
         const docRef = doc(db, "Queries", user.uid);
         const docSnap = await getDoc(docRef);
-  
+
         if (docSnap.exists()) {
           const data = docSnap.data();
           const fetchedQueries: QueryDetails[] = Object.entries(data.queries || {}).map(
@@ -139,7 +143,7 @@ const RecyclerPage = () => {
               ...queryData, // Spread the rest of the query data
             })
           );
-  
+
           setQueries(fetchedQueries);
         } else {
           console.error("No such document!");
@@ -150,7 +154,7 @@ const RecyclerPage = () => {
         setLoading(false);
       }
     };
-  
+
     fetchQueries();
   }, [user]);
 
@@ -218,40 +222,40 @@ const RecyclerPage = () => {
       alert("Failed to update query status. Invalid user or query ID.");
       return;
     }
-  
+
     try {
       // Reference the document using the recycler's user ID
       const docRef = doc(db, "Queries", user.uid);
-  
+
       console.log("Updating Firestore document:", {
         userId: user.uid,
         queryId,
         newStatus,
       });
-  
+
       // Update the specific query inside the `queries` object
       await updateDoc(docRef, {
-        [`queries.${queryId}.status`]: newStatus, // Use dot notation to update nested fields
+        [`queries.${queryId}.status`]: newStatus,
       });
       console.log(`Firestore updated: Query ${queryId} set to ${newStatus}`);
-  
+
       // Update the local state
       setQueries((prevQueries) =>
         prevQueries.map((q) =>
           q.id === queryId ? { ...q, status: newStatus } : q
         )
       );
-  
+
       // Show success alert
       alert(`Query ${newStatus === "accepted" ? "accepted" : "rejected"} successfully!`);
     } catch (error) {
       console.error("Error updating query status:", error);
-  
+
       // Show error alert
       alert("Failed to update query status. Please try again.");
     }
   };
-  
+
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -259,6 +263,36 @@ const RecyclerPage = () => {
       </div>
     );
   }
+
+
+  const handleOpenRecycleDialog = (product: Product) => {
+    // Find the consumer name from queries for this product
+    const query = queries.find(q => q.productId === product.id && q.status === "accepted");
+    setSelectedProduct(product);
+    setSelectedConsumer(query ? query.consumerName : "N/A");
+    setShowRecycleDialog(true);
+  };
+
+  // Handler to complete recycle
+  const handleCompleteRecycle = async () => {
+    if (!selectedProduct) return;
+    try {
+      // Update recycleStatus in manufacturer's database
+      const manufacturerId = selectedProduct.userId || selectedProduct.manufacturerId;
+      if (!manufacturerId) {
+        alert("Manufacturer ID not found for this product.");
+        return;
+      }
+      const productRef = doc(db, "manufacturers", manufacturerId, "products", selectedProduct.id);
+      await updateDoc(productRef, { recycleStatus: "completed" });
+      alert("Recycle status updated to completed!");
+      setShowRecycleDialog(false);
+      // Refresh product list
+    } catch (error) {
+      alert("Failed to update recycle status.");
+      console.error(error);
+    }
+  };
 
   return (
     <>
@@ -284,13 +318,13 @@ const RecyclerPage = () => {
           ) : filteredProducts.length > 0 ? (
             filteredProducts.map((product) => (
               <Link key={product.id} href={`/product/${product.id}`} passHref>
-          <div className="p-4 bg-white rounded shadow hover:shadow-lg cursor-pointer">
-            <h3 className="font-bold text-lg">{product.productName}</h3>
-            <p>Category: {product.category}</p>
-            <p>Price: ₹{product.price}</p>
-            <p>Points: {product.points}</p>
-            <p className="line-clamp-1 text-gray-500">{product.desc}</p>
-          </div>
+                <div className="p-4 bg-white rounded shadow hover:shadow-lg cursor-pointer">
+                  <h3 className="font-bold text-lg">{product.productName}</h3>
+                  <p>Category: {product.category}</p>
+                  <p>Price: ₹{product.price}</p>
+                  <p>Points: {product.points}</p>
+                  <p className="line-clamp-1 text-gray-500">{product.desc}</p>
+                </div>
               </Link>
             ))
           ) : (
@@ -307,11 +341,11 @@ const RecyclerPage = () => {
 
         <div className="w-full max-w-4xl p-6 mt-6 mb-6 bg-white shadow-md rounded-lg">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Add Your Recycling Facility Address</h2>
-          <GoogleMap 
-          mapContainerStyle={mapContainerStyle} 
-          center={facilityLocation || defaultCenter} 
-          zoom={10} onClick={handleMapClick}>
-          {facilityLocation && <Marker position={facilityLocation} />}
+          <GoogleMap
+            mapContainerStyle={mapContainerStyle}
+            center={facilityLocation || defaultCenter}
+            zoom={10} onClick={handleMapClick}>
+            {facilityLocation && <Marker position={facilityLocation} />}
           </GoogleMap>
           {facilityAddress && (
             <p className="mt-3 text-gray-700">Selected Address: {facilityAddress}</p>
@@ -355,12 +389,50 @@ const RecyclerPage = () => {
                       Reject
                     </button>
                   </div>
+                  <button
+                    className="mt-2 bg-green-700 text-white px-3 py-1 rounded hover:bg-green-800"
+                    type="button"
+                    onClick={e => {
+                      e.preventDefault();
+                      const product = productArray.find(p => p.id === query.productId);
+                      if (product) {
+                        handleOpenRecycleDialog(product);
+                      } else {
+                        alert("Product not found for this query.");
+                      }
+                    }}
+                  >
+                    Complete Recycle
+                  </button>
                 </li>
               ))}
             </ul>
           )}
         </div>
-
+        {showRecycleDialog && selectedProduct && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 min-w-[300px]">
+              <h3 className="text-lg font-bold mb-4 text-green-700">Complete Recycle</h3>
+              <p className="mb-2"><strong>Product Name:</strong> {selectedProduct.productName}</p>
+              <p className="mb-2"><strong>Serial Number:</strong> {selectedProduct.id}</p>
+              <p className="mb-4"><strong>Consumer Name:</strong> {selectedConsumer}</p>
+              <div className="flex gap-2">
+                <button
+                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                  onClick={handleCompleteRecycle}
+                >
+                  Complete Transaction
+                </button>
+                <button
+                  className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
+                  onClick={() => setShowRecycleDialog(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         <Footer />
       </div>
     </>
