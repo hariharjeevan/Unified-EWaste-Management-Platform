@@ -6,6 +6,166 @@ admin.initializeApp();
 const firestore = admin.firestore();
 const {v4: uuidv4} = require("uuid");
 
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(functions.config().sendgrid.key);
+
+exports.adminCreateUser = functions.https.onCall(async (data, context) => {
+  if (context.auth?.token?.role !== "admin") {
+    throw new functions.https.HttpsError("permission-denied",
+        "Only admins can create users.");
+  }
+
+  const {email, role, name} = data;
+  if (!email || !role) {
+    throw new functions.https.HttpsError("invalid-argument",
+        "Missing email or role.");
+  }
+
+  // Get admin's orgID from Firestore
+  const adminUserDoc = await firestore.collection("users").
+      doc(context.auth.uid).get();
+  if (!adminUserDoc.exists) {
+    throw new functions.https.HttpsError("permission-denied",
+        "Admin user data not found.");
+  }
+  const orgID = adminUserDoc.data().orgID;
+
+  try {
+    const tempPassword = Math.random().toString(36).slice(-10);
+
+    const userRecord = await admin.auth().createUser({
+      email,
+      password: tempPassword,
+      emailVerified: false,
+    });
+
+    // Set role and orgID in custom claims
+    await admin.auth().setCustomUserClaims(userRecord.uid, {role, orgID});
+
+    const orgDoc = await firestore.collection("organizations").doc(orgID).get();
+    const organization = orgDoc.exists && orgDoc.data().name ? orgDoc.data().
+        name : "your organization";
+
+    // Store user profile in Firestore with orgID
+    await firestore.collection("users").doc(userRecord.uid).set({
+      uid: userRecord.uid,
+      email,
+      name,
+      role,
+      orgID,
+      organization,
+      userType: "Manufacturer",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    await firestore.collection("organizations").doc(orgID).update({
+      employeeIds: admin.firestore.FieldValue.arrayUnion(userRecord.uid),
+    });
+
+    // Send invite email with SendGrid
+
+    const msg = {
+      to: email,
+      from: "genesislive@proton.me",
+      subject: `You're invited to join ${organization} on UEMP`,
+      text: `Hello,
+
+You've been invited to join ${organization} on UEMP as an employee.
+
+Login Email: ${email}
+Temporary Password: ${tempPassword}
+
+Please log in at https://unified-e-waste-management-platform.vercel.app/login and change your password after logging in.
+
+If you did not expect this invitation, you can ignore this email.
+
+Best regards,
+${organization} Team
+`,
+      html: `
+  <div style="font-family: Arial, sans-serif; 
+  background: #f9f9f9; padding: 32px;">
+    <div style="max-width: 480px; margin: auto; 
+    background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #e0e0e0; 
+    padding: 32px;">
+      <h2 style="color: #16a34a; margin-bottom: 16px;">
+      Welcome to ${organization} on UEMP!</h2>
+      <p style="font-size: 16px; color: #222;">
+        Hello,<br><br>
+        You've been invited to join 
+        <b>${organization}</b> on UEMP as an employee.<br><br>
+        <b>Login Email:</b> ${email}<br>
+        <b>Temporary Password:</b> 
+        <span style="font-family: monospace; 
+        background: #f3f3f3; padding: 2px 6px; border-radius: 4px;">
+        ${tempPassword}</span>
+      </p>
+      <div style="text-align: center; margin: 32px 0;">
+        <a href="https://unified-e-waste-management-platform.vercel.app/login"
+           style="background: #16a34a; color: #fff; 
+           text-decoration: none; padding: 14px 32px; 
+           border-radius: 6px; font-size: 18px; font-weight: 
+           bold; display: inline-block;">
+          Log In to UEMP
+        </a>
+      </div>
+      <p style="font-size: 15px; color: #555;">
+        Please log in and change your password after logging in.<br><br>
+        If you did not expect this invitation, 
+        you can ignore this email.<br><br>
+        Best regards,<br>
+        <b>${organization} Team</b>
+      </p>
+    </div>
+  </div>
+  `,
+    };
+
+    await sgMail.send(msg);
+
+    return {success: true, uid: userRecord.uid};
+  } catch (error) {
+    console.error("adminCreateUser error:", error);
+    throw new functions.https.HttpsError("internal", error.message);
+  }
+});
+
+exports.setUserOrgAdmin = functions.https.onCall(async (data, context) => {
+  // Only allow the user to set their own admin claim at signup
+  if (!context.auth || context.auth.uid !== data.uid) {
+    throw new functions.https.HttpsError("permission-denied", "Not allowed.");
+  }
+
+  const {orgID} = data;
+  if (!orgID) {
+    throw new functions.https.HttpsError("invalid-argument", "Missing orgID.");
+  }
+
+  // Set custom claims: admin for this org
+  await admin.auth().setCustomUserClaims(context.auth.uid, {
+    role: "admin",
+    orgID,
+  });
+
+  return {success: true};
+});
+
+{/* Assign user roles*/}
+exports.setUserRole = functions.https.onCall(async (data, context) => {
+  // Only allow admins to call this
+  if (context.auth.token.role !== "admin") {
+    throw new functions.https.HttpsError("permission-denied",
+        "Only admins can assign roles.");
+  }
+
+  const {uid, role} = data;
+
+  await admin.auth().setCustomUserClaims(uid, {role});
+  await admin.firestore().collection("users").doc(uid).update({role});
+
+  return {message: `Role ${role} assigned to user ${uid}`};
+});
+
 {/* Product Registration Function */}
 exports.verifyAndRegisterConsumer = functions.https.onCall(
     async (data, context) => {

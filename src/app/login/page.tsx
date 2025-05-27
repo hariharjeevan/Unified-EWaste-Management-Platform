@@ -1,10 +1,12 @@
 //Login Page
+
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { auth, db } from "@/firebaseConfig";
 import { FirebaseError } from "firebase/app";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, User } from "firebase/auth";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -21,6 +23,7 @@ const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const functions = getFunctions();
   const router = useRouter();
 
   const redirectToPage = useCallback((userType: string, userId: string) => {
@@ -94,12 +97,37 @@ const Login = () => {
         );
         user = userCredential.user;
 
+        // Generate orgID based on organization name + random 6-character alphanumeric string
+        const orgBase = organization
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, "")
+          .substring(0, 6);
+        const randomPart = Math.random().toString(36).substring(2, 8);
+        const orgID = `${orgBase}${randomPart}`;
+
         await setDoc(doc(db, "users", user.uid), {
           name,
           email,
           userType,
+          role: "admin",
           organization: userType === "Consumer" ? "" : organization,
+          orgID: userType === "Consumer" ? "" : orgID,
         });
+
+        if (userType !== "Consumer") {
+          await setDoc(doc(db, "organizations", orgID), {
+            name: organization,
+            type: userType,
+            adminId: user.uid,
+            createdAt: serverTimestamp(),
+            employeeIds: [],
+          });
+
+          // Set admin custom claim for this user for this org
+          const setUserOrgAdmin = httpsCallable(functions, "setUserOrgAdmin");
+          await setUserOrgAdmin({ uid: user.uid, orgID });
+          await auth.currentUser?.getIdToken(true);
+        }
       }
 
       const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -192,7 +220,7 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar links={[{ label: "Docs", href: "/docs", tooltip:"Refer to the website's documentation" }, { label: "About", href: "/about", tooltip:"About the team behind UEMP" }]} />
+      <Navbar links={[{ label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" }, { label: "About", href: "/about", tooltip: "About the team behind UEMP" }]} />
       <div className="flex flex-col items-center justify-center min-h-screen px-4">
         <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md mt-6">
           <h1 className="text-2xl font-bold mb-4 text-center text-green-700">

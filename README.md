@@ -100,6 +100,9 @@ The **Unified E-Waste Management Platform (UEMP)** aims to streamline e-waste tr
 ### 2️⃣ Manufacturer Dashboard
 <img src="docs/screenshots/Manufacturer_Dashboard.png" alt="Manufacturer Dashboard" width="600">
 
+### 2️⃣ Manufacturer QR Code Generation
+<img src="docs/screenshots/Manufacturer_QR_Example.png" alt="Manufacturer QR code generation" width="600">
+
 ### 3️⃣ Recycler Dashboard
 <img src="docs/screenshots/Recycler_Dashboard.png" alt="Recycler Dashboard" width="600">
 

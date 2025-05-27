@@ -17,6 +17,7 @@ import { QRCodeCanvas as QRCode } from "qrcode.react";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { IoMdInformationCircleOutline } from "react-icons/io";
 
+
 interface Product {
   id: string;
   name: string;
@@ -361,7 +362,7 @@ const Manufacturer = () => {
       ]} />
       <div className="bg-transparent min-h-screen flex flex-col items-center pt-16 px-2 sm:px-0">
         {/* Manufacturer Info */}
-        <div className="w-full max-w-2xl flex justify-center">
+        <div className="w-full max-w-2xl flex flex-col items-center justify-center gap-4">
           <InfoCard
             name={manufacturerName}
             organization={organization}
@@ -385,7 +386,6 @@ const Manufacturer = () => {
               Create Product
             </button>
           </div>
-        </div>
 
         {/* CSV Upload Section */}
         <div className="w-full max-w-2xl mt-6 bg-white shadow-md rounded-xl p-6 flex flex-col items-center">
@@ -434,6 +434,7 @@ const Manufacturer = () => {
           <p className="text-gray-700 text-sm mt-2 text-center">
             Upload a CSV file with product details. You can download a sample template to get started.
           </p>
+        </div>
         </div>
 
         {showProducts && (
