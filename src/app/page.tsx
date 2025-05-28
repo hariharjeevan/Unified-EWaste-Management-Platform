@@ -108,7 +108,7 @@ const Home = () => {
               <p className="text-center text-[#071D10] text-3xl md:text-4xl mb-1 relative z-10">
                 <span className="block md:inline">Unified</span>
                 <br className="hidden md:block" />
-                <span className="inline-block min-h-[2em] md:inline min-h-[2em] w-full md:w-auto">
+                <span className="inline-block min-h-[2em] md:inline w-full md:w-auto">
                   {value && window.innerWidth >= 768 ? (
                     <span style={{ visibility: value ? "visible" : "hidden", display: "inline-block", width: "auto", whiteSpace: "nowrap", overflow: "hidden", padding: "0 0 0 0" }}>{value}</span>
                   ) : (

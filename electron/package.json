@@ -1,0 +1,45 @@
+{
+  "name": "uemp",
+  "version": "0.1.0",
+  "description": "Unified E-Waste Management Platform (UEMP) is a comprehensive digital platform that optimizes the entire lifecycle of electronic products—from manufacturing to consumer use and responsible recycling.",
+  "author": "Aventra",
+  "main": "dist/main.js",
+  "type": "commonjs",
+  "build": {
+    "appId": "com.aventra.uemp",
+    "productName": "UEMP",
+    "asar": true,
+    "files": [
+      "dist/**/*",
+      "!**/*.map",
+      "!**/tests/**",
+      "!**/*.ts",
+      "package.json"
+    ],
+    "directories": {
+      "buildResources": "assets"
+    },
+    "win": {
+      "icon": "assets/favicon.ico",
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "createDesktopShortcut": true
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dist": "npm run build && electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^36.3.1",
+    "electron-builder": "^26.0.12",
+    "tsx": "^4.19.4",
+    "typescript": "^5.4.0"
+  },
+  "compilerOptions": {
+    "module": "CommonJS"
+  }
+}
