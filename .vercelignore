@@ -1,4 +1,7 @@
+# Ignore electron source code
 electron/
 dist/
-*.ts
-*.tsx
+
+# Ignore typescript source files only in electron
+electron/**/*.ts
+electron/**/*.tsx
