@@ -1,0 +1,4 @@
+electron/
+dist/
+*.ts
+*.tsx
