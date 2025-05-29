@@ -1,10 +1,11 @@
-//InforCad.tsx
-
 import { MdBusiness, MdEmail } from "react-icons/md";
 import { FaPerson } from "react-icons/fa6";
 import SplitText from "@/components/SplitText";
 import AdminDashboard from "@/components/AdminDashboard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "@/firebaseConfig";
 
 interface InfoCardProps {
   name: string;
@@ -14,6 +15,24 @@ interface InfoCardProps {
 
 export default function InfoCard({ name, organization, email }: InfoCardProps) {
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists()) {
+          setIsAdmin(userDoc.data().role === "admin");
+        } else {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="w-full max-w-xl mt-6 text-center bg-white rounded-xl shadow-lg px-6 py-5 border border-blue-100">
@@ -60,14 +79,24 @@ export default function InfoCard({ name, organization, email }: InfoCardProps) {
             </span>
           </div>
         </div>
-        <div className="w-full flex justify-center sm:justify-end">
-          <button
-            onClick={() => setShowAdminDashboard(true)}
-            className="mt-4 sm:mt-0 bg-purple-600 text-white px-8 py-2 rounded-lg hover:bg-purple-700 transition-all duration-200"
-          >
-            Open Admin Dashboard
-          </button>
-        </div>
+        {isAdmin ? (
+          <div className="w-full flex justify-center sm:justify-end">
+            <button
+              onClick={() => setShowAdminDashboard(true)}
+              className="mt-4 sm:mt-0 bg-purple-600 text-white px-8 py-2 rounded-lg hover:bg-purple-700 transition-all duration-200"
+            >
+              Open Admin Dashboard
+            </button>
+          </div>
+        ) : (
+          <div className="w-full flex justify-center sm:justify-end">
+            <span
+              className="mt-4 sm:mt-0 bg-purple-600 text-white px-8 py-2 rounded-lg transition-all duration-200"
+            >
+              Role: Employee
+            </span>
+          </div>
+        )}
       </div>
       {showAdminDashboard && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
