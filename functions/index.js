@@ -7,6 +7,7 @@ const firestore = admin.firestore();
 const {v4: uuidv4} = require("uuid");
 
 const sgMail = require("@sendgrid/mail");
+const { update } = require("@react-spring/web");
 sgMail.setApiKey(functions.config().sendgrid.key);
 
 exports.adminCreateUser = functions.https.onCall(async (data, context) => {
@@ -259,6 +260,7 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
             manufacturerId,
             productId,
             registeredAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
 
           transaction.update(productRef, {
@@ -344,7 +346,7 @@ exports.onProductDeletion = functions.firestore
       }
     });
 
-{/* Query Handling ffunction*/}
+{/* Query Handling function*/}
 exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(

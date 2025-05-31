@@ -50,9 +50,10 @@ const RecyclerPage = () => {
     consumerPhone: string;
     consumerAddress: string;
     recyclerId: string;
+    consumerId: string;
   }
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(auth.currentUser);
   const [productArray, setProductArray] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -63,6 +64,9 @@ const RecyclerPage = () => {
   const [showRecycleDialog, setShowRecycleDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedConsumer, setSelectedConsumer] = useState<string | null>(null);
+  const [selectedProductdetails, setSelectedProductDetails] = useState<{ label: string; value: any }[] | null>(null);
+  const [inspectedQueryId, setInspectedQueryId] = useState<string | null>(null);
+  const [consumerId, setConsumerId] = useState<string | null>(null);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -157,6 +161,48 @@ const RecyclerPage = () => {
 
     fetchQueries();
   }, [user]);
+
+  const inspectqueryproductdetails = async (consumerId: string, productId: string, queryId: string) => {
+    setInspectedQueryId(queryId);
+
+    if (!user) {
+      return;
+    }
+
+    const queryRef = doc(db, "Queries", user.uid);
+    const querySnapshot = await getDoc(queryRef);
+    if (querySnapshot.exists()) {
+      const data = querySnapshot.data();
+      setConsumerId(data.consumerId);
+    }
+
+    if (!consumerId) {
+      console.error("Consumer ID not found.");
+      return;
+    }
+    try {
+      const consumerdbref = doc(db, "consumers", consumerId, "scannedProducts", productId);
+      const consumerSnapshot = await getDoc(consumerdbref);
+      if (consumerSnapshot.exists()) {
+        const consumerData = consumerSnapshot.data();
+        const productDetails = [
+          { label: "Product ID", value: consumerData?.serialNumber },
+          { label: "Product Name", value: consumerData?.name },
+          { label: "Category", value: consumerData?.category },
+          { label: "Created At", value: consumerData?.createdAt },
+          { label: "Recoverable Metals", value: consumerData?.recoverableMetals },
+          { label: "Recyclability", value: consumerData?.recyclability },
+          { label: "Consumer Scanned At: " , value: consumerData?.updatedAt },
+        ];
+        setSelectedProductDetails(productDetails);
+      } else {
+        setSelectedProductDetails([{ label: "Error", value: "Product not found." }]);
+      }
+    } catch (error) {
+      console.error("Error inspecting product details:", error);
+      setSelectedProductDetails([{ label: "Error", value: "Failed to fetch product details." }]);
+    }
+  };
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const searchValue = event.target.value.toLowerCase();
@@ -369,12 +415,26 @@ const RecyclerPage = () => {
             <ul className="space-y-4">
               {queries.map((query) => (
                 <li key={query.id || query.productId} className="p-4 border rounded shadow">
-                  <p><strong>Product:</strong> {query.productName}</p>
-                  <p><strong>Category:</strong> {query.category}</p>
+                  <p><strong>Offered for Recycling:</strong> {query.productName}</p>
                   <p><strong>Consumer:</strong> {query.consumerName}</p>
                   <p><strong>Phone:</strong> {query.consumerPhone}</p>
                   <p><strong>Address:</strong> {query.consumerAddress}</p>
                   <p><strong>Status:</strong> {query.status}</p>
+                  {inspectedQueryId === query.id && selectedProductdetails && (
+                    <div className="w-full max-w-4xl bg-white p-6 mb-10 rounded shadow text-black">
+                      <h2 className="text-xl font-bold mb-4">Inspected Product Details</h2>
+                      <ul>
+                        {selectedProductdetails.map((detail) => (
+                          <li key={detail.label} className="mb-2">
+                            <strong>{detail.label}:</strong>{" "}
+                            {detail.value && typeof detail.value === "object" && detail.value.seconds
+                              ? new Date(detail.value.seconds * 1000).toLocaleString()
+                              : String(detail.value)}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                   <div className="mt-2 space-x-2">
                     <button
                       onClick={() => updateQueryStatus(query.id, "accepted")}
@@ -388,6 +448,14 @@ const RecyclerPage = () => {
                     >
                       Reject
                     </button>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => inspectqueryproductdetails(query.consumerId, query.productId, query.id)}
+                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 inline-block cursor-pointer"
+                    >
+                      Inspect Product
+                    </span>
                   </div>
                   <button
                     className="mt-2 bg-green-700 text-white px-3 py-1 rounded hover:bg-green-800"
@@ -409,30 +477,7 @@ const RecyclerPage = () => {
             </ul>
           )}
         </div>
-        {showRecycleDialog && selectedProduct && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-            <div className="bg-white rounded-lg shadow-lg p-6 min-w-[300px]">
-              <h3 className="text-lg font-bold mb-4 text-green-700">Complete Recycle</h3>
-              <p className="mb-2"><strong>Product Name:</strong> {selectedProduct.productName}</p>
-              <p className="mb-2"><strong>Serial Number:</strong> {selectedProduct.id}</p>
-              <p className="mb-4"><strong>Consumer Name:</strong> {selectedConsumer}</p>
-              <div className="flex gap-2">
-                <button
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                  onClick={handleCompleteRecycle}
-                >
-                  Complete Transaction
-                </button>
-                <button
-                  className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500"
-                  onClick={() => setShowRecycleDialog(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+
         <Footer />
       </div>
     </>
