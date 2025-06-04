@@ -1,7 +1,7 @@
 //Consumer Page
 "use client";
 
-import { useState, useEffect, useCallback, useRef} from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
@@ -14,6 +14,7 @@ import Image from "next/image";
 import { AiOutlineEye, AiOutlineEyeInvisible, AiFillBell } from "react-icons/ai";
 import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
 import Footer from "@/components/Footer";
+import { useSearchParams } from "next/navigation";
 
 const mapContainerStyle = {
   width: "100%",
@@ -31,6 +32,8 @@ const Consumer = () => {
 
   const auth = getAuth();
   const consumerId = auth.currentUser?.uid;
+  const searchParams = useSearchParams();
+  const qrParam = searchParams.get("qr");
 
   interface Product {
     id?: string;
@@ -82,6 +85,7 @@ const Consumer = () => {
   const [showQueryModal, setShowQueryModal] = useState(false);
   const [scannerStarted, setScannerStarted] = useState(false);
   const [consumerName, setConsumerName] = useState<string>("User");
+  const [showCameraPermissionPopup, setShowCameraPermissionPopup] = useState(false);
   const qrContainerRef = useRef<HTMLDivElement | null>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const maxDistance = 500; // Maximum distance in kmx
@@ -92,11 +96,10 @@ const Consumer = () => {
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "",
     libraries,
   });
-  
+
   const toggleQueryModal = () => {
     setShowQueryModal((prev) => !prev);
   };
-
 
   const fetchConsumerLocation = async (uid: string) => {
     try {
@@ -134,14 +137,13 @@ const Consumer = () => {
         const scannedRef = collection(db, "consumers", consumerId, "scannedProducts");
         const scannedSnap = await getDocs(scannedRef);
 
-        const scannedNames = scannedSnap.docs.map((doc) => {
-          const data = doc.data();
-          return{name : data.name?.toLowerCase().trim() || "" ,
-            category : data.category?.toLowerCase().trim()|| "" ,
-          };
-        }).filter(
-          (item) => item.name && item.category
-        );
+        // Gather all scanned product names (lowercased, trimmed)
+        const scannedNames = scannedSnap.docs
+          .map((doc) => {
+            const data = doc.data();
+            return data.name?.toLowerCase().trim() || "";
+          })
+          .filter((name) => !!name);
 
         const productsRef = collection(db, "recyclers", recyclerId, "products");
         const productsSnap = await getDocs(productsRef);
@@ -167,30 +169,38 @@ const Consumer = () => {
           };
         });
 
-        const getStringSimilarity = (str1: string, str2: string): number => {
-          let commonChars = 0;
-          const minLength = Math.min(str1.length, str2.length);
-
-          for (let i = 0; i < minLength; i++) {
-            if (str1[i] === str2[i]) {
-              commonChars++;
+        // Improved string similarity using Levenshtein distance
+        function levenshtein(a: string, b: string): number {
+          const matrix = Array.from({ length: a.length + 1 }, () =>
+            Array(b.length + 1).fill(0)
+          );
+          for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+          for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+          for (let i = 1; i <= a.length; i++) {
+            for (let j = 1; j <= b.length; j++) {
+              matrix[i][j] =
+                a[i - 1] === b[j - 1]
+                  ? matrix[i - 1][j - 1]
+                  : Math.min(
+                    matrix[i - 1][j - 1] + 1,
+                    matrix[i][j - 1] + 1,
+                    matrix[i - 1][j] + 1
+                  );
             }
           }
+          return matrix[a.length][b.length];
+        }
 
-          return commonChars / Math.max(str1.length, str2.length);
-        };
+        function getSimilarity(a: string, b: string): number {
+          if (!a || !b) return 0;
+          const distance = levenshtein(a, b);
+          return 1 - distance / Math.max(a.length, b.length, 1);
+        }
 
-        const similarityThreshold = 0.10;
-
+        // Filter recycler products by name similarity to any scanned product
         const matchingProducts = allProducts.filter((product) => {
-          const productName = product.productName?.toLowerCase() || "";
-          const productCategory = product.category?.toLowerCase() || "";
-
-          return scannedNames.some((scanned) => {
-            const Namesimilarity = getStringSimilarity(scanned.name, productName);
-            const categorySimilarity = getStringSimilarity(scanned.category, productCategory);
-            return Namesimilarity >= similarityThreshold && categorySimilarity >= 1;
-          });
+          const productName = (product.productName || product.name || "").toLowerCase().trim();
+          return scannedNames.includes(productName);
         });
 
         return matchingProducts;
@@ -369,9 +379,9 @@ const Consumer = () => {
         await fetchScannedProducts(currentUser.uid);
         await fetchHomeLocation(currentUser.uid);
       } else {
-        
+
         router.push("/login");
-  
+
         setConsumerLocation(null);
         setScannedProducts([]);
         setNearbyRecyclers([]);
@@ -379,10 +389,10 @@ const Consumer = () => {
         setHomeAddress(null);
       }
     });
-  
+
     return () => unsubscribe();
   }, [auth, fetchScannedProducts, router]);
-  
+
 
   useEffect(() => {
     if (consumerId) {
@@ -405,17 +415,22 @@ const Consumer = () => {
         setScannerStarted(false);
         setErrorMessage(null);
         setProductDetails(null);
+        let qrValue = decodedText;
 
         try {
-          const parts = decodedText.split("-");
+          const url = new URL(decodedText);
+          const qrParam = url.searchParams.get("qr");
+          if (qrParam) {
+            qrValue = qrParam;
+          }
+
+          const parts = qrValue.split("-");
           if (parts.length !== 2) {
             setErrorMessage("Invalid QR Code format.");
             return;
           }
-
           const [manufacturerUID, serialNumber] = parts;
           setManufacturerUID(manufacturerUID);
-
           const productRef = doc(
             db,
             "manufacturers",
@@ -551,6 +566,40 @@ const Consumer = () => {
       await fetchAddressFromCoords(selectedLocation.lat, selectedLocation.lng);
     }
   };
+
+  useEffect(() => {
+    const fetchProductDetails = async (manufacturerUID: string, serialNumber: string) => {
+      try {
+        const productRef = doc(
+          db,
+          "manufacturers",
+          manufacturerUID,
+          "products",
+          serialNumber
+        );
+        const productSnap = await getDoc(productRef);
+
+        if (productSnap.exists()) {
+          const productData = productSnap.data() as Product;
+          setProductDetails(productData);
+        } else {
+          setErrorMessage("No product found for this QR code.");
+        }
+      } catch (error) {
+        console.error("Error retrieving product details:", error);
+        setErrorMessage("Failed to fetch product details.");
+      }
+    };
+    if (qrParam && user) {
+      // Parse manufacturerUID and serialNumber
+      const parts = qrParam.split("-");
+      if (parts.length === 2) {
+        setManufacturerUID(parts[0]);
+        // Fetch product details and show registration UI as you do in QR scan
+        fetchProductDetails(parts[0], parts[1]);
+      }
+    }
+  }, [qrParam, user]);
 
   if (!isLoaded) {
     return (
@@ -695,11 +744,40 @@ const Consumer = () => {
               <div className="flex flex-col items-center gap-2">
                 <h1 className="text-black font-bold text-lg">Scan QR</h1>
                 <button
-                  onClick={startQRScanner}
+                  onClick={async () => {
+                  try {
+                    setShowCameraPermissionPopup(true);
+                    await navigator.mediaDevices.getUserMedia({ video: true });
+                    startQRScanner();
+                  } catch (err) {
+                    setErrorMessage("Camera access denied. Please allow camera permission to scan QR codes.");
+                  }
+                  }}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
                 >
                   Start Scanner
                 </button>
+                {/* Camera Permission Popup */}
+                {typeof window !== "undefined" && showCameraPermissionPopup && (
+                  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
+                  <div className="bg-white rounded-lg shadow-lg p-6 flex flex-col items-center max-w-xs">
+                    <img
+                    src="/camera_permission.png"
+                    alt="Allow Camera Permission"
+                    className="w-200 h-200 mb-3"
+                    />
+                    <p className="text-black text-center mb-2 font-semibold">
+                    Please allow camera access at the top of your browser to scan QR codes.
+                    </p>
+                    <button
+                    onClick={() => setShowCameraPermissionPopup(false)}
+                    className="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                    >
+                    Close
+                    </button>
+                  </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col items-center gap-2">
@@ -841,24 +919,24 @@ const Consumer = () => {
         <div className="w-full max-w-4xl p-6 mt-6 bg-white shadow-md rounded-lg">
           <h2 className="text-xl font-bold text-gray-900 mb-4">Set Your Home Location</h2>
           <div style={{ position: "relative", zIndex: 1, pointerEvents: "auto" }}>
-          <GoogleMap
-            mapContainerStyle={mapContainerStyle}
-            center={homeLocation || defaultCenter}
-            zoom={10}
-            onClick={handleMapClick}
-            options={{
-              disableDefaultUI: false,
-              gestureHandling: "auto",
-              draggable: true,
-            }}
-          >
-            {homeLocation && <Marker position={homeLocation} />}
-          </GoogleMap>
-          {homeAddress && (
-            <p className="text-gray-700 mt-3">Selected Address: {homeAddress}</p>
-          )}
+            <GoogleMap
+              mapContainerStyle={mapContainerStyle}
+              center={homeLocation || defaultCenter}
+              zoom={10}
+              onClick={handleMapClick}
+              options={{
+                disableDefaultUI: false,
+                gestureHandling: "auto",
+                draggable: true,
+              }}
+            >
+              {homeLocation && <Marker position={homeLocation} />}
+            </GoogleMap>
+            {homeAddress && (
+              <p className="text-gray-700 mt-3">Selected Address: {homeAddress}</p>
+            )}
           </div>
-          
+
           <button
             onClick={saveHomeLocation}
             className="mt-3 bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition"
@@ -931,7 +1009,7 @@ const Consumer = () => {
       </div>
       <Footer />
     </>
-  );
+);
 };
 
 export default Consumer;

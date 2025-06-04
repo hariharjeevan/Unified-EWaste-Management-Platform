@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { db, auth } from "@/firebaseConfig";
-import { collection, doc, setDoc, getDoc, getDocs, deleteDoc, serverTimestamp } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
 import { query, orderBy, limit, startAfter, QueryDocumentSnapshot } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -35,7 +35,7 @@ interface Product {
 const Manufacturer = () => {
   const [user, setUser] = useState(auth.currentUser);
   const [manufacturerName, setManufacturerName] = useState("");
-  const [organization, setOrganization] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
   const [manufacturerEmail, setManufacturerEmail] = useState("");
   const [showProducts, setShowProducts] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
@@ -53,6 +53,9 @@ const Manufacturer = () => {
   const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
+  const [organizationID, setOrganizationID] = useState("");
+  const [certificationStatus, setCertificationStatus] = useState("none");
+  const [submissionStatus, setSubmissionStatus] = useState("");
   const productSectionRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -62,20 +65,30 @@ const Manufacturer = () => {
         router.push("/login");
       } else {
         setUser(currentUser);
-
         // Fetch manufacturer profile info from users collection
         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
         if (userDoc.exists()) {
           const data = userDoc.data();
           setManufacturerName(data.name || "Unknown Name");
-          setOrganization(data.organization || "Unknown Organization");
           setManufacturerEmail(data.email || "Unknown email");
+          setOrganizationID(data.orgID || "");
+          
+          if (data.orgID) {
+            const orgDoc = await getDoc(doc(db, "organizations", data.orgID));
+            if (orgDoc.exists()) {
+              setOrganizationName(orgDoc.data().name || "Unknown Organization");
+            } else {
+              setOrganizationName("Unknown Organization");
+            }
+          } else {
+            setOrganizationName("Unknown Organization");
+          }
         }
       }
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, organizationID]);
 
   const fetchProducts = async () => {
     if (!user) return;
@@ -146,7 +159,7 @@ const Manufacturer = () => {
         (np) => !productList.some((existing) => existing.id === np.id)
       );
 
-      // Filter out products that were deleted (in case Firestore returns them due to pagination)
+      // Filter out products that were deleted
       setProductList((prev) => {
         // Remove any duplicates by id
         const all = [...prev, ...deduped];
@@ -220,7 +233,7 @@ const Manufacturer = () => {
         return;
       }
 
-      const qrData = `${user.uid}-${productDetails.serialNumber}`;
+      const qrData = `https://unified-e-waste-management-platform.vercel.app/consumer/register?qr=${user.uid}-${productDetails.serialNumber}`;
       const secretKey = generateSecretKey();
 
       const newProduct = {
@@ -243,7 +256,7 @@ const Manufacturer = () => {
       console.error("Error adding product:", error);
     }
   };
-  
+
   const checkProductExists = async (serial: string) => {
     if (!user) return false;
     const ref = doc(db, "manufacturers", user.uid, "products", serial);
@@ -313,8 +326,13 @@ const Manufacturer = () => {
       const serialSnap = await getDoc(serialRef);
       if (serialSnap.exists()) return;
 
-      const qrData = `${user.uid}-${product.serialNumber}`;
+      const qrData = `https://unified-e-waste-management-platform.vercel.app/consumer/register?qr=${user.uid}-${product.serialNumber}`;
       const secretKey = generateSecretKey();
+
+      // Ensure userCount is a positive integer (or 0 if invalid)
+      const userCount = typeof product.userCount === "number" && product.userCount > 0
+        ? product.userCount
+        : 0;
 
       const newProduct = {
         ...product,
@@ -322,7 +340,7 @@ const Manufacturer = () => {
         secretKey,
         registeredUsers: [],
         registered: false,
-        userCount: 0,
+        userCount,
         manufacturerId: user.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -339,7 +357,7 @@ const Manufacturer = () => {
     const csvContent = [
       expectedHeaders.join(","),
       "Product A,SN0006,Electronics,High,Gold; Silver",
-      "Product B,SN0007,Electronics,Low,Copper",
+      "Product B,SN0007,Electronics,Low,Copper; Silver",
     ].join("\n");
 
     const bom = "\uFEFF";
@@ -353,6 +371,39 @@ const Manufacturer = () => {
     link.click();
     document.body.removeChild(link);
   };
+  useEffect(() => {
+    const fetchOrganizationDetails = async () => {
+      try {
+        if (!organizationID) return; // Defensive check
+        const orgRef = doc(db, "organizations", organizationID);
+        const orgDoc = await getDoc(orgRef);
+        if (orgDoc.exists()) {
+          setManufacturerName(orgDoc.data().name);
+          setCertificationStatus(orgDoc.data().certification || "none");
+        }
+      } catch (error) {
+        console.error("Error fetching organization details:", error);
+      }
+    };
+
+    if (organizationID) {
+      fetchOrganizationDetails();
+    }
+  }, [organizationID]);
+
+  const submitCertificationRequest = async () => {
+    try {
+      if (!organizationID) return; // Defensive check
+      const orgRef = doc(db, "organizations", organizationID);
+      await updateDoc(orgRef, {
+        certification: "pending",
+      });
+      setSubmissionStatus("Certification request submitted successfully.");
+    } catch (error) {
+      console.error("Error submitting certification request:", error);
+      setSubmissionStatus("Error submitting certification request.");
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#f5f3f4] to-[#e0e7ff]">
@@ -365,7 +416,7 @@ const Manufacturer = () => {
         <div className="w-full max-w-2xl flex flex-col items-center justify-center gap-4">
           <InfoCard
             name={manufacturerName}
-            organization={organization}
+            organization={organizationName}
             email={manufacturerEmail}
           />
         </div>
@@ -387,56 +438,89 @@ const Manufacturer = () => {
             </button>
           </div>
 
-        {/* CSV Upload Section */}
-        <div className="w-full max-w-2xl mt-6 bg-white shadow-md rounded-xl p-6 flex flex-col items-center">
-          <h3 className="text-lg font-semibold text-black mb-4">Bulk Upload Products</h3>
-          <div className="flex flex-col w-full items-center">
-            {/* Drag and Drop Area */}
-            <label
-              htmlFor="csv-upload"
-              className="flex flex-col items-center justify-center w-full border-2 border-dashed border-blue-400 rounded-lg p-6 bg-blue-50 hover:bg-blue-100 cursor-pointer transition-all duration-200 mb-4"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const file = e.dataTransfer.files?.[0];
-                if (file && file.type === "text/csv") {
-                  handleCSVUpload({
-                    target: { files: [file] },
-                  } as unknown as React.ChangeEvent<HTMLInputElement>);
-                }
-              }}
-            >
-              <UploadIcon className="w-8 h-8 text-blue-500" />
+          {/* CSV Upload Section */}
+          <div className="w-full max-w-2xl mt-6 bg-white shadow-md rounded-xl p-6 flex flex-col items-center">
+            <h3 className="text-lg font-semibold text-black mb-4">Bulk Upload Products</h3>
+            <div className="flex flex-col w-full items-center">
+              {/* Drag and Drop Area */}
+              <label
+                htmlFor="csv-upload"
+                className="flex flex-col items-center justify-center w-full border-2 border-dashed border-blue-400 rounded-lg p-6 bg-blue-50 hover:bg-blue-100 cursor-pointer transition-all duration-200 mb-4"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const file = e.dataTransfer.files?.[0];
+                  if (file && file.type === "text/csv") {
+                    handleCSVUpload({
+                      target: { files: [file] },
+                    } as unknown as React.ChangeEvent<HTMLInputElement>);
+                  }
+                }}
+              >
+                <UploadIcon className="w-8 h-8 text-blue-500" />
 
-              <span className="text-blue-600 font-semibold text-center">
-                Drag &amp; drop your CSV file here, or&nbsp;
-                <span className="underline">browse</span>
-              </span>
-              <input
-                id="csv-upload"
-                type="file"
-                accept=".csv"
-                onChange={handleCSVUpload}
-                className="hidden"
-              />
-            </label>
-            <button
-              onClick={downloadTemplate}
-              className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-all duration-200 w-full sm:w-auto"
-            >
-              Download Sample Template
-            </button>
+                <span className="text-blue-600 font-semibold text-center">
+                  Drag &amp; drop your CSV file here, or&nbsp;
+                  <span className="underline">browse</span>
+                </span>
+                <input
+                  id="csv-upload"
+                  type="file"
+                  accept=".csv"
+                  onChange={handleCSVUpload}
+                  className="hidden"
+                />
+              </label>
+              <button
+                onClick={downloadTemplate}
+                className="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-all duration-200 w-full sm:w-auto"
+              >
+                Download Sample Template
+              </button>
+            </div>
+            <p className="text-gray-700 text-sm mt-2 text-center">
+              Upload a CSV file with product details. You can download a sample template to get started.
+            </p>
           </div>
-          <p className="text-gray-700 text-sm mt-2 text-center">
-            Upload a CSV file with product details. You can download a sample template to get started.
-          </p>
-        </div>
         </div>
 
+        <div className="w-full max-w-4xl mt-10 bg-white text-black p-6 rounded shadow-md">
+          <h3 className="text-lg font-semibold mb-4">Manufacturer Certification Request</h3>
+          <div>
+            <p><strong>Organization Name:</strong> {organizationName}</p>
+            <p><strong>Current Certification Status:</strong> {certificationStatus === "none"
+              ? "Not Certified"
+              : certificationStatus.charAt(0).toUpperCase() + certificationStatus.slice(1)}
+            </p>
+          </div>
+
+          {certificationStatus === "none" && (
+            <div className="mt-4">
+              <button
+                onClick={submitCertificationRequest}
+                className="px-4 py-2 bg-blue-500 text-white rounded"
+              >
+                Submit Certification Request
+              </button>
+              {submissionStatus && <p className="mt-2">{submissionStatus}</p>}
+            </div>
+          )}
+
+          {certificationStatus === "pending" && (
+            <p className="mt-4 text-yellow-600 font-semibold">
+              Your certification request is pending approval.
+            </p>
+          )}
+          {certificationStatus === "approved" && (
+            <p className="mt-4 text-green-600 font-semibold">
+              Your organization has been certified!
+            </p>
+          )}
+        </div>
         {showProducts && (
           <div
             ref={productSectionRef}

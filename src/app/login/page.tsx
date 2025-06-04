@@ -7,10 +7,24 @@ import { FirebaseError } from "firebase/app";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged, User } from "firebase/auth";
 import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import { Mona_Sans } from 'next/font/google';
+import { Suspense } from "react";
+
+const monaSansB = Mona_Sans({
+  subsets: ['latin'],
+  weight: '800',
+  display: 'swap',
+});
+
+const monaSansN = Mona_Sans({
+  subsets: ['latin'],
+  weight: '500',
+  display: 'swap',
+});
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -25,8 +39,10 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const functions = getFunctions();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const redirectToPage = useCallback((userType: string, userId: string) => {
+    const qr = searchParams.get("qr");
     if (!userType) {
       setError("User type is undefined. Please try logging in again.");
       return;
@@ -40,7 +56,11 @@ const Login = () => {
         router.push("/recycler");
         break;
       case "Consumer":
-        router.push(`/consumer/${userId}`);
+        if (qr) {
+          router.push(`/consumer/${userId}?qr=${encodeURIComponent(qr)}`);
+        } else {
+          router.push(`/consumer/${userId}`);
+        }
         break;
       case "Government":
         router.push("/government");
@@ -48,7 +68,7 @@ const Login = () => {
       default:
         setError("Invalid user type. Please contact support.");
     }
-  }, [router]);
+  }, [router, searchParams]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
@@ -221,7 +241,41 @@ const Login = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar links={[{ label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" }, { label: "About", href: "/about", tooltip: "About the team behind UEMP" }]} />
-      <div className="flex flex-col items-center justify-center min-h-screen px-4">
+      {/* Hero Section */}
+      <section className={`${monaSansN.className} w-full bg-gradient-to-r from-green-100 to-green-100 py-8 mb-8 shadow-inner`}>
+        <div className="max-w-3xl mx-auto px-4 text-center">
+          <h1 className="text-4xl sm:text-5xl font-extrabold text-green-700 mb-4">
+            Unified E-Waste Management Platform
+          </h1>
+          <p className="text-lg sm:text-xl text-gray-700 mb-6">
+            Join us in making E-waste recycling smarter, safer, and more transparent for everyone—manufacturers, recyclers, consumers, and government!
+          </p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <span className="bg-blue-200 text-blue-900 px-4 py-2 rounded-full font-semibold">Track Products</span>
+            <span className="bg-green-200 text-green-900 px-4 py-2 rounded-full font-semibold">Recycle Responsibly</span>
+            <span className="bg-yellow-200 text-yellow-900 px-4 py-2 rounded-full font-semibold">Earn Rewards</span>
+            <span className="bg-red-200 text-red-900 px-4 py-2 rounded-full font-semibold">Government Oversight</span>
+          </div>
+          <div
+            className="w-full flex justify-center mt-5"
+          >
+            <button
+              className="w-full max-w-2xl px-6 py-3 bg-green-600 text-white rounded-full font-semibold shadow hover:bg-green-700 transition text-center text-lg block focus:outline-none"
+              tabIndex={0}
+              style={{ letterSpacing: "0.02em" }}
+              onClick={() => {
+                const loginSection = document.getElementById("login-section");
+                if (loginSection) {
+                  loginSection.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
+            >
+              Login below
+            </button>
+          </div>
+        </div>
+      </section>
+      <div id="login-section" className="flex flex-col items-center justify-center min-h-screen px-4">
         <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md mt-6">
           <h1 className="text-2xl font-bold mb-4 text-center text-green-700">
             {isLogin ? "Login" : "Sign Up"}
@@ -395,4 +449,10 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Login />
+    </Suspense>
+  );
+}

@@ -7,7 +7,6 @@ const firestore = admin.firestore();
 const {v4: uuidv4} = require("uuid");
 
 const sgMail = require("@sendgrid/mail");
-const { update } = require("@react-spring/web");
 sgMail.setApiKey(functions.config().sendgrid.key);
 
 exports.adminCreateUser = functions.https.onCall(async (data, context) => {
@@ -267,6 +266,7 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
             registeredBy: consumerUid,
             registeredUsers: admin.firestore.FieldValue.arrayUnion(consumerUid),
             userCount: admin.firestore.FieldValue.increment(1),
+            registered: true,
           });
         });
 
@@ -327,12 +327,14 @@ exports.onProductDeletion = functions.firestore
             return;
           }
 
-          // Remove the consumer from the registeredUsers array,
-          // decrement userCount, and update registered/registeredBy fields
+          const currentUserCount = typeof productData.userCount === "number" ?
+                productData.userCount : 0;
           transaction.update(productRef, {
             registeredUsers: admin.firestore.FieldValue.arrayRemove(
                 consumerUid),
-            userCount: admin.firestore.FieldValue.increment(-1),
+            userCount: currentUserCount > 0 ?
+              admin.firestore.FieldValue.increment(-1) :
+              0,
             registered: false,
             registeredBy: admin.firestore.FieldValue.delete(),
           });

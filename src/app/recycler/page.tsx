@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/firebaseConfig";
 import { AiOutlineSearch } from "react-icons/ai";
-import { collection, doc, getDocs, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -67,6 +67,8 @@ const RecyclerPage = () => {
   const [selectedProductdetails, setSelectedProductDetails] = useState<{ label: string; value: any }[] | null>(null);
   const [inspectedQueryId, setInspectedQueryId] = useState<string | null>(null);
   const [consumerId, setConsumerId] = useState<string | null>(null);
+  const activeQueries = queries.filter(q => q.status !== "rejected");
+  const historyQueries = queries.filter(q => q.status === "rejected");
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -192,7 +194,7 @@ const RecyclerPage = () => {
           { label: "Created At", value: consumerData?.createdAt },
           { label: "Recoverable Metals", value: consumerData?.recoverableMetals },
           { label: "Recyclability", value: consumerData?.recyclability },
-          { label: "Consumer Scanned At: " , value: consumerData?.updatedAt },
+          { label: "Consumer Scanned At: ", value: consumerData?.updatedAt },
         ];
         setSelectedProductDetails(productDetails);
       } else {
@@ -285,6 +287,24 @@ const RecyclerPage = () => {
       });
       console.log(`Firestore updated: Query ${queryId} set to ${newStatus}`);
 
+      // If rejected, delete the product from recycler's products collection
+      if (newStatus === "rejected") {
+        // Find the productId from the query
+        const rejectedQuery = queries.find(q => q.id === queryId);
+        if (rejectedQuery && rejectedQuery.productId) {
+          const productDocRef = doc(db, "recyclers", user.uid, "products", rejectedQuery.productId);
+          try {
+            await deleteDoc(productDocRef);
+            setProductArray(prev => prev.filter(p => p.id !== rejectedQuery.productId));
+            setFilteredProducts(prev => prev.filter(p => p.id !== rejectedQuery.productId));
+            console.log(`Product ${rejectedQuery.productId} deleted from recycler's products`);
+          } catch (err) {
+            console.error("Error deleting product:", err);
+            alert("Failed to delete product after rejection.");
+          }
+        }
+      }
+
       // Update the local state
       setQueries((prevQueries) =>
         prevQueries.map((q) =>
@@ -309,7 +329,6 @@ const RecyclerPage = () => {
       </div>
     );
   }
-
 
   const handleOpenRecycleDialog = (product: Product) => {
     // Find the consumer name from queries for this product
@@ -404,16 +423,16 @@ const RecyclerPage = () => {
           </button>
         </div>
 
-        {/* Queries */}
+        {/* Recycling Requests */}
         <div className="w-full max-w-4xl bg-white p-6 mt-10 mb-10 rounded shadow text-black">
           <h2 className="text-xl font-bold mb-4">Recycling Requests: </h2>
           {loading ? (
             <p>Loading...</p>
-          ) : queries.length === 0 ? (
+          ) : activeQueries.length === 0 ? (
             <p>No queries found.</p>
           ) : (
             <ul className="space-y-4">
-              {queries.map((query) => (
+              {activeQueries.map((query) => (
                 <li key={query.id || query.productId} className="p-4 border rounded shadow">
                   <p><strong>Offered for Recycling:</strong> {query.productName}</p>
                   <p><strong>Consumer:</strong> {query.consumerName}</p>
@@ -472,6 +491,26 @@ const RecyclerPage = () => {
                   >
                     Complete Recycle
                   </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {/* Recycling History */}
+        <div className="w-full max-w-4xl bg-white p-6 mt-10 mb-10 rounded shadow text-black">
+          <h2 className="text-xl font-bold mb-4">Recycling History</h2>
+          {loading ? (
+            <p>Loading...</p>
+          ) : historyQueries.length === 0 ? (
+            <p>No history found.</p>
+          ) : (
+            <ul className="space-y-4">
+              {historyQueries.map((query) => (
+                <li key={query.id || query.productId} className="p-4 border rounded shadow">
+                  <p><strong>Product:</strong> {query.productName}</p>
+                  <p><strong>Consumer:</strong> {query.consumerName}</p>
+                  <p><strong>Status:</strong> {query.status}</p>
+                  {/* Add more details if needed */}
                 </li>
               ))}
             </ul>

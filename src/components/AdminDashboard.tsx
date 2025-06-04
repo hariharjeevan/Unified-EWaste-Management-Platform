@@ -128,106 +128,111 @@ const AdminDashboard = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto mt-10 p-8 bg-white rounded-3xl shadow-2xl border border-gray-200">
-      <h1 className="text-4xl font-extrabold mb-8 text-green-500 tracking-tight text-center">Admin Dashboard</h1>
+    <div className="max-w-4xl w-full mx-auto mt-6 p-4 sm:p-8 bg-white rounded-3xl shadow-2xl border border-gray-200">
+      <h1 className="text-3xl sm:text-4xl font-extrabold mb-6 sm:mb-8 text-green-500 tracking-tight text-center">Admin Dashboard</h1>
       {error && (
-        <p className="text-red-800 bg-red-100 px-4 py-3 rounded-lg mb-4 border border-red-200 text-center">{error}</p>
+      <p className="text-red-800 bg-red-100 px-4 py-3 rounded-lg mb-4 border border-red-200 text-center">{error}</p>
       )}
       {success && (
-        <p className="text-green-800 bg-green-100 px-4 py-3 rounded-lg mb-4 border border-green-200 text-center">{success}</p>
+      <p className="text-green-800 bg-green-100 px-4 py-3 rounded-lg mb-4 border border-green-200 text-center">{success}</p>
       )}
 
-      <div className="mb-12 p-8 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow flex flex-col gap-4 border border-blue-100">
-        <h2 className="text-2xl font-semibold mb-2 text-green-800">Invite Employee</h2>
-        <div className="flex flex-wrap gap-3 items-center">
-          <input
-            type="text"
-            value={employeeName}
-            onChange={(e) => setEmployeeName(e.target.value)}
-            placeholder="Employee Name"
-            disabled={isLoading}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-base text-black min-w-[180px] outline-none focus:ring-2 focus:ring-blue-300 bg-white shadow-sm"
-          />
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="Employee Email"
-            disabled={isLoading}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-base text-black min-w-[220px] outline-none focus:ring-2 focus:ring-blue-300 bg-white shadow-sm"
-          />
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            disabled={isLoading}
-            className="px-4 py-2 rounded-lg border border-gray-300 text-base text-black bg-white shadow-sm"
-          >
-            <option value="employee">Employee</option>
-            <option value="admin">Admin</option>
-          </select>
-          <button
-            onClick={handleInvite}
-            disabled={isLoading || !email}
-            className={`px-6 py-2 rounded-lg font-semibold text-base transition-all duration-150 ${isLoading || !email
-              ? "bg-blue-200 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
-              } text-white shadow`}
-          >
-            {isLoading ? "Sending..." : "Send Invitation"}
-          </button>
-        </div>
+      <div className="mb-10 sm:mb-12 p-4 sm:p-8 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow flex flex-col gap-4 border border-blue-100">
+      <h2 className="text-xl sm:text-2xl font-semibold mb-2 text-green-800">Invite Employee</h2>
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
+        <input
+        type="text"
+        value={employeeName}
+        onChange={(e) => setEmployeeName(e.target.value)}
+        placeholder="Employee Name"
+        disabled={isLoading}
+        className="px-4 py-2 rounded-lg border border-gray-300 text-base text-black min-w-0 flex-1 outline-none focus:ring-2 focus:ring-blue-300 bg-white shadow-sm"
+        />
+        <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Employee Email"
+        disabled={isLoading}
+        className="px-4 py-2 rounded-lg border border-gray-300 text-base text-black min-w-0 flex-1 outline-none focus:ring-2 focus:ring-blue-300 bg-white shadow-sm"
+        />
+        <select
+        value={role}
+        onChange={(e) => setRole(e.target.value)}
+        disabled={isLoading}
+        className="px-4 py-2 rounded-lg border border-gray-300 text-base text-black bg-white shadow-sm min-w-[120px]"
+        >
+        <option value="employee">Employee</option>
+        <option value="admin">Admin</option>
+        </select>
+        <button
+        onClick={handleInvite}
+        disabled={isLoading || !email}
+        className={`px-6 py-2 rounded-lg font-semibold text-base transition-all duration-150 ${isLoading || !email
+          ? "bg-blue-200 cursor-not-allowed"
+          : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
+          } text-white shadow mt-2 sm:mt-0`}
+        >
+        {isLoading ? "Sending..." : "Send Invitation"}
+        </button>
+      </div>
       </div>
 
       <div>
-        <h2 className="text-2xl font-semibold mb-6 text-green-800">Employees</h2>
+      <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-green-800">Employees</h2>
+      <div className="max-h-[400px] overflow-y-auto pr-2">
         <ul className="list-none p-0">
-          {employees.map((employee, idx) => (
-            <li
-              key={employee.uid || employee.email || idx}
-              className="bg-gray-50 text-black mb-4 px-6 py-5 rounded-xl shadow flex items-center border border-gray-200"
-            >
-              <div className="flex-1 flex items-center min-w-0">
-                <span className="truncate font-medium text-lg">{employee.email}</span>
-              </div>
-              <span className="w-32 flex-shrink-0 flex justify-center">
-                <span className={`inline-block text-center text-base font-semibold px-4 py-1 rounded-full
-                  ${employee.role === 'admin'
-                    ? 'bg-blue-100 text-red-500 border border-blue-200'
-                    : 'bg-gray-200 text-gray-700 border border-gray-300'
-                  }`}>
-                  {employee.role.charAt(0).toUpperCase() + employee.role.slice(1)}
-                </span>
+        {employees.map((employee, idx) => (
+          <li
+            key={employee.uid || employee.email || idx}
+            className="bg-gray-50 text-black mb-4 px-4 sm:px-6 py-4 sm:py-5 rounded-xl shadow flex flex-col sm:flex-row items-start sm:items-center border border-gray-200 gap-3 sm:gap-0"
+          >
+            <div className="flex-1 flex items-center min-w-0">
+              <span className="truncate font-medium text-base sm:text-lg">{employee.email}</span>
+            </div>
+            <span className="w-full sm:w-32 flex-shrink-0 flex justify-start sm:justify-center">
+              <span className={`inline-block text-center text-base font-semibold px-4 py-1 rounded-full
+          ${employee.role === 'admin'
+            ? 'bg-blue-100 text-red-500 border border-blue-200'
+            : 'bg-gray-200 text-gray-700 border border-gray-300'
+          }`}>
+          {employee.role.charAt(0).toUpperCase() + employee.role.slice(1)}
               </span>
-              <span className="flex gap-2 ml-6">
-                <button
-                  onClick={() => handleRoleChange(employee.uid, 'admin')}
-                  disabled={roleLoadingUid === employee.uid || employee.role === 'admin'}
-                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-150 ${employee.role === 'admin'
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : "bg-green-500 hover:bg-green-600 text-white cursor-pointer"
-                    } ${roleLoadingUid === employee.uid ? "opacity-70" : ""}`}
-                >
-                  {roleLoadingUid === employee.uid && employee.role !== 'admin' ? "..." : "Make Admin"}
-                </button>
-                <button
-                  onClick={() => handleRoleChange(employee.uid, 'employee')}
-                  disabled={roleLoadingUid === employee.uid || employee.role === 'employee'}
-                  className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-150 ${employee.role === 'employee'
-                    ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                    : "bg-red-500 hover:bg-red-600 text-white cursor-pointer"
-                    } ${roleLoadingUid === employee.uid ? "opacity-70" : ""}`}
-                >
-                  {roleLoadingUid === employee.uid && employee.role !== 'employee' ? "..." : "Demote"}
-                </button>
+            </span>
+            {employee.role !== 'admin' && (
+              <span className="flex gap-2 mt-2 sm:mt-0 ml-0 sm:ml-6 w-full sm:w-auto">
+          <button
+            onClick={() => handleRoleChange(employee.uid, 'admin')}
+            disabled={roleLoadingUid === employee.uid || employee.role === 'admin'}
+            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-150 ${employee.role === 'admin'
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-green-500 hover:bg-green-600 text-white cursor-pointer"
+              } ${roleLoadingUid === employee.uid ? "opacity-70" : ""} w-full sm:w-auto`}
+          >
+            {employee.role !== 'admin' &&
+              (roleLoadingUid === employee.uid ? "..." : "Make Admin")}
+          </button>
+          <button
+            onClick={() => handleRoleChange(employee.uid, 'employee')}
+            disabled={roleLoadingUid === employee.uid || employee.role === 'employee'}
+            className={`px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-150 ${employee.role === 'employee'
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-red-500 hover:bg-red-600 text-white cursor-pointer"
+              } ${roleLoadingUid === employee.uid ? "opacity-70" : ""} w-full sm:w-auto`}
+          >
+            {roleLoadingUid === employee.uid && employee.role !== 'employee' ? "..." : "Demote"}
+          </button>
               </span>
-            </li>
-          ))}
+            )}
+          </li>
+        ))}
         </ul>
         {employees.length === 0 && (
-          <div className="text-gray-400 text-center mt-10 text-lg font-medium">
-            No employees found.
-          </div>
+        <div className="text-gray-400 text-center mt-10 text-lg font-medium">
+          No employees found.
+        </div>
         )}
+      </div>
       </div>
     </div>
   );
