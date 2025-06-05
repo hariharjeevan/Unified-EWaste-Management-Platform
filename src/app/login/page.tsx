@@ -10,21 +10,9 @@ import { getFunctions, httpsCallable } from "firebase/functions";
 import { useRouter, useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Spinner from "@/components/Spinner";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { Mona_Sans } from 'next/font/google';
 import { Suspense } from "react";
-
-const monaSansB = Mona_Sans({
-  subsets: ['latin'],
-  weight: '800',
-  display: 'swap',
-});
-
-const monaSansN = Mona_Sans({
-  subsets: ['latin'],
-  weight: '500',
-  display: 'swap',
-});
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -195,6 +183,7 @@ const Login = () => {
 
   // Function to handle demo login based on user type
   const handleDemoLogin = (userEmail: string, userPassword: string, userType: string) => {
+    setIsLoading(true);
     signInWithEmailAndPassword(auth, userEmail, userPassword)
       .then((userCredential) => {
         const user = userCredential.user;
@@ -203,6 +192,9 @@ const Login = () => {
       .catch((error) => {
         console.error("Error logging in with demo account:", error);
         setError("Failed to log in as demo user.");
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   };
 
@@ -242,7 +234,7 @@ const Login = () => {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar links={[{ label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" }, { label: "About", href: "/about", tooltip: "About the team behind UEMP" }]} />
       {/* Hero Section */}
-      <section className={`${monaSansN.className} w-full bg-gradient-to-r from-green-100 to-green-100 py-8 mb-8 shadow-inner`}>
+      <section className="w-full bg-gradient-to-r from-green-100 to-green-100 py-8 mb-8 shadow-inner">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h1 className="text-4xl sm:text-5xl font-extrabold text-green-700 mb-4">
             Unified E-Waste Management Platform
@@ -250,12 +242,12 @@ const Login = () => {
           <p className="text-lg sm:text-xl text-gray-700 mb-6">
             Join us in making E-waste recycling smarter, safer, and more transparent for everyone—manufacturers, recyclers, consumers, and government!
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <span className="bg-blue-200 text-blue-900 px-4 py-2 rounded-full font-semibold">Track Products</span>
-            <span className="bg-green-200 text-green-900 px-4 py-2 rounded-full font-semibold">Recycle Responsibly</span>
-            <span className="bg-yellow-200 text-yellow-900 px-4 py-2 rounded-full font-semibold">Earn Rewards</span>
-            <span className="bg-red-200 text-red-900 px-4 py-2 rounded-full font-semibold">Government Oversight</span>
-          </div>
+            <div className="flex flex-wrap justify-center gap-2">
+            <span className="bg-blue-200 text-blue-900 px-2 py-1 rounded-full font-semibold text-sm">Track Products</span>
+            <span className="bg-green-200 text-green-900 px-2 py-1 rounded-full font-semibold text-sm">Recycle Responsibly</span>
+            <span className="bg-yellow-200 text-yellow-900 px-2 py-1 rounded-full font-semibold text-sm">Earn Rewards</span>
+            <span className="bg-red-200 text-red-900 px-2 py-1 rounded-full font-semibold text-sm">Government Oversight</span>
+            </div>
           <div
             className="w-full flex justify-center mt-5"
           >
@@ -367,26 +359,7 @@ const Login = () => {
               disabled={isLoading}
             >
               {isLoading ? (
-                <svg
-                  className="animate-spin h-6 w-6 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                  ></path>
-                </svg>
+                <Spinner size={25} color="white" />
               ) : isLogin ? (
                 "Login"
               ) : (
@@ -423,8 +396,10 @@ const Login = () => {
           </button>
           <button
             onClick={handleDemoRecyclerLogin}
-            className="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 
+            className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 
             focus:outline-none focus:ring-2 focus:ring-blue-400 transition duration-200 w-full sm:w-1/2 md:w-1/3"
+            disabled={isLoading}
+            style={{ minHeight: "52px" }}
           >
             Recycler Login
           </button>

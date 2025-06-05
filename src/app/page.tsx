@@ -11,22 +11,9 @@ import { auth, db } from "@/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { Mona_Sans } from 'next/font/google';
 import { useDencrypt } from "use-dencrypt-effect";
 import Image from "next/image";
 import Head from "next/head";
-
-const monaSansB = Mona_Sans({
-  subsets: ['latin'],
-  weight: '800',
-  display: 'swap',
-});
-
-const monaSansN = Mona_Sans({
-  subsets: ['latin'],
-  weight: '500',
-  display: 'swap',
-});
 
 const Home = () => {
   const [userType, setUserType] = useState<string | null>(null);
@@ -79,7 +66,7 @@ const Home = () => {
   };
 
   return (
-    <div className={`${monaSansN.className} relative min-h-screen flex flex-col bg-[#f5f3f4]`}>
+    <div className="relative min-h-screen flex flex-col bg-[#f5f3f4]">
       <Navbar links={[{ label: "Docs", href: "/docs", tooltip:"Refer to the website's documentation" }, { label: "About", href: "/about", tooltip:"About the team behind UEMP" }]} />
       <Head>
         <title>Unified E-Waste Management Platform</title>
@@ -104,8 +91,8 @@ const Home = () => {
         {/* Hero Section */}
         <div className="hero">
           <div className="bg-white bg-opacity-5 backdrop-blur-sm rounded-xl p-8 shadow-lg m-0 md:m-4 w-full md:w-auto">
-            <h1 className={`${monaSansB.className} font-sans`}>
-              <p className="text-center text-[#071D10] text-3xl md:text-4xl mb-1 relative z-10">
+            <h1>
+              <p className="text-center font-extrabold text-[#071D10] text-3xl md:text-4xl mb-1 relative z-10">
                 <span className="block md:inline">Unified</span>
                 <br className="hidden md:block" />
                 <span className="inline-block min-h-[2em] md:inline w-full md:w-auto">
@@ -119,7 +106,7 @@ const Home = () => {
                 <span className="block md:inline">Platform</span>
               </p>
             </h1>
-            <h2 className={`${monaSansB.className} font-sans text-lg md:text-xl text-center text-[#2F2F2F] mb-8`}>
+            <h2 className="font-bold text-lg md:text-xl text-center text-[#2F2F2F] mb-8">
               &quot;Bringing accountability into perspective&quot;
             </h2>
             <div className="max-w-4xl text-center mb-2 flex flex-col items-center justify-center relative z-10">
@@ -198,8 +185,8 @@ const Home = () => {
 
         {/* Links Section */}
         <div id="links-section" className="w-full max-w-4xl relative mt-4 z-10 px-4">
-          <h1 className={`${monaSansB.className} font-sans`}>
-            <p className="text-2xl text-green-500 mt-4 relative z-10">Choose your role:</p>
+          <h1>
+            <p className="text-2xl font-bold text-green-500 mt-4 relative z-10">Choose your role:</p>
           </h1>
           {error && <p className="bg-black p-1 text-red-500 font-[Consolas]">{error}</p>}
 

@@ -10,12 +10,24 @@
 
 [Read the Full Documentation here 👀](https://unified-e-waste-management-platform.vercel.app/docs)
 
+</div>
+
 ---
 
-### **Download UEMP - Version 0.1.0**
+The Unified E-Waste Management Platform (UEMP) is available as both a modern web application and a downloadable desktop app.
 
-Get started with the Unified E-Waste Management Platform by downloading the installer for Windows:
+**Web App:** Access the platform from any device with a browser at-
+<div align="center">
 
+[Visit the Web App 🚀](https://unified-e-waste-management-platform.vercel.app)
+
+### OR
+
+</div>
+
+**Desktop App:** Download and install the Electron-powered app on Windows for a easier user experience.
+
+<div align="center">
 <a href="https://github.com/hariharjeevan/Unified-EWaste-Management-Platform/releases/download/v0.1.0/UEMP.Setup.0.1.0.exe">
   <img src="docs/download_win.png" width="200"/>
 </a>
@@ -141,17 +153,25 @@ The **Unified E-Waste Management Platform (UEMP)** aims to streamline e-waste tr
 
 <img src="docs/screenshots/Manufacturer_Dashboard.png" alt="Manufacturer Dashboard" width="600">
 
-### 2️⃣ Manufacturer QR Code Generation
+### 3️⃣ Manufacturer QR Code Generation
 
 <img src="docs/screenshots/Manufacturer_QR_Example.png" alt="Manufacturer QR code generation" width="600">
 
-### 3️⃣ Recycler Dashboard
+### 4️⃣ Manufacturer Admin Dashboard
+
+<img src="docs/screenshots/Manufacturer_Admin_Dashboard.png" alt="Manufacturer Admin Dashboard" width="600">
+
+### 5️⃣ Recycler Dashboard
 
 <img src="docs/screenshots/Recycler_Dashboard.png" alt="Recycler Dashboard" width="600">
 
-### 4️⃣ Consumer Portal
+### 6️⃣ Consumer Portal
 
 <img src="docs/screenshots/consumer.png" alt="Consumer Portal" width="600">
+
+### 7️⃣ Government Dashboard
+
+<img src="docs/screenshots/Government_Dashboard.png" alt="Government Dashboard" width="600">
 
 ## 🚀 **Get Started**
 

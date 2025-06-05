@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from "firebase/functions";
-
 import { DocumentData } from 'firebase/firestore';
 
 const AdminDashboard = () => {
@@ -129,7 +128,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="max-w-4xl w-full mx-auto mt-6 p-4 sm:p-8 bg-white rounded-3xl shadow-2xl border border-gray-200">
-      <h1 className="text-3xl sm:text-4xl font-extrabold mb-6 sm:mb-8 text-green-500 tracking-tight text-center">Admin Dashboard</h1>
+      <h1 className="text-3xl sm:text-4xl font-bold mb-6 sm:mb-8 text-green-500 tracking-tight text-center">Admin Dashboard</h1>
       {error && (
       <p className="text-red-800 bg-red-100 px-4 py-3 rounded-lg mb-4 border border-red-200 text-center">{error}</p>
       )}
@@ -138,7 +137,7 @@ const AdminDashboard = () => {
       )}
 
       <div className="mb-10 sm:mb-12 p-4 sm:p-8 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow flex flex-col gap-4 border border-blue-100">
-      <h2 className="text-xl sm:text-2xl font-semibold mb-2 text-green-800">Invite Employee</h2>
+      <h2 className="text-xl sm:text-2xl font-medium mb-2 text-green-800">Invite Employee</h2>
       <div className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
         <input
         type="text"
@@ -168,7 +167,7 @@ const AdminDashboard = () => {
         <button
         onClick={handleInvite}
         disabled={isLoading || !email}
-        className={`px-6 py-2 rounded-lg font-semibold text-base transition-all duration-150 ${isLoading || !email
+        className={`px-6 py-2 rounded-lg font-medium text-base transition-all duration-150 ${isLoading || !email
           ? "bg-blue-200 cursor-not-allowed"
           : "bg-blue-600 hover:bg-blue-700 cursor-pointer"
           } text-white shadow mt-2 sm:mt-0`}

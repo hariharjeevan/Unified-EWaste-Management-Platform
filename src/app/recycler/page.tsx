@@ -10,6 +10,7 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import Spinner from "@/components/Spinner";
 import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
 
 const mapContainerStyle = {
@@ -327,8 +328,9 @@ const RecyclerPage = () => {
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center h-screen">
+      <div className="flex flex-col items-center justify-center h-screen">
         <p className="text-white text-lg">Loading Google Maps...</p>
+          <Spinner size={30} color="white" />
       </div>
     );
   }

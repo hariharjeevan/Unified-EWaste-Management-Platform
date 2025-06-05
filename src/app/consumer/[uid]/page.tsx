@@ -2,19 +2,19 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { db } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged, User, getAuth } from "firebase/auth";
 import { getFunctions, httpsCallable, HttpsCallableResult } from "firebase/functions";
-import Navbar from "@/components/Navbar";
-import Link from "next/link";
+import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import Image from "next/image";
-import { AiOutlineEye, AiOutlineEyeInvisible, AiFillBell } from "react-icons/ai";
-import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
+import Link from "next/link";
+import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useSearchParams } from "next/navigation";
+import Spinner from "@/components/Spinner";
+import { AiOutlineEye, AiOutlineEyeInvisible, AiFillBell } from "react-icons/ai";
 
 const mapContainerStyle = {
   width: "100%",
@@ -600,26 +600,7 @@ const Consumer = () => {
       <div className="flex items-center justify-center h-screen">
         <div className="flex flex-col items-center">
           <p className="text-white text-lg mb-4">Loading Google Maps...</p>
-          <svg
-            className="animate-spin h-8 w-8 text-white"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-            ></path>
-          </svg>
+          <Spinner size={30} color="white" />
         </div>
       </div>
     );
@@ -762,7 +743,7 @@ const Consumer = () => {
                         height={200}
                         className="mb-3"
                       />
-                      <p className="text-black text-center mb-2 font-semibold">
+                      <p className="text-black text-center mb-2 font-medium">
                         Please allow camera access at the top of your browser to scan QR codes.
                       </p>
                       <button
@@ -885,26 +866,7 @@ const Consumer = () => {
                 style={{ minWidth: "150px" }}
               >
                 {loading ? (
-                  <svg
-                    className="animate-spin h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                    ></path>
-                  </svg>
+                  <Spinner size={20} color="white" />
                 ) : (
                   "Register Product"
                 )}

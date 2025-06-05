@@ -10,13 +10,7 @@ import { RiLogoutBoxFill } from "react-icons/ri";
 import { FaRegUserCircle } from "react-icons/fa";
 import { IoLogIn } from "react-icons/io5";
 import { doc, getDoc } from "firebase/firestore";
-import { Mona_Sans } from 'next/font/google';
-
-const monaSans = Mona_Sans({
-  subsets: ['latin'],
-  weight: '800',
-  display: 'swap',
-});
+import GradientText from "./GradText";
 
 interface NavbarProps {
   links?: { label: string; href: string; tooltip: string }[];
@@ -66,7 +60,7 @@ const Navbar = ({ links = [] }: NavbarProps) => {
   const getTooltipPosition = (event: React.MouseEvent) => {
     const tooltip = event.currentTarget.querySelector(".tooltip");
     if (!tooltip) return;
-    
+
     const rect = tooltip.getBoundingClientRect();
     const windowWidth = window.innerWidth;
 
@@ -89,7 +83,7 @@ const Navbar = ({ links = [] }: NavbarProps) => {
       <div
         className="relative"
         onMouseEnter={() => setMenuOpen(true)}
-        onMouseLeave={() => {}}
+        onMouseLeave={() => { }}
       >
         <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center space-x-2">
           <FaRegUserCircle size={30} className="cursor-pointer hover:text-green-400 transition-colors duration-300" />
@@ -103,12 +97,12 @@ const Navbar = ({ links = [] }: NavbarProps) => {
             <p className="block text-gray-700 border-b border-gray-200 pb-2 text-lg font-semibold">
               {userData?.name || "User"}
             </p>
-            <p className="block text-gray-600 text-sm">{user?.email}</p>
+            <p className="block text-gray-600 font-medium text-sm">{user?.email}</p>
             {userData?.organization && (
-              <p className="block text-gray-500 text-sm mt-1 italic">{userData.organization}</p>
+              <p className="block text-gray-500 text-sm font-medium mt-1 italic">{userData.organization}</p>
             )}
 
-            <div className="mt-3">
+            <div className="mt-3 font-semibold">
               {user ? (
                 <button
                   onClick={handleLogout}
@@ -131,29 +125,34 @@ const Navbar = ({ links = [] }: NavbarProps) => {
 
       {/* Center: Logo */}
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-        <h1 className={`${monaSans.className} font-sans`}>
-          <Link href="/" className="text-2xl pointer-events-auto select-auto">UEMP</Link>
-        </h1>
+          <GradientText
+            colors={["#000000", "#000000", "#3cb16d", "#000000", "#000000"]}
+            animationSpeed={4}
+            showBorder={false}
+            className="custom-class"
+          >
+            <Link href="/" className="font-extrabold text-2xl pointer-events-auto select-auto">UEMP</Link>
+          </GradientText>
       </div>
-      
+
       {/* Right: Navigation Links */}
       <div className="hidden lg:flex items-center space-x-4">
         {links.map((link) => (
-          <div 
-            className="relative group" 
+          <div
+            className="relative group"
             key={link.href}
             onMouseEnter={getTooltipPosition}
             onMouseLeave={getTooltipPosition}
           >
             <Link
               href={link.href}
-              className="text-lg hover:text-green-400 transition-colors duration-300"
+              className="text-lg font-medium hover:text-green-400 transition-colors duration-300"
             >
               {link.label}
             </Link>
             {/* Custom Tooltip */}
             <div
-              className="absolute left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-white text-green-500 text-sm py-2 px-4 rounded-lg mt-2 shadow-xl tooltip"
+              className="absolute font-medium left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-white text-green-500 text-sm py-2 px-4 rounded-lg mt-2 shadow-xl tooltip"
             >
               {link.tooltip}
             </div>

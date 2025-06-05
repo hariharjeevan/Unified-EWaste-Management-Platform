@@ -6,6 +6,13 @@ import { doc, getDoc, updateDoc, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/firebaseConfig";
 import Navbar from "@/components/Navbar";
 import { onAuthStateChanged, User } from "firebase/auth";
+import { Mona_Sans } from 'next/font/google';
+
+const monaSansN = Mona_Sans({
+  subsets: ['latin'],
+  weight: '500',
+  display: 'swap',
+});
 
 interface Product {
   id: string;
@@ -98,7 +105,7 @@ const ProductDetails = () => {
   if (!product) return <p className="text-center text-red-500">Product not found.</p>;
 
   return (
-    <div className="min-h-screen bg-white text-black">
+    <div className={`${monaSansN.className} min-h-screen bg-white text-black`}>
     <>
       <Navbar links={[{ label: "Home", href: "/", tooltip:"" }]} />
       <div className="w-screen h-screen p-6 item-center justify-center border rounded-lg bg-white shadow-md">

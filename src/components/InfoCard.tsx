@@ -40,7 +40,7 @@ export default function InfoCard({ name, organization, email }: InfoCardProps) {
     <div className="w-full max-w-xl mt-6 text-center bg-white rounded-xl shadow-lg px-2 sm:px-6 py-5 border border-blue-100 mx-auto">
       <SplitText
         text="Manufacturer Dashboard"
-        className="text-2xl font-semibold text-center text-black"
+        className="text-2xl font-bold text-center text-black"
         delay={50}
         animationFrom={{ opacity: 0, transform: 'translate3d(0,50px,0)' }}
         animationTo={{ opacity: 1, transform: 'translate3d(0,0,0)' }}
@@ -50,7 +50,7 @@ export default function InfoCard({ name, organization, email }: InfoCardProps) {
       />
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-5 w-full">
         <div className="flex flex-col items-start gap-3 w-full">
-          <div className="flex items-center gap-2 text-gray-900 text-left font-medium min-h-[28px] w-full">
+          <div className="flex items-center gap-2 text-gray-900 text-left font-normal min-h-[28px] w-full">
             <FaPerson className="text-blue-600 w-6 h-6" />
             <span className="inline-block w-full max-w-xs h-5">
               {name ? (
@@ -60,7 +60,7 @@ export default function InfoCard({ name, organization, email }: InfoCardProps) {
               )}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-gray-900 text-left font-medium min-h-[28px] w-full">
+          <div className="flex items-center gap-2 text-gray-900 text-left font-normal min-h-[28px] w-full">
             <MdBusiness className="text-blue-600 w-6 h-6" />
             <span className="inline-block w-full max-w-xs h-5">
               {organization ? (

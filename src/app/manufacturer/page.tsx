@@ -17,7 +17,6 @@ import { QRCodeCanvas as QRCode } from "qrcode.react";
 import { AiFillEye, AiFillEyeInvisible } from "react-icons/ai";
 import { IoMdInformationCircleOutline } from "react-icons/io";
 
-
 interface Product {
   id: string;
   name: string;
@@ -406,14 +405,14 @@ const Manufacturer = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-br from-[#f5f3f4] to-[#e0e7ff]">
+    <div className=" min-h-screen flex flex-col bg-gradient-to-br from-[#f5f3f4] to-[#e0e7ff]">
       <Navbar links={[
         { label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" },
         { label: "About", href: "/about", tooltip: "About the team behind UEMP" }
       ]} />
       <div className="bg-transparent min-h-screen flex flex-col items-center pt-16 px-2 sm:px-0">
         {/* Manufacturer Info */}
-        <div className="w-full max-w-2xl flex flex-col items-center justify-center gap-4">
+        <div className="w-full max-w-2xl font-medium flex flex-col items-center justify-center gap-4">
           <InfoCard
             name={manufacturerName}
             organization={organizationName}
@@ -423,7 +422,7 @@ const Manufacturer = () => {
         {/* Actions Section */}
         <div className="w-full max-w-2xl mt-6 bg-white shadow-md rounded-xl p-6 flex flex-col items-center">
           <h3 className="text-lg font-semibold text-black mb-4">Product Actions</h3>
-          <div className="flex flex-col sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0 w-full justify-center">
+          <div className="flex flex-col font-medium sm:flex-row sm:space-x-4 space-y-2 sm:space-y-0 w-full justify-center">
             <button
               onClick={fetchProducts}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-200 w-full sm:w-auto"
@@ -489,7 +488,7 @@ const Manufacturer = () => {
         </div>
 
         <div className="w-full max-w-4xl mt-10 bg-white text-black p-6 rounded shadow-md">
-          <h3 className="text-lg font-semibold mb-4">Manufacturer Certification Request</h3>
+          <h3 className="text-lg font-bold mb-4">Manufacturer Certification Request</h3>
           <div>
             <p><strong>Organization Name:</strong> {organizationName}</p>
             <p><strong>Current Certification Status:</strong> {certificationStatus === "none"
@@ -643,7 +642,11 @@ const Manufacturer = () => {
                 <p className="text-black font-bold">Secret Key:</p>
                 <span
                   className="text-black border px-2 py-1 rounded bg-gray-200 w-[150px] text-center overflow-hidden"
-                  style={{ whiteSpace: "nowrap", textOverflow: "ellipsis" }}
+                  style={{ 
+                  whiteSpace: "nowrap", 
+                  textOverflow: "ellipsis",
+                  fontFamily: "'Consolas'"
+                  }}
                 >
                   {showSecretKey ? showProductDetails.secretKey : "**********"}
                 </span>
