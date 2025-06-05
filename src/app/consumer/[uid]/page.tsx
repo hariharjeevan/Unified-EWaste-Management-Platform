@@ -1,7 +1,7 @@
 //Consumer Page
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { db } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
@@ -68,6 +68,11 @@ const Consumer = () => {
     address: string;
   };
 
+  type QueryDoc = {
+    id: string;
+    consumerId: string;
+  };
+
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -83,6 +88,8 @@ const Consumer = () => {
   const [nearbyRecyclers, setNearbyRecyclers] = useState<RecyclerInfo[]>([]);
   const [homeAddress, setHomeAddress] = useState<string | null>(null);
   const [showQueryModal, setShowQueryModal] = useState(false);
+  const [consumerQueries, setConsumerQueries] = useState<any[]>([]);
+  const [loadingQueries, setLoadingQueries] = useState(false);
   const [scannerStarted, setScannerStarted] = useState(false);
   const [consumerName, setConsumerName] = useState<string>("User");
   const [showCameraPermissionPopup, setShowCameraPermissionPopup] = useState(false);
@@ -100,6 +107,31 @@ const Consumer = () => {
   const toggleQueryModal = () => {
     setShowQueryModal((prev) => !prev);
   };
+
+  const fetchConsumerName = useCallback(async (uid: string) => {
+    if (!consumerId) return;
+    try {
+      const userdocref = doc(db, "users", uid);
+      const userDoc = await getDoc(userdocref);
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        if (data && data.name) {
+          setConsumerName(data.name);
+        } else {
+          console.warn("No name found for the consumer.");
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching consumer name:", error);
+    }
+
+  }, [consumerId]);
+
+  useEffect(() => {
+    if (consumerId) {
+      fetchConsumerName(consumerId);
+    }
+  }, [consumerId, fetchConsumerName]);
 
   const fetchConsumerLocation = async (uid: string) => {
     try {
@@ -359,6 +391,41 @@ const Consumer = () => {
       console.error("Error fetching home location:", error);
     }
   };
+
+
+
+  const fetchConsumerQueries = useCallback(async () => {
+    if (!consumerId) return;
+    setLoadingQueries(true);
+    try {
+      const queriesRef = collection(db, "Queries");
+      const querySnap = await getDocs(queriesRef);
+
+      // Flatten all queries from all recyclers
+      let allQueries: any[] = [];
+      querySnap.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.queries) {
+          // data.queries is an object: { [queryId]: queryData }
+          Object.entries(data.queries).forEach(([queryId, queryData]: [string, any]) => {
+            allQueries.push({
+              id: queryId,
+              recyclerId: docSnap.id,
+              ...queryData,
+            });
+          });
+        }
+      });
+
+      // Filter by consumerId
+      const consumerQueries = allQueries.filter(q => q.consumerId === consumerId);
+      setConsumerQueries(consumerQueries);
+    } catch (error) {
+      console.error("Error fetching queries:", error);
+    } finally {
+      setLoadingQueries(false);
+    }
+  }, [consumerId]);
 
   useEffect(() => {
     if (consumerLocation && consumerId) {
@@ -653,7 +720,10 @@ const Consumer = () => {
     <>
       <Navbar links={[{ label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" }, { label: "About", href: "/about", tooltip: "About the team behind UEMP" }]} />
       <button
-        onClick={toggleQueryModal}
+        onClick={() => {
+          setShowQueryModal(true);
+          fetchConsumerQueries();
+        }}
         className="fixed bottom-6 right-6 bg-green-600 hover:bg-green-700 text-white p-4 rounded-full shadow-lg z-50"
         aria-label="Show Query Details"
       >
@@ -964,6 +1034,44 @@ const Consumer = () => {
             </div>
           )}
         </div>
+        {showQueryModal && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
+            <div className="bg-black rounded-lg shadow-lg p-6 w-full max-w-lg">
+              <h3 className="text-lg font-semibold text-center mb-4">Your Recycling Requests</h3>
+              {loadingQueries ? (
+                <p className="text-center text-gray-600">Loading...</p>
+              ) : consumerQueries.length === 0 ? (
+                <p className="text-center text-gray-500">No requests found.</p>
+              ) : (
+                <ul className="divide-y">
+                  {consumerQueries.map((q) => (
+                    <li key={q.id} className="py-2">
+                      <div className="flex flex-col">
+                        <span className="font-medium">{q.productName}</span>
+                        <span className="text-sm text-gray-600">Status: <span className={
+                          q.status === "accepted"
+                            ? "text-green-600"
+                            : q.status === "rejected"
+                              ? "text-red-600"
+                              : "text-yellow-600"
+                        }>{q.status}</span></span>
+                        {q.recyclerName && (
+                          <span className="text-sm text-gray-500">Recycler: {q.recyclerName}</span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <button
+                onClick={() => setShowQueryModal(false)}
+                className="mt-4 bg-red-600 text-white px-4 py-2 rounded w-full hover:bg-red-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       <Footer />
     </>
