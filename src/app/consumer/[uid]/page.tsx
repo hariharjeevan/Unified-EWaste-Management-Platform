@@ -137,13 +137,15 @@ const Consumer = () => {
         const scannedRef = collection(db, "consumers", consumerId, "scannedProducts");
         const scannedSnap = await getDocs(scannedRef);
 
-        // Gather all scanned product names (lowercased, trimmed)
-        const scannedNames = scannedSnap.docs
-          .map((doc) => {
-            const data = doc.data();
-            return data.name?.toLowerCase().trim() || "";
-          })
-          .filter((name) => !!name);
+        const scannedNames = scannedSnap.docs.map((doc) => {
+          const data = doc.data();
+          return {
+            name: data.name?.toLowerCase().trim() || "",
+            category: data.category?.toLowerCase().trim() || "",
+          };
+        }).filter(
+          (item) => item.name && item.category
+        );
 
         const productsRef = collection(db, "recyclers", recyclerId, "products");
         const productsSnap = await getDocs(productsRef);
@@ -169,38 +171,30 @@ const Consumer = () => {
           };
         });
 
-        // Improved string similarity using Levenshtein distance
-        function levenshtein(a: string, b: string): number {
-          const matrix = Array.from({ length: a.length + 1 }, () =>
-            Array(b.length + 1).fill(0)
-          );
-          for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
-          for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
-          for (let i = 1; i <= a.length; i++) {
-            for (let j = 1; j <= b.length; j++) {
-              matrix[i][j] =
-                a[i - 1] === b[j - 1]
-                  ? matrix[i - 1][j - 1]
-                  : Math.min(
-                    matrix[i - 1][j - 1] + 1,
-                    matrix[i][j - 1] + 1,
-                    matrix[i - 1][j] + 1
-                  );
+        const getStringSimilarity = (str1: string, str2: string): number => {
+          let commonChars = 0;
+          const minLength = Math.min(str1.length, str2.length);
+
+          for (let i = 0; i < minLength; i++) {
+            if (str1[i] === str2[i]) {
+              commonChars++;
             }
           }
-          return matrix[a.length][b.length];
-        }
 
-        function getSimilarity(a: string, b: string): number {
-          if (!a || !b) return 0;
-          const distance = levenshtein(a, b);
-          return 1 - distance / Math.max(a.length, b.length, 1);
-        }
+          return commonChars / Math.max(str1.length, str2.length);
+        };
 
-        // Filter recycler products by name similarity to any scanned product
+        const similarityThreshold = 0.50; // Adjust this threshold as needed
+
         const matchingProducts = allProducts.filter((product) => {
-          const productName = (product.productName || product.name || "").toLowerCase().trim();
-          return scannedNames.includes(productName);
+          const productName = product.productName?.toLowerCase() || "";
+          const productCategory = product.category?.toLowerCase() || "";
+
+          return scannedNames.some((scanned) => {
+            const Namesimilarity = getStringSimilarity(scanned.name, productName);
+            const categorySimilarity = getStringSimilarity(scanned.category, productCategory);
+            return Namesimilarity >= similarityThreshold && categorySimilarity >= 1;
+          });
         });
 
         return matchingProducts;
@@ -745,13 +739,13 @@ const Consumer = () => {
                 <h1 className="text-black font-bold text-lg">Scan QR</h1>
                 <button
                   onClick={async () => {
-                  try {
-                    setShowCameraPermissionPopup(true);
-                    await navigator.mediaDevices.getUserMedia({ video: true });
-                    startQRScanner();
-                  } catch (err) {
-                    setErrorMessage("Camera access denied. Please allow camera permission to scan QR codes.");
-                  }
+                    try {
+                      setShowCameraPermissionPopup(true);
+                      await navigator.mediaDevices.getUserMedia({ video: true });
+                      startQRScanner();
+                    } catch (err) {
+                      setErrorMessage("Camera access denied. Please allow camera permission to scan QR codes.");
+                    }
                   }}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
                 >
@@ -760,22 +754,24 @@ const Consumer = () => {
                 {/* Camera Permission Popup */}
                 {typeof window !== "undefined" && showCameraPermissionPopup && (
                   <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-40">
-                  <div className="bg-white rounded-lg shadow-lg p-6 flex flex-col items-center max-w-xs">
-                    <img
-                    src="/camera_permission.png"
-                    alt="Allow Camera Permission"
-                    className="w-200 h-200 mb-3"
-                    />
-                    <p className="text-black text-center mb-2 font-semibold">
-                    Please allow camera access at the top of your browser to scan QR codes.
-                    </p>
-                    <button
-                    onClick={() => setShowCameraPermissionPopup(false)}
-                    className="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-                    >
-                    Close
-                    </button>
-                  </div>
+                    <div className="bg-white rounded-lg shadow-lg p-6 flex flex-col items-center max-w-xs">
+                      <Image
+                        src="/camera_permission.png"
+                        alt="Allow Camera Permission"
+                        width={200}
+                        height={200}
+                        className="mb-3"
+                      />
+                      <p className="text-black text-center mb-2 font-semibold">
+                        Please allow camera access at the top of your browser to scan QR codes.
+                      </p>
+                      <button
+                        onClick={() => setShowCameraPermissionPopup(false)}
+                        className="mt-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                      >
+                        Close
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1009,7 +1005,7 @@ const Consumer = () => {
       </div>
       <Footer />
     </>
-);
+  );
 };
 
 export default Consumer;

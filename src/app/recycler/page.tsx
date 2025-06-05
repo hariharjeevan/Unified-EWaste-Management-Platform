@@ -65,10 +65,12 @@ const RecyclerPage = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedConsumer, setSelectedConsumer] = useState<string | null>(null);
   const [selectedProductdetails, setSelectedProductDetails] = useState<{ label: string; value: any }[] | null>(null);
-  const [inspectedQueryId, setInspectedQueryId] = useState<string | null>(null);
+  const [inspectedQuery, setInspectedQuery] = useState<QueryDetails | null>(null);
   const [consumerId, setConsumerId] = useState<string | null>(null);
   const activeQueries = queries.filter(q => q.status !== "rejected");
   const historyQueries = queries.filter(q => q.status === "rejected");
+  const [showQueryModal, setShowQueryModal] = useState(false);
+  const [modalQuery, setModalQuery] = useState<QueryDetails | null>(null);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -165,7 +167,8 @@ const RecyclerPage = () => {
   }, [user]);
 
   const inspectqueryproductdetails = async (consumerId: string, productId: string, queryId: string) => {
-    setInspectedQueryId(queryId);
+    const query = queries.find(q => q.id === queryId);
+    setInspectedQuery(query || null);
 
     if (!user) {
       return;
@@ -432,55 +435,28 @@ const RecyclerPage = () => {
             <p>No queries found.</p>
           ) : (
             <ul className="space-y-4">
-              {activeQueries.map((query) => (
-                <li key={query.id || query.productId} className="p-4 border rounded shadow">
-                  <p><strong>Offered for Recycling:</strong> {query.productName}</p>
+              {queries.map((query) => (
+                <li
+                  key={query.id || query.productId}
+                  className="p-4 border rounded shadow bg-white cursor-pointer hover:shadow-lg transition"
+                  onClick={() => {
+                    setModalQuery(query);
+                    setShowQueryModal(true);
+                    setInspectedQuery(null);
+                    setSelectedProductDetails(null);
+                  }}
+                >
+                  <h3 className="font-bold text-lg mb-2">{query.productName}</h3>
                   <p><strong>Consumer:</strong> {query.consumerName}</p>
                   <p><strong>Phone:</strong> {query.consumerPhone}</p>
                   <p><strong>Address:</strong> {query.consumerAddress}</p>
                   <p><strong>Status:</strong> {query.status}</p>
-                  {inspectedQueryId === query.id && selectedProductdetails && (
-                    <div className="w-full max-w-4xl bg-white p-6 mb-10 rounded shadow text-black">
-                      <h2 className="text-xl font-bold mb-4">Inspected Product Details</h2>
-                      <ul>
-                        {selectedProductdetails.map((detail) => (
-                          <li key={detail.label} className="mb-2">
-                            <strong>{detail.label}:</strong>{" "}
-                            {detail.value && typeof detail.value === "object" && detail.value.seconds
-                              ? new Date(detail.value.seconds * 1000).toLocaleString()
-                              : String(detail.value)}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  <div className="mt-2 space-x-2">
-                    <button
-                      onClick={() => updateQueryStatus(query.id, "accepted")}
-                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                    >
-                      Accept
-                    </button>
-                    <button
-                      onClick={() => updateQueryStatus(query.id, "rejected")}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                    >
-                      Reject
-                    </button>
-                    <span
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => inspectqueryproductdetails(query.consumerId, query.productId, query.id)}
-                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 inline-block cursor-pointer"
-                    >
-                      Inspect Product
-                    </span>
-                  </div>
                   <button
                     className="mt-2 bg-green-700 text-white px-3 py-1 rounded hover:bg-green-800"
                     type="button"
                     onClick={e => {
                       e.preventDefault();
+                      e.stopPropagation();
                       const product = productArray.find(p => p.id === query.productId);
                       if (product) {
                         handleOpenRecycleDialog(product);
@@ -517,6 +493,92 @@ const RecyclerPage = () => {
           )}
         </div>
 
+        {showQueryModal && modalQuery && (
+          <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+              <h3 className="text-lg text-white text-center bg-black font-semibold mb-6 rounded-full p-2">
+                Recycling Request Actions
+              </h3>
+              <p className="text-black"><strong>Product:</strong> {modalQuery.productName}</p>
+              <p className="text-black"><strong>Consumer:</strong> {modalQuery.consumerName}</p>
+              <p className="text-black"><strong>Phone:</strong> {modalQuery.consumerPhone}</p>
+              <p className="text-black"><strong>Address:</strong> {modalQuery.consumerAddress}</p>
+              <p className="text-black"><strong>Status:</strong> {modalQuery.status}</p>
+              <div className="flex flex-row space-x-2 mt-4">
+                {modalQuery.status !== "accepted" && modalQuery.status !== "rejected" && (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to accept this query?")) {
+                          updateQueryStatus(modalQuery.id, "accepted");
+                          setShowQueryModal(false);
+                        }
+                      }}
+                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                    >
+                      Accept
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm("Are you sure you want to reject this query?")) {
+                          updateQueryStatus(modalQuery.id, "rejected");
+                          setQueries(prev => prev.filter(q => q.id !== modalQuery.id));
+                          setShowQueryModal(false);
+                        }
+                      }}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                    >
+                      Reject
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => {
+                    inspectqueryproductdetails(modalQuery.consumerId, modalQuery.productId, modalQuery.id);
+                  }}
+                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                >
+                  Inspect Product
+                </button>
+              </div>
+              {/* Inspected Product Details */}
+              {inspectedQuery && inspectedQuery.id === modalQuery.id && selectedProductdetails && (
+                <div className="bg-gray-100 p-4 rounded mb-2 mt-4">
+                  <h4 className="font-semibold mb-2">Inspected Product Details</h4>
+                  <ul>
+                    {selectedProductdetails.map((detail) => (
+                      <li key={detail.label} className="mb-1 text-black">
+                        <strong>{detail.label}:</strong>{" "}
+                        {detail.value && typeof detail.value === "object" && detail.value.seconds
+                          ? new Date(detail.value.seconds * 1000).toLocaleString()
+                          : String(detail.value)}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    className="mt-2 bg-gray-300 px-3 py-1 rounded"
+                    onClick={() => {
+                      setInspectedQuery(null);
+                      setSelectedProductDetails(null);
+                    }}
+                  >
+                    Close Details
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={() => {
+                  setShowQueryModal(false);
+                  setInspectedQuery(null);
+                  setSelectedProductDetails(null);
+                }}
+                className="mt-4 bg-red-600 text-white px-4 py-2 rounded w-full hover:bg-red-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
         <Footer />
       </div>
     </>
