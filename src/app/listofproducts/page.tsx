@@ -1,13 +1,14 @@
 //ListOfProductsClient.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { getAuth } from "firebase/auth";
 import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { db } from "@/firebaseConfig";
 import Navbar from "@/components/Navbar";
+import Spinner from "@/components/Spinner";
 
 interface Product {
   id: string;
@@ -24,7 +25,7 @@ interface SendRequestResponse {
 
 const auth = getAuth();
 
-const ListOfProductsClient = () => {
+const ListOfProductsClientInner = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(true);
   const searchParams = useSearchParams();
@@ -205,7 +206,7 @@ const ListOfProductsClient = () => {
         <h1 className="text-3xl font-semibold mb-8">List of Products</h1>
         {productsLoading ? (
           <div className="flex items-center justify-center h-64 w-full">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent"></div>
+            <Spinner size={25} color="blue" />
             <span className="ml-4 text-lg">Loading products...</span>
           </div>
         ) : products.length === 0 ? (
@@ -244,8 +245,8 @@ const ListOfProductsClient = () => {
           <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-8">
-                <div className="loader mb-4" />
-                <p className="text-gray-700">Sending request...</p>
+                <p className="text-gray-700 mb-1">Sending request...</p>
+                <Spinner size={25} color="blue" />
               </div>
             ) : (
               <>
@@ -312,4 +313,10 @@ const ListOfProductsClient = () => {
   );
 };
 
-export default ListOfProductsClient;
+export default function ListOfProductsClient() {
+  return (
+    <Suspense fallback={<div className="text-center mt-10">Redirecting...</div>}>
+      <ListOfProductsClientInner />
+    </Suspense>
+  );
+}

@@ -152,6 +152,7 @@ const Home = () => {
                 alt="Why Choose UEMP"
                 width="400"
                 height="400"
+                unoptimized
               />
             </div>
             <p className="text-lg text-[#000500] mb-4 leading-relaxed text-center">
@@ -179,6 +180,7 @@ const Home = () => {
               alt="Our Mission"
               width="500"
               height="500"
+              unoptimized
             />
           </div>
         </div>
