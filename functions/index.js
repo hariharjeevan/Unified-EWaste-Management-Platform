@@ -1,10 +1,10 @@
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
-const {VertexAI} = require("@google-cloud/vertexai");
+const { VertexAI } = require("@google-cloud/vertexai");
 
 admin.initializeApp();
 const firestore = admin.firestore();
-const {v4: uuidv4} = require("uuid");
+const { v4: uuidv4 } = require("uuid");
 
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(functions.config().sendgrid.key);
@@ -12,21 +12,21 @@ sgMail.setApiKey(functions.config().sendgrid.key);
 exports.adminCreateUser = functions.https.onCall(async (data, context) => {
   if (context.auth?.token?.role !== "admin") {
     throw new functions.https.HttpsError("permission-denied",
-        "Only admins can create users.");
+      "Only admins can create users.");
   }
 
-  const {email, role, name} = data;
+  const { email, role, name } = data;
   if (!email || !role) {
     throw new functions.https.HttpsError("invalid-argument",
-        "Missing email or role.");
+      "Missing email or role.");
   }
 
   // Get admin's orgID from Firestore
   const adminUserDoc = await firestore.collection("users").
-      doc(context.auth.uid).get();
+    doc(context.auth.uid).get();
   if (!adminUserDoc.exists) {
     throw new functions.https.HttpsError("permission-denied",
-        "Admin user data not found.");
+      "Admin user data not found.");
   }
   const orgID = adminUserDoc.data().orgID;
 
@@ -40,11 +40,11 @@ exports.adminCreateUser = functions.https.onCall(async (data, context) => {
     });
 
     // Set role and orgID in custom claims
-    await admin.auth().setCustomUserClaims(userRecord.uid, {role, orgID});
+    await admin.auth().setCustomUserClaims(userRecord.uid, { role, orgID });
 
     const orgDoc = await firestore.collection("organizations").doc(orgID).get();
     const organization = orgDoc.exists && orgDoc.data().name ? orgDoc.data().
-        name : "your organization";
+      name : "your organization";
 
     // Store user profile in Firestore with orgID
     await firestore.collection("users").doc(userRecord.uid).set({
@@ -75,7 +75,8 @@ You've been invited to join ${organization} on UEMP as an employee.
 Login Email: ${email}
 Temporary Password: ${tempPassword}
 
-Please log in at https://unified-e-waste-management-platform.vercel.app/login and change your password after logging in.
+Please log in at https://unified-e-waste-management-platform.vercel.app/login 
+and change your password after logging in.
 
 If you did not expect this invitation, you can ignore this email.
 
@@ -123,7 +124,7 @@ ${organization} Team
 
     await sgMail.send(msg);
 
-    return {success: true, uid: userRecord.uid};
+    return { success: true, uid: userRecord.uid };
   } catch (error) {
     console.error("adminCreateUser error:", error);
     throw new functions.https.HttpsError("internal", error.message);
@@ -136,7 +137,7 @@ exports.setUserOrgAdmin = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("permission-denied", "Not allowed.");
   }
 
-  const {orgID} = data;
+  const { orgID } = data;
   if (!orgID) {
     throw new functions.https.HttpsError("invalid-argument", "Missing orgID.");
   }
@@ -147,7 +148,7 @@ exports.setUserOrgAdmin = functions.https.onCall(async (data, context) => {
     orgID,
   });
 
-  return {success: true};
+  return { success: true };
 });
 
 {/* Assign user roles*/}
@@ -155,205 +156,205 @@ exports.setUserRole = functions.https.onCall(async (data, context) => {
   // Only allow admins to call this
   if (context.auth.token.role !== "admin") {
     throw new functions.https.HttpsError("permission-denied",
-        "Only admins can assign roles.");
+      "Only admins can assign roles.");
   }
 
-  const {uid, role} = data;
+  const { uid, role } = data;
 
-  await admin.auth().setCustomUserClaims(uid, {role});
-  await admin.firestore().collection("users").doc(uid).update({role});
+  await admin.auth().setCustomUserClaims(uid, { role });
+  await admin.firestore().collection("users").doc(uid).update({ role });
 
-  return {message: `Role ${role} assigned to user ${uid}`};
+  return { message: `Role ${role} assigned to user ${uid}` };
 });
 
 {/* Product Registration Function */}
 exports.verifyAndRegisterConsumer = functions.https.onCall(
-    async (data, context) => {
-      if (!context.auth) {
-        throw new functions.https.HttpsError(
-            "unauthenticated",
-            "User must be logged in.",
-        );
-      }
+  async (data, context) => {
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        "unauthenticated",
+        "User must be logged in.",
+      );
+    }
 
-      const consumerUid = context.auth.uid;
-      const {
-        manufacturerId,
-        productId,
-        serialNumber,
-        modelNumber,
-        secretKey,
-      } = data;
+    const consumerUid = context.auth.uid;
+    const {
+      manufacturerId,
+      productId,
+      serialNumber,
+      modelNumber,
+      secretKey,
+    } = data;
 
-      if (
-        !manufacturerId ||
+    if (
+      !manufacturerId ||
       !productId ||
       !serialNumber ||
       !modelNumber ||
       !secretKey
-      ) {
-        throw new functions.https.HttpsError(
-            "invalid-argument",
-            "Missing required fields.",
-        );
-      }
+    ) {
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Missing required fields.",
+      );
+    }
 
-      try {
-        const productRef = firestore
-            .collection("manufacturers")
-            .doc(manufacturerId)
-            .collection("products")
-            .doc(productId);
+    try {
+      const productRef = firestore
+        .collection("manufacturers")
+        .doc(manufacturerId)
+        .collection("products")
+        .doc(productId);
 
-        const consumerRef = firestore
-            .collection("consumers")
-            .doc(consumerUid)
-            .collection("scannedProducts")
-            .doc(productId);
+      const consumerRef = firestore
+        .collection("consumers")
+        .doc(consumerUid)
+        .collection("scannedProducts")
+        .doc(productId);
 
-        await firestore.runTransaction(async (transaction) => {
-          const [productSnap, consumerSnap] = await Promise.all([
-            transaction.get(productRef),
-            transaction.get(consumerRef),
-          ]);
+      await firestore.runTransaction(async (transaction) => {
+        const [productSnap, consumerSnap] = await Promise.all([
+          transaction.get(productRef),
+          transaction.get(consumerRef),
+        ]);
 
-          if (!productSnap.exists) {
-            throw new functions.https.HttpsError(
-                "not-found",
-                "Product not found.",
-            );
-          }
+        if (!productSnap.exists) {
+          throw new functions.https.HttpsError(
+            "not-found",
+            "Product not found.",
+          );
+        }
 
-          if (consumerSnap.exists) {
-            throw new functions.https.HttpsError(
-                "already-exists",
-                "Product already scanned by this user.",
-            );
-          }
+        if (consumerSnap.exists) {
+          throw new functions.https.HttpsError(
+            "already-exists",
+            "Product already scanned by this user.",
+          );
+        }
 
-          const productData = productSnap.data();
-          if (!productData) {
-            throw new functions.https.HttpsError(
-                "data-loss",
-                "Product data is missing or corrupted.",
-            );
-          }
+        const productData = productSnap.data();
+        if (!productData) {
+          throw new functions.https.HttpsError(
+            "data-loss",
+            "Product data is missing or corrupted.",
+          );
+        }
 
-          if (productData.registeredBy) {
-            throw new functions.https.HttpsError(
-                "already-exists",
-                "This product is already registered.",
-            );
-          }
+        if (productData.registeredBy) {
+          throw new functions.https.HttpsError(
+            "already-exists",
+            "This product is already registered.",
+          );
+        }
 
-          if (productData.secretKey !== secretKey) {
-            throw new functions.https.HttpsError(
-                "permission-denied",
-                "Incorrect secret key.",
-            );
-          }
+        if (productData.secretKey !== secretKey) {
+          throw new functions.https.HttpsError(
+            "permission-denied",
+            "Incorrect secret key.",
+          );
+        }
 
-          transaction.set(consumerRef, {
-            serialNumber,
-            modelNumber,
-            manufacturerId,
-            productId,
-            registeredAt: admin.firestore.FieldValue.serverTimestamp(),
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          });
-
-          transaction.update(productRef, {
-            registeredBy: consumerUid,
-            registeredUsers: admin.firestore.FieldValue.arrayUnion(consumerUid),
-            userCount: admin.firestore.FieldValue.increment(1),
-            registered: true,
-          });
+        transaction.set(consumerRef, {
+          serialNumber,
+          modelNumber,
+          manufacturerId,
+          productId,
+          registeredAt: admin.firestore.FieldValue.serverTimestamp(),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
-        return {success: true, message: "Product registered successfully!"};
-      } catch (error) {
-        console.error("Error during product registration:", error);
-        throw new functions.https.HttpsError(
-            "internal",
-            error.message || "An unknown error occurred.",
-        );
-      }
-    },
+        transaction.update(productRef, {
+          registeredBy: consumerUid,
+          registeredUsers: admin.firestore.FieldValue.arrayUnion(consumerUid),
+          userCount: admin.firestore.FieldValue.increment(1),
+          registered: true,
+        });
+      });
+
+      return { success: true, message: "Product registered successfully!" };
+    } catch (error) {
+      console.error("Error during product registration:", error);
+      throw new functions.https.HttpsError(
+        "internal",
+        error.message || "An unknown error occurred.",
+      );
+    }
+  },
 );
 
 {/* Product Deletion Handler */}
 exports.onProductDeletion = functions.firestore
-    .document("consumers/{consumerUid}/scannedProducts/{productId}")
-    .onDelete(async (snap, context) => {
-      const {consumerUid, productId} = context.params;
+  .document("consumers/{consumerUid}/scannedProducts/{productId}")
+  .onDelete(async (snap, context) => {
+    const { consumerUid, productId } = context.params;
 
-      try {
-        console.log(`Product ${productId} deleted by consumer ${consumerUid}`);
+    try {
+      console.log(`Product ${productId} deleted by consumer ${consumerUid}`);
 
-        const firestore = admin.firestore();
-        const productData = snap.data();
+      const firestore = admin.firestore();
+      const productData = snap.data();
 
-        if (!productData || !productData.manufacturerId) {
+      if (!productData || !productData.manufacturerId) {
+        console.warn(
+          `Missing or invalid product data for product ${productId}.`,
+        );
+        return;
+      }
+
+      const productRef = firestore
+        .collection("manufacturers")
+        .doc(productData.manufacturerId)
+        .collection("products")
+        .doc(productId);
+
+      await firestore.runTransaction(async (transaction) => {
+        const productSnap = await transaction.get(productRef);
+
+        if (!productSnap.exists) {
           console.warn(
-              `Missing or invalid product data for product ${productId}.`,
+            `Product ${productId} not found in ` +
+            "manufacturers collection.",
           );
           return;
         }
 
-        const productRef = firestore
-            .collection("manufacturers")
-            .doc(productData.manufacturerId)
-            .collection("products")
-            .doc(productId);
+        const productData = productSnap.data();
 
-        await firestore.runTransaction(async (transaction) => {
-          const productSnap = await transaction.get(productRef);
-
-          if (!productSnap.exists) {
-            console.warn(
-                `Product ${productId} not found in ` +
-            "manufacturers collection.",
-            );
-            return;
-          }
-
-          const productData = productSnap.data();
-
-          if (!productData) {
-            console.warn(
-                "Product data is missing or corrupted for product " +
+        if (!productData) {
+          console.warn(
+            "Product data is missing or corrupted for product " +
             `${productId}.`,
-            );
-            return;
-          }
+          );
+          return;
+        }
 
-          const currentUserCount = typeof productData.userCount === "number" ?
-                productData.userCount : 0;
-          transaction.update(productRef, {
-            registeredUsers: admin.firestore.FieldValue.arrayRemove(
-                consumerUid),
-            userCount: currentUserCount > 0 ?
-              admin.firestore.FieldValue.increment(-1) :
-              0,
-            registered: false,
-            registeredBy: admin.firestore.FieldValue.delete(),
-          });
-
-          console.log(`Manufacturer database updated for product ${productId}`);
+        const currentUserCount = typeof productData.userCount === "number" ?
+          productData.userCount : 0;
+        transaction.update(productRef, {
+          registeredUsers: admin.firestore.FieldValue.arrayRemove(
+            consumerUid),
+          userCount: currentUserCount > 0 ?
+            admin.firestore.FieldValue.increment(-1) :
+            0,
+          registered: false,
+          registeredBy: admin.firestore.FieldValue.delete(),
         });
-      } catch (error) {
-        console.error(
-            "Error updating manufacturer database on product deletion:", error,
-        );
-      }
-    });
+
+        console.log(`Manufacturer database updated for product ${productId}`);
+      });
+    } catch (error) {
+      console.error(
+        "Error updating manufacturer database on product deletion:", error,
+      );
+    }
+  });
 
 {/* Query Handling function*/}
 exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
-        "unauthenticated",
-        "User must be logged in.",
+      "unauthenticated",
+      "User must be logged in.",
     );
   }
 
@@ -374,8 +375,8 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
     !productName
   ) {
     throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Missing required fields.",
+      "invalid-argument",
+      "Missing required fields.",
     );
   }
 
@@ -387,14 +388,14 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
 
     // Check if request already exists for this product by this user
     const alreadySent = Object.values(queries).some(
-        (query) =>
-          query.productId === productId && query.consumerId === consumerId,
+      (query) =>
+        query.productId === productId && query.consumerId === consumerId,
     );
 
     if (alreadySent) {
       throw new functions.https.HttpsError(
-          "already-exists",
-          "You’ve already sent a request for this product.",
+        "already-exists",
+        "You’ve already sent a request for this product.",
       );
     }
 
@@ -416,14 +417,14 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
       [queryId]: newQuery,
     };
 
-    await recyclerDocRef.set({queries: updatedQueries}, {merge: true});
+    await recyclerDocRef.set({ queries: updatedQueries }, { merge: true });
 
-    return {success: true, message: "Request sent successfully"};
+    return { success: true, message: "Request sent successfully" };
   } catch (error) {
     console.error("Error in sendRecyclerRequest():", error);
     throw new functions.https.HttpsError(
-        "internal",
-        error.message || "Failed to send request.",
+      "internal",
+      error.message || "Failed to send request.",
     );
   }
 });
@@ -443,8 +444,8 @@ exports.askGemini = functions.https.onCall(async (data, context) => {
 
   if (!userMessage) {
     throw new functions.https.HttpsError(
-        "invalid-argument",
-        "Message is required.",
+      "invalid-argument",
+      "Message is required.",
     );
   }
 
@@ -454,9 +455,9 @@ exports.askGemini = functions.https.onCall(async (data, context) => {
       if (!docSnap.exists) return "";
       const fields = docSnap.data();
       return Object.keys(fields)
-          .sort((a, b) => Number(a) - Number(b))
-          .map((key) => fields[key])
-          .join("\n\n");
+        .sort((a, b) => Number(a) - Number(b))
+        .map((key) => fields[key])
+        .join("\n\n");
     };
 
     const context1 = await
@@ -482,11 +483,11 @@ exports.askGemini = functions.https.onCall(async (data, context) => {
 
     const responseText =
       result.response?.candidates?.[0]?.
-          content?.parts?.[0]?.text || "No response.";
-    return {response: responseText};
+        content?.parts?.[0]?.text || "No response.";
+    return { response: responseText };
   } catch (error) {
     console.error("Gemini error (detailed):", error);
     throw new functions.https.
-        HttpsError("internal", `Gemini Error: ${error.message}`);
+      HttpsError("internal", `Gemini Error: ${error.message}`);
   }
 });

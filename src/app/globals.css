@@ -37,19 +37,6 @@ body {
   transition: visibility 0.3s ease, opacity 0.3s ease;
 }
 
-.loader {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #22c55e;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  animation: spin 1s linear infinite;
-}
-@keyframes spin {
-  0% { transform: rotate(0deg);}
-  100% { transform: rotate(360deg);}
-}
-
 @font-face {
   font-family: 'Mona Sans';
   src: url('/fonts/MonaSans-Regular.woff2') format('woff2');
