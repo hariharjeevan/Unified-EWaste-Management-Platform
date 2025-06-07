@@ -232,7 +232,12 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      <Navbar links={[{ label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" }, { label: "About", href: "/about", tooltip: "About the team behind UEMP" }]} />
+      <Navbar
+        links={[
+          { label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" },
+          { label: "About", href: "/about", tooltip: "About the team behind UEMP" },
+        ]}
+      />
       {/* Hero Section */}
       <section className="w-full bg-gradient-to-r from-green-100 to-green-100 py-8 mb-8 shadow-inner">
         <div className="max-w-3xl mx-auto px-4 text-center">

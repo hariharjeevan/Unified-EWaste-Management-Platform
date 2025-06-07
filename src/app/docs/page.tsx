@@ -1,13 +1,12 @@
 //Documentation Page
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import GitHubEmbed from "@/components/GitHubEmbed";
 import Image from "next/image";
 import EnlargedImageModal from "@/components/EnlargedImageModal";
-import { useRef } from "react";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 const DocsPage = () => {
@@ -25,13 +24,8 @@ const DocsPage = () => {
 
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
-  const openModal = (url: string) => {
-    setImageUrl(url);
-  };
-
-  const closeModal = () => {
-    setImageUrl(null);
-  };
+  const openModal = (url: string) => setImageUrl(url);
+  const closeModal = () => setImageUrl(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -49,17 +43,17 @@ const DocsPage = () => {
       {/* Navbar */}
       <Navbar links={[{ label: "About", href: "/about", tooltip: "About the team behind UEMP" }]} />
 
-      <main className="flex flex-col items-center p-8">
-        <h1 className="text-4xl font-bold text-[#000500] mb-2">Documentation</h1>
-        <p className="text-lg text-gray-700 max-w-4xl text-center mb-4">
+      <main className="flex flex-col items-center px-2 sm:px-4 md:px-8 py-4">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#000500] mb-2 text-center">Documentation</h1>
+        <p className="text-base sm:text-lg text-gray-700 max-w-4xl text-center mb-4">
           Welcome to the Unified E-Waste Management Platform (UEMP) documentation.
           This page provides an overview of the platform&apos;s features and the roles of Manufacturers,
           Recyclers, Consumers, and Government organizations.
         </p>
 
         {/* Overview Section */}
-        <section className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md mb-8 text-justify">
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Overview</h2>
+        <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8 text-justify">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Overview</h2>
           <p className="text-gray-700 mb-4">
             UEMP is a platform designed to streamline e-waste management by connecting manufacturers,
             recyclers, consumers, and government organizations. It promotes responsible recycling,
@@ -69,52 +63,53 @@ const DocsPage = () => {
             The platform uses QR codes to track products from manufacturing to recycling, ensuring
             transparency and accountability at every stage.
           </p>
-          <h2 className="text-2xl font-bold text-[#000500] mb-4 text-center">Core Technologies Used</h2>
-          <div className="relative">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4 text-center">Core Technologies Used</h2>
+          <div className="relative w-full">
             {/* Scroll Buttons */}
             <button
               onClick={() => scroll("left")}
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white text-black shadow-md rounded-full p-2 z-10"
+              className="absolute left-1 top-1/2 -translate-y-1/2 bg-white text-black shadow-md rounded-full p-2 z-10 hidden sm:flex"
               aria-label="Scroll Left"
             >
               <FaChevronLeft />
             </button>
             <div
               ref={containerRef}
-              className="flex overflow-x-auto gap-6 px-10 scroll-smooth"
+              className="flex overflow-x-auto gap-4 sm:gap-6 px-2 sm:px-10 scroll-smooth"
               style={{
                 scrollbarWidth: "none",
                 msOverflowStyle: "none",
               }}
             >
               <style jsx>{`
-              div::-webkit-scrollbar {
-                display: none;
-              }
-              `}
-              </style>
+                div::-webkit-scrollbar {
+                  display: none;
+                }
+              `}</style>
               {logos.map((logo, idx) => (
                 <div
                   key={idx}
-                  className="flex-shrink-0 transition duration-300 flex items-center justify-center"
-                  style={{ width: logo.width + 20, height: logo.height + 20 }}
+                  className="flex-shrink-0 flex items-center justify-center transition duration-300"
+                  style={{
+                    width: Math.max(logo.width + 20, 80),
+                    height: Math.max(logo.height + 20, 60),
+                  }}
                 >
                   <Image
                     src={logo.src}
                     alt={`Tech Logo ${idx + 1}`}
                     width={logo.width}
                     height={logo.height}
-                    className="object-contain"
+                    className="object-contain max-w-full max-h-full"
                     loading="lazy"
                     unoptimized
                   />
                 </div>
               ))}
-
             </div>
             <button
               onClick={() => scroll("right")}
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white text-black shadow-md rounded-full p-2 z-10"
+              className="absolute right-1 top-1/2 -translate-y-1/2 bg-white text-black shadow-md rounded-full p-2 z-10 hidden sm:flex"
               aria-label="Scroll Right"
             >
               <FaChevronRight />
@@ -123,16 +118,16 @@ const DocsPage = () => {
         </section>
 
         {/* Web/Desktop App Section */}
-        <section className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md mb-8 text-justify">
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Web & Desktop App (Electron)</h2>
+        <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8 text-justify">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Web & Desktop App (Electron)</h2>
           <p className="text-gray-700 mb-4">
-            The Unified E-Waste Management Platform (UEMP) is available as both a modern web application and a downloadable desktop app. The dektop version is packaged using
+            The Unified E-Waste Management Platform (UEMP) is available as both a modern web application and a downloadable desktop app. The desktop version is packaged using
             <strong>
               <Image
                 src="/documentation/logos/electron_logo.png"
                 alt="Electron Logo"
-                width={150}
-                height={150}
+                width={100}
+                height={100}
                 className="pl-2 inline-block mr-1 align-text-bottom"
                 unoptimized
               />
@@ -141,7 +136,7 @@ const DocsPage = () => {
           <ul className="list-disc list-inside text-gray-700 mb-4">
             <li>
               <strong>Web App:</strong> Access the platform from any device with a browser at-
-              <a href="https://unified-e-waste-management-platform.vercel.app" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline justify-center flex">https://unified-e-waste-management-platform.vercel.app</a>.
+              <a href="https://unified-e-waste-management-platform.vercel.app" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline justify-center flex break-all">https://unified-e-waste-management-platform.vercel.app</a>.
             </li>
             <li>
               <strong>Desktop App:</strong> Download and install the Electron-powered app on Windows for a easier user experience.
@@ -149,8 +144,9 @@ const DocsPage = () => {
                 <Image
                   src="/documentation/download_win.png"
                   alt="Download Button"
-                  width={200}
-                  height={400}
+                  width={160}
+                  height={80}
+                  className="w-40 h-auto"
                   unoptimized
                 />
               </a>
@@ -170,15 +166,12 @@ const DocsPage = () => {
         </section>
 
         {/* Login Page Section */}
-        <section className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md mb-8 text-justify">
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Login Page</h2>
-
-          {/* Description of the Login Page */}
+        <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8 text-justify">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Login Page</h2>
           <p className="text-gray-700 mb-4">
             The Login Page allows users to authenticate themselves and access their accounts securely. It supports both logging in with existing credentials (email/password) and signing up for new accounts, while also providing demo login options for testing.
           </p>
-
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Key Functionalities</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Key Functionalities</h2>
           <ul className="list-disc list-inside text-gray-700">
             <li>
               <strong>Email Authentication:</strong> Users can log in with their registered email and password.
@@ -193,8 +186,7 @@ const DocsPage = () => {
               <strong>Demo Logins:</strong> Users can log in as demo users (e.g., Manufacturer, Recycler, Consumer, Government) with predefined credentials to test the platform.
             </li>
           </ul>
-
-          <h2 className="text-2xl font-bold text-[#000500] mt-4 mb-4">Technical Details</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mt-4 mb-4">Technical Details</h2>
           <p className="text-gray-700 mb-4">
             The Login Page is built to provide a seamless and secure user experience. Below are the technical aspects of the page:
           </p>
@@ -211,11 +203,10 @@ const DocsPage = () => {
             rawUrl="https://raw.githubusercontent.com/hariharjeevan/Unified-EWaste-Management-Platform/refs/heads/main/src/app/login/page.tsx"
             initialLines={25}
           />
-          <h3 className="text-xl font-semibold text-[#000500] mb-2">Try Demo Login</h3>
+          <h3 className="text-lg sm:text-xl font-semibold text-[#000500] mb-2">Try Demo Login</h3>
           <p className="text-gray-700 mb-4">
             The demo login buttons allow users to quickly test the login process for different user roles. Each button triggers a different login scenario, simulating how users from different roles would log in.
           </p>
-
           <div className="flex items-center justify-center mt-6">
             <Image
               src="/documentation/login.gif"
@@ -231,17 +222,39 @@ const DocsPage = () => {
         </section>
 
         {/* QR Registration Demo */}
-        <section className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">QR based Product Registration Demo</h2>
-          <p className="text-gray-700 mb-4">
+        <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">QR based Product Registration Demo</h2>
+          <p className="text-gray-700 mb-4 text-justify">
             The Consumer Register Page allows users to register a product by scanning a QR code. Depending on their authentication state, users are redirected to their consumer dashboard or prompted to log in. This ensures a seamless flow between QR scanning, login, and product registration.
           </p>
-
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Key Functionalities</h2>
-          <ul className="list-disc list-inside text-gray-700">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Key Functionalities</h2>
+          <ul className="list-disc list-inside text-black">
             <li>
               <strong>QR Code Handling:</strong> Detects the <code>qr</code> query parameter from the URL to identify the product being registered.
             </li>
+          </ul>
+          <div className="flex flex-col items-center justify-center text-black mb-4">
+            <Image
+              src="/documentation/Product Instance.png"
+              alt="Product Instance"
+              width={400}
+              height={400}
+              className="mt-4 mb-4 shadow-md max-w-full w-full sm:max-w-lg cursor-pointer hover:scale-105 transition-all"
+              unoptimized
+              onClick={() => openModal("/documentation/Product Instance.png")}
+            />
+            <p>Each qr code contains the: </p>
+            <ul className="list-disc list-inside text-black">
+              <li>Manufacturer UID</li>
+              <li>Product ID</li>
+              <li>Serial Number</li>
+            </ul>
+            <p>of that product as displayed below.</p>
+            <code className="text-center mt-2 bg-gray-100 break-all block p-2 rounded">
+              https://unified-e-waste-management-platform.vercel.app/consumer/register?qr=/register?qr=$[<strong>user.uid</strong>]|$[<strong>productId</strong>]|$[<strong>productDetails.serialNumber</strong>]
+            </code>
+          </div>
+          <ul className="list-disc list-inside text-black">
             <li>
               <strong>Authentication-Aware Redirection:</strong> Redirects the user based on their login status:
               <ul className="list-disc list-inside ml-6">
@@ -250,12 +263,8 @@ const DocsPage = () => {
                 <li><strong>Missing QR:</strong> Redirects to <code>/consumer</code>.</li>
               </ul>
             </li>
-            <li>
-              <strong>Client-Side Only Execution:</strong> The component uses the <code>&quot;use client&quot;</code> directive and wraps the logic in a <code>Suspense</code> boundary for async-safe rendering of <code>useSearchParams()</code>.
-            </li>
           </ul>
-
-          <h3 className="text-xl font-semibold text-[#000500] mb-2 mt-2">Demo Flow</h3>
+          <h3 className="text-lg sm:text-xl font-semibold text-[#000500] mb-2 mt-2">Demo Flow</h3>
           <p className="text-gray-700 mb-4">
             The animation below illustrates the consumer QR-based registration flow, showing how users are redirected based on authentication status.
           </p>
@@ -271,8 +280,7 @@ const DocsPage = () => {
             />
           </div>
           <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
-
-          <h2 className="text-2xl font-bold text-[#000500] mt-4 mb-4">Technical Details</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mt-4 mb-4">Technical Details</h2>
           <p className="text-gray-700 mb-4">
             This page uses Firebase Authentication and Next.js navigation utilities to ensure secure and intelligent redirect behavior:
           </p>
@@ -287,7 +295,6 @@ const DocsPage = () => {
               <strong>Query Extraction:</strong> <code>useSearchParams()</code> is used to read the <code>qr</code> code from the URL.
             </li>
           </ul>
-
           <GitHubEmbed
             githubBlobUrl="https://github.com/hariharjeevan/Unified-EWaste-Management-Platform/blob/feature/recycler/src/app/consumer/register/page.tsx"
             rawUrl="https://raw.githubusercontent.com/hariharjeevan/Unified-EWaste-Management-Platform/feature/recycler/src/app/consumer/register/page.tsx"
@@ -296,18 +303,17 @@ const DocsPage = () => {
         </section>
 
         {/* Manufacturer Section */}
-        <section className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Manufacturer</h2>
+        <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Manufacturer</h2>
           <p className="text-gray-700 mb-4">
             Manufacturers play a key role in the platform by generating QR codes for their products and tracking their lifecycle.
           </p>
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Technical Details</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Technical Details</h2>
           <GitHubEmbed
             githubBlobUrl="https://github.com/hariharjeevan/Unified-EWaste-Management-Platform/blob/main/src/app/manufacturer/page.tsx"
             rawUrl="https://raw.githubusercontent.com/hariharjeevan/Unified-EWaste-Management-Platform/main/src/app/manufacturer/page.tsx"
             initialLines={25}
           />
-
           <ul className="list-disc list-inside text-gray-700">
             <li>
               <strong>QR Code Generation:</strong> Manufacturers can generate unique QR codes for their products,
@@ -327,15 +333,13 @@ const DocsPage = () => {
               <strong>Admin Dashboard:</strong> Improved admin dashboard for role based access control to employees.
             </li>
           </ul>
-          <div className="flex items-center justify-center mt-4 hover:cursor-pointer 
-          transition-transform transform hover:scale-105">
+          <div className="flex items-center justify-center mt-4 cursor-pointer transition-transform hover:scale-105">
             <Image
               src="/documentation/manufacturer.gif"
               alt="Manufacturer Dashboard"
               width={600}
               height={400}
-              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer 
-              hover:brightness-75 transition-all"
+              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
               unoptimized
               onClick={() => openModal("/documentation/manufacturer.gif")}
             />
@@ -344,12 +348,12 @@ const DocsPage = () => {
         </section>
 
         {/* Recycler Section */}
-        <section className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Recycler</h2>
+        <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Recycler</h2>
           <p className="text-gray-700 mb-4">
             Recyclers are responsible for processing e-waste and ensuring proper recycling practices.
           </p>
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Technical Details</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Technical Details</h2>
           <GitHubEmbed
             githubBlobUrl="https://github.com/hariharjeevan/Unified-EWaste-Management-Platform/blob/main/src/app/recycler/page.tsx"
             rawUrl="https://raw.githubusercontent.com/hariharjeevan/Unified-EWaste-Management-Platform/refs/heads/main/src/app/recycler/page.tsx"
@@ -369,29 +373,40 @@ const DocsPage = () => {
               and update their status in the system.
             </li>
           </ul>
-          <div className="flex items-center justify-center mt-4 hover:cursor-pointer 
-          transition-transform transform hover:scale-105">
+          <div className="flex items-center justify-center mt-4 cursor-pointer transition-transform hover:scale-105">
             <Image
               src="/documentation/recycler.gif"
-              alt="Manufacturer Dashboard"
+              alt="Recycler Dashboard"
               width={600}
               height={400}
-              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer 
-              hover:brightness-75 transition-all"
+              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
               unoptimized
               onClick={() => openModal("/documentation/recycler.gif")}
             />
           </div>
           <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
+          <p className="text-black text-justify mt-4">Recyclers can obtain information about manufacturers such as <code className="mx-1">Manufacturer UID</code> and <code className="mx-1">Product ID
+          </code> from Manufacturer Details page as shown below: </p>
+          <div className="flex items-center justify-center mt-4 cursor-pointer transition-transform hover:scale-105">
+            <Image
+              src="/documentation/Manufacturer Details.gif"
+              alt="Manufacturer Details"
+              width={600}
+              height={400}
+              className="mt-4 mb-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
+              unoptimized
+              onClick={() => openModal("/documentation/Manufacturer Details.gif")}
+            />
+          </div>
         </section>
 
         {/* Consumer Section */}
-        <section className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Consumer</h2>
+        <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Consumer</h2>
           <p className="text-gray-700 mb-4">
             Consumers can use the platform to recycle their electronic products responsibly.
           </p>
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Technical Details</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Technical Details</h2>
           <GitHubEmbed
             githubBlobUrl="https://github.com/hariharjeevan/Unified-EWaste-Management-Platform/blob/main/src/app/consumer/%5Buid%5D/page.tsx"
             rawUrl="https://raw.githubusercontent.com/hariharjeevan/Unified-EWaste-Management-Platform/refs/heads/main/src/app/consumer/%5Buid%5D/page.tsx"
@@ -409,15 +424,13 @@ const DocsPage = () => {
               <strong>Recycling Options:</strong> Schedule recycling pickups or drop-offs with registered recyclers.
             </li>
           </ul>
-          <div className="flex items-center justify-center mt-4 hover:cursor-pointer 
-          transition-transform transform hover:scale-105">
+          <div className="flex items-center justify-center mt-4 cursor-pointer transition-transform hover:scale-105">
             <Image
               src="/documentation/consumer.gif"
-              alt="Manufacturer Dashboard"
+              alt="Consumer Dashboard"
               width={600}
               height={400}
-              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer 
-              hover:brightness-75 transition-all"
+              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
               unoptimized
               onClick={() => openModal("/documentation/consumer.gif")}
             />
@@ -425,16 +438,16 @@ const DocsPage = () => {
           <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
         </section>
 
-        {/* Governement Section */}
-        <section className="w-full max-w-4xl bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Government</h2>
+        {/* Government Section */}
+        <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Government</h2>
           <p className="text-gray-700 mb-4">
             Government organizations can use the platform to oversee e-waste management and enforce regulations.
           </p>
-          <h2 className="text-2xl font-bold text-[#000500] mb-4">Technical Details</h2>
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Technical Details</h2>
           <GitHubEmbed
             githubBlobUrl="https://github.com/hariharjeevan/Unified-EWaste-Management-Platform/blob/main/src/app/government/page.tsx"
-            rawUrl="https://raw.githubusercontent.com/hariharjeevan/Unified-EWaste-Management-Platform/refs/heads/main/src/app/government/page.tsx"
+            rawUrl="https://raw.githubusercontent.com/hariharjeevan/Unified-EWaste-Management-Platform/main/src/app/government/page.tsx"
             initialLines={25}
           />
           <ul className="list-disc list-inside text-gray-700">
@@ -451,15 +464,13 @@ const DocsPage = () => {
               responsible e-waste management.
             </li>
           </ul>
-          <div className="flex items-center justify-center mt-4 hover:cursor-pointer 
-          transition-transform transform hover:scale-105">
+          <div className="flex items-center justify-center mt-4 cursor-pointer transition-transform hover:scale-105">
             <Image
               src="/documentation/government.gif"
               alt="Government"
               width={600}
               height={400}
-              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer 
-              hover:brightness-75 transition-all"
+              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
               unoptimized
               onClick={() => openModal("/documentation/government.gif")}
             />

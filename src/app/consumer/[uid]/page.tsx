@@ -101,10 +101,6 @@ const Consumer = () => {
     libraries,
   });
 
-  const toggleQueryModal = () => {
-    setShowQueryModal((prev) => !prev);
-  };
-
   const fetchConsumerName = useCallback(async (uid: string) => {
     if (!consumerId) return;
     try {
@@ -166,15 +162,13 @@ const Consumer = () => {
         const scannedRef = collection(db, "consumers", consumerId, "scannedProducts");
         const scannedSnap = await getDocs(scannedRef);
 
-        const scannedNames = scannedSnap.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            name: data.name?.toLowerCase().trim() || "",
-            category: data.category?.toLowerCase().trim() || "",
-          };
-        }).filter(
-          (item) => item.name && item.category
-        );
+        // Collect all scanned productIds
+        const scannedProductIds = scannedSnap.docs
+          .map((doc) => {
+            const data = doc.data();
+            return data.productId?.toString().trim();
+          })
+          .filter((id) => !!id);
 
         const productsRef = collection(db, "recyclers", recyclerId, "products");
         const productsSnap = await getDocs(productsRef);
@@ -184,6 +178,7 @@ const Consumer = () => {
           return {
             id: doc.id,
             name: data.productName || "",
+            productId: data.productId || "",
             serialNumber: data.serialNumber || "",
             category: data.category || "Unknown",
             recyclability: data.recyclability || "Unknown",
@@ -200,31 +195,10 @@ const Consumer = () => {
           };
         });
 
-        const getStringSimilarity = (str1: string, str2: string): number => {
-          let commonChars = 0;
-          const minLength = Math.min(str1.length, str2.length);
-
-          for (let i = 0; i < minLength; i++) {
-            if (str1[i] === str2[i]) {
-              commonChars++;
-            }
-          }
-
-          return commonChars / Math.max(str1.length, str2.length);
-        };
-
-        const similarityThreshold = 0.50; // Adjust this threshold as needed
-
-        const matchingProducts = allProducts.filter((product) => {
-          const productName = product.productName?.toLowerCase() || "";
-          const productCategory = product.category?.toLowerCase() || "";
-
-          return scannedNames.some((scanned) => {
-            const Namesimilarity = getStringSimilarity(scanned.name, productName);
-            const categorySimilarity = getStringSimilarity(scanned.category, productCategory);
-            return Namesimilarity >= similarityThreshold && categorySimilarity >= 1;
-          });
-        });
+        // Match products by productId
+        const matchingProducts = allProducts.filter((product) =>
+          scannedProductIds.includes(product.productId?.toString().trim())
+        );
 
         return matchingProducts;
       } catch (error) {
@@ -1057,6 +1031,7 @@ const Consumer = () => {
                           <li key={index} className="text-sm text-gray-700">
                             <span className="font-semibold">{product.name}</span>
                             {product.price && <> – ₹{product.price}</>}
+                            <span className="ml-2 text-xs text-gray-500">(Product ID: {product.productId})</span>
                           </li>
                         ))}
                       </ul>

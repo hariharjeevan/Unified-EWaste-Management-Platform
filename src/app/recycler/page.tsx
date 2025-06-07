@@ -371,7 +371,12 @@ const RecyclerPage = () => {
 
   return (
     <>
-      <Navbar links={[{ label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" }]} />
+      <Navbar
+        links={[
+          { label: "Find Manufacturer", href: "/manufacturerdetails", tooltip: "Find your manufacturer and their manufactured products." },
+          { label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" },
+        ]}
+      />
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 text-black">
         <div className="relative w-full max-w-2xl p-4">
           <div className="flex items-center border rounded-lg shadow-md bg-white p-2">
