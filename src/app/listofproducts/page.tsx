@@ -30,20 +30,21 @@ const ListOfProductsClientInner = () => {
   const [productsLoading, setProductsLoading] = useState(true);
   const searchParams = useSearchParams();
   const [consumerId, setConsumerId] = useState<string | null>(auth.currentUser?.uid || null);
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedSerialNumber, setSelectedSerialNumber] = useState<string | null>(null);
   const [consumerDetails, setConsumerDetails] = useState({
     name: "",
     phone: "",
     address: "",
   });
   const [showModal, setShowModal] = useState(false);
-  const [scannedProducts, setScannedProducts] = useState<{ id: string; name: string }[]>([]);
+  const [scannedProducts, setScannedProducts] = useState<
+    { id: string; name: string; productId: string }[]
+  >([]);
   const [loading, setLoading] = useState(false);
 
   const recyclerId = searchParams.get("recyclerId");
   const idsParam = searchParams.get("ids");
 
-  // Keep consumerId in sync with auth state
   useEffect(() => {
     const unsubscribe = getAuth().onAuthStateChanged((user) => {
       if (user) {
@@ -53,10 +54,9 @@ const ListOfProductsClientInner = () => {
     return () => unsubscribe();
   }, []);
 
-  // Fetch products for recycler
   useEffect(() => {
     const fetchProducts = async () => {
-      setProductsLoading(true); // Start loading
+      setProductsLoading(true);
       if (!recyclerId || !idsParam) {
         setProductsLoading(false);
         return;
@@ -78,23 +78,23 @@ const ListOfProductsClientInner = () => {
         })
       );
       setProducts(fetched);
-      setProductsLoading(false); // Done loading
+      setProductsLoading(false);
     };
     fetchProducts();
   }, [recyclerId, idsParam]);
 
-  // Fetch scanned products for dropdown
   useEffect(() => {
+    if (!consumerId) return;
     const fetchScannedProducts = async () => {
-      if (!consumerId) return;
       try {
         const scannedRef = collection(db, "consumers", consumerId, "scannedProducts");
         const scannedSnap = await getDocs(scannedRef);
-        const scanned: { id: string; name: string }[] = scannedSnap.docs.map((doc) => {
+        const scanned = scannedSnap.docs.map((doc) => {
           const data = doc.data();
           return {
             id: doc.id,
             name: data.name || "Unnamed Product",
+            productId: data.productId,
           };
         });
         setScannedProducts(scanned);
@@ -105,7 +105,6 @@ const ListOfProductsClientInner = () => {
     fetchScannedProducts();
   }, [consumerId]);
 
-  // Handle input changes
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -113,22 +112,19 @@ const ListOfProductsClientInner = () => {
     setConsumerDetails((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Open modal and reset fields
   const handleSendRequestClick = () => {
     setShowModal(true);
     setConsumerDetails({ name: "", phone: "", address: "" });
-    setSelectedProductId(null);
+    setSelectedSerialNumber(null);
   };
 
-  // Handle dropdown change
   const handleDropdownChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedProductId(e.target.value);
+    setSelectedSerialNumber(e.target.value);
   };
 
-  // Submit details and send request
   const handleSubmitDetails = async () => {
     if (
-      !selectedProductId ||
+      !selectedSerialNumber ||
       !consumerDetails.name ||
       !consumerDetails.phone ||
       !consumerDetails.address
@@ -136,19 +132,24 @@ const ListOfProductsClientInner = () => {
       alert("Please fill in all the fields and select a product.");
       return;
     }
+
+    if (isNaN(Number(consumerDetails.phone))) {
+      alert("Please enter a valid numeric phone number.");
+      return;
+    }
     setLoading(true);
-    await sendRequestCloudFunction(selectedProductId, consumerDetails);
+    await sendRequestCloudFunction(selectedSerialNumber, consumerDetails);
     setLoading(false);
     setShowModal(false);
     setConsumerDetails({ name: "", phone: "", address: "" });
-    setSelectedProductId(null);
+    setSelectedSerialNumber(null);
   };
 
   const sendRequestCloudFunction = async (
-    productId: string,
+    serialNumber: string,
     details: { name: string; phone: string; address: string }
   ): Promise<void> => {
-    if (!productId || !recyclerId || !consumerId) {
+    if (!serialNumber || !recyclerId || !consumerId) {
       alert("Missing Recycler or Consumer Details");
       return;
     }
@@ -157,15 +158,15 @@ const ListOfProductsClientInner = () => {
       if (window.confirm("Do you want to send this request?")) {
         const functions = getFunctions();
         const sendRecyclerRequest = httpsCallable(functions, "sendRecyclerRequest");
-        // Get the scanned product by id
-        const scannedProduct = scannedProducts.find((p) => p.id === productId);
+        const scannedProduct = scannedProducts.find((p) => p.id === serialNumber);
         if (!scannedProduct) {
           alert("Product not found in your scanned products.");
           return;
         }
         const result = await sendRecyclerRequest({
           recyclerId,
-          productId: scannedProduct.id,
+          serialNumber: scannedProduct.id,
+          productId: scannedProduct.productId,
           details,
           productName: scannedProduct.name,
         });
@@ -255,7 +256,7 @@ const ListOfProductsClientInner = () => {
                 </h2>
                 <select
                   className="w-full mb-3 px-3 py-2 border rounded"
-                  value={selectedProductId || ""}
+                  value={selectedSerialNumber || ""}
                   onChange={handleDropdownChange}
                 >
                   <option value="" disabled>

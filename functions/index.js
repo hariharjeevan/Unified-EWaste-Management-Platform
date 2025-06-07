@@ -126,7 +126,6 @@ ${organization} Team
 
     return { success: true, uid: userRecord.uid };
   } catch (error) {
-    console.error("adminCreateUser error:", error);
     throw new functions.https.HttpsError("internal", error.message);
   }
 });
@@ -151,7 +150,7 @@ exports.setUserOrgAdmin = functions.https.onCall(async (data, context) => {
   return { success: true };
 });
 
-{/* Assign user roles*/}
+{/* Assign user roles*/ }
 exports.setUserRole = functions.https.onCall(async (data, context) => {
   // Only allow admins to call this
   if (context.auth.token.role !== "admin") {
@@ -167,7 +166,7 @@ exports.setUserRole = functions.https.onCall(async (data, context) => {
   return { message: `Role ${role} assigned to user ${uid}` };
 });
 
-{/* Product Registration Function */}
+{/* Product Registration Function */ }
 exports.verifyAndRegisterConsumer = functions.https.onCall(
   async (data, context) => {
     if (!context.auth) {
@@ -260,7 +259,6 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
           manufacturerId,
           productId,
           registeredAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
         transaction.update(productRef, {
@@ -268,12 +266,12 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
           registeredUsers: admin.firestore.FieldValue.arrayUnion(consumerUid),
           userCount: admin.firestore.FieldValue.increment(1),
           registered: true,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         });
       });
 
       return { success: true, message: "Product registered successfully!" };
     } catch (error) {
-      console.error("Error during product registration:", error);
       throw new functions.https.HttpsError(
         "internal",
         error.message || "An unknown error occurred.",
@@ -282,14 +280,13 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
   },
 );
 
-{/* Product Deletion Handler */}
+{/* Product Deletion Handler */ }
 exports.onProductDeletion = functions.firestore
   .document("consumers/{consumerUid}/scannedProducts/{productId}")
   .onDelete(async (snap, context) => {
     const { consumerUid, productId } = context.params;
 
     try {
-      console.log(`Product ${productId} deleted by consumer ${consumerUid}`);
 
       const firestore = admin.firestore();
       const productData = snap.data();
@@ -349,7 +346,7 @@ exports.onProductDeletion = functions.firestore
     }
   });
 
-{/* Query Handling function*/}
+{/* Query Handling function*/ }
 exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
@@ -361,13 +358,15 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
   const consumerId = context.auth.uid;
   const {
     recyclerId,
+    serialNumber,
     productId,
-    details, // { name, phone, address }
+    details,
     productName,
   } = data;
 
   if (
     !recyclerId ||
+    !serialNumber ||
     !productId ||
     !details?.name ||
     !details?.phone ||
@@ -389,7 +388,7 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
     // Check if request already exists for this product by this user
     const alreadySent = Object.values(queries).some(
       (query) =>
-        query.productId === productId && query.consumerId === consumerId,
+        query.serialNumber === serialNumber && query.consumerId === consumerId,
     );
 
     if (alreadySent) {
@@ -402,6 +401,7 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
     const queryId = uuidv4();
 
     const newQuery = {
+      serialNumber,
       productId,
       productName,
       status: "pending",
@@ -419,9 +419,29 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
 
     await recyclerDocRef.set({ queries: updatedQueries }, { merge: true });
 
+    const consumerProductRef = firestore
+      .collection("consumers")
+      .doc(consumerId)
+      .collection("scannedProducts")
+      .doc(serialNumber);
+
+    await consumerProductRef.set(
+      {
+        recyclingRequest: {
+          recyclerId,
+          queryId,
+          status: "pending",
+          serialNumber,
+          productId,
+          productName,
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        },
+      },
+      { merge: true }
+    );
+
     return { success: true, message: "Request sent successfully" };
   } catch (error) {
-    console.error("Error in sendRecyclerRequest():", error);
     throw new functions.https.HttpsError(
       "internal",
       error.message || "Failed to send request.",
@@ -429,7 +449,7 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
   }
 });
 
-{/* Vertex AI Chatbot */}
+{/* Vertex AI Chatbot */ }
 const vertexAI = new VertexAI({
   project: "uemp-aadde",
   location: "us-central1",
@@ -486,7 +506,6 @@ exports.askGemini = functions.https.onCall(async (data) => {
         content?.parts?.[0]?.text || "No response.";
     return { response: responseText };
   } catch (error) {
-    console.error("Gemini error (detailed):", error);
     throw new functions.https.
       HttpsError("internal", `Gemini Error: ${error.message}`);
   }

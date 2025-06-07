@@ -14,6 +14,7 @@ const ServicePage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [manufacturerId, setManufacturerId] = useState("");
   const [productId, setProductId] = useState("");
+  const [seialnumber, setSeialNumber] = useState("");
   const [nameofproduct, setNameofProduct] = useState("");
   const [selectedValue, setSelectedValue] = useState("");
   const [pricevalue, setPriceValue] = useState("");
@@ -74,7 +75,6 @@ const ServicePage = () => {
       return;
     }
 
-    // Check if manufacturerId exists
     const userRef = doc(db, "users", manufacturerId);
     const userSnap = await getDoc(userRef);
     if (!userSnap.exists()) {
@@ -82,7 +82,6 @@ const ServicePage = () => {
       return;
     }
 
-    // Check if productId exists under manufacturer
     const productModelRef = doc(db, "manufacturers", manufacturerId, "productModels", productId);
     const productModelSnap = await getDoc(productModelRef);
     if (!productModelSnap.exists()) {
@@ -106,7 +105,6 @@ const ServicePage = () => {
       return;
     }
 
-    // Fetch minimal product details from manufacturer's public productModals
     let minimalDetails = null;
     try {
       const publicProductRef = doc(
@@ -136,6 +134,7 @@ const ServicePage = () => {
       const newProduct = {
         id: productId,
         productId,
+        seialnumber,
         manufacturerId,
         productName: minimalDetails?.name || nameofproduct,
         category: minimalDetails?.category || selectedValue || "Default Category",
@@ -151,6 +150,7 @@ const ServicePage = () => {
 
       setManufacturerId("");
       setProductId("");
+      setSeialNumber("");
       setNameofProduct("");
       setSelectedValue("");
       setPriceValue("");
@@ -159,7 +159,6 @@ const ServicePage = () => {
 
       router.push("/recycler");
     } catch (error) {
-      console.error("Error saving data:", error);
       alert("Failed to save data.");
     }
   };
@@ -182,16 +181,16 @@ const ServicePage = () => {
         for (const row of results.data as any[]) {
           const manufacturerId = row["Manufacturer ID"]?.trim();
           const productId = row["Product ID"]?.trim();
+          const serialnumber = row["Serial Number"]?.trim();
           const price = parseFloat(row["Price"]);
           const points = parseInt(row["Points"], 10);
           const desc = row["Description"]?.trim();
 
-          if (!manufacturerId || !productId || isNaN(price) || isNaN(points) || !desc) {
+          if (!manufacturerId || !productId || !serialnumber || isNaN(price) || isNaN(points) || !desc) {
             errorCount++;
             continue;
           }
 
-          // Fetch product model details for name and category
           let productName = "";
           let category = "";
           try {
@@ -209,7 +208,8 @@ const ServicePage = () => {
               category = data?.category || "";
             }
           } catch (err) {
-            // If fetch fails, leave productName/category empty
+            productName = "";
+            category = "";
           }
 
           try {
@@ -217,6 +217,7 @@ const ServicePage = () => {
             await setDoc(docRef, {
               id: productId,
               productId,
+              serialnumber,
               manufacturerId,
               productName,
               category,
@@ -280,6 +281,14 @@ const ServicePage = () => {
             value={loadingProduct ? "Loading..." : selectedValue}
             readOnly
             className="w-full p-2 mb-2 border border-gray-300 rounded text-black bg-gray-100"
+          />
+          <input
+            type="text"
+            placeholder="Enter Serial Number"
+            value={seialnumber}
+            onChange={(e) => setSeialNumber(e.target.value)}
+            required
+            className="w-full p-2 mb-2 border border-gray-300 rounded text-black"
           />
           <input
             type="number"

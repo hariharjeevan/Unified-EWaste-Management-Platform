@@ -144,7 +144,6 @@ const RecyclerPage = () => {
       if (!user) return;
 
       try {
-        // Reference the document using the recycler's user ID
         const docRef = doc(db, "Queries", user.uid);
         const docSnap = await getDoc(docRef);
 
@@ -152,8 +151,8 @@ const RecyclerPage = () => {
           const data = docSnap.data();
           const fetchedQueries: QueryDetails[] = Object.entries(data.queries || {}).map(
             ([queryId, queryData]: [string, any]) => ({
-              id: queryId, // Use the key as the queryId
-              ...queryData, // Spread the rest of the query data
+              id: queryId,
+              ...queryData, //spread the query data
             })
           );
 
@@ -203,7 +202,7 @@ const RecyclerPage = () => {
           { label: "Created At", value: consumerData?.createdAt },
           { label: "Recoverable Metals", value: consumerData?.recoverableMetals },
           { label: "Recyclability", value: consumerData?.recyclability },
-          { label: "Consumer Scanned At: ", value: consumerData?.updatedAt },
+          { label: "Consumer Scanned At", value: consumerData?.updatedAt },
         ];
         setSelectedProductDetails(productDetails);
       } else {
@@ -281,7 +280,6 @@ const RecyclerPage = () => {
     }
 
     try {
-      // Reference the document using the recycler's user ID
       const docRef = doc(db, "Queries", user.uid);
 
       console.log("Updating Firestore document:", {
@@ -290,15 +288,13 @@ const RecyclerPage = () => {
         newStatus,
       });
 
-      // Update the specific query inside the `queries` object
       await updateDoc(docRef, {
         [`queries.${queryId}.status`]: newStatus,
       });
       console.log(`Firestore updated: Query ${queryId} set to ${newStatus}`);
 
-      // If rejected, delete the product from recycler's products collection
       if (newStatus === "rejected") {
-        // Find the productId from the query
+
         const rejectedQuery = queries.find(q => q.id === queryId);
         if (rejectedQuery && rejectedQuery.productId) {
           const productDocRef = doc(db, "recyclers", user.uid, "products", rejectedQuery.productId);
@@ -314,19 +310,16 @@ const RecyclerPage = () => {
         }
       }
 
-      // Update the local state
       setQueries((prevQueries) =>
         prevQueries.map((q) =>
           q.id === queryId ? { ...q, status: newStatus } : q
         )
       );
 
-      // Show success alert
       alert(`Query ${newStatus === "accepted" ? "accepted" : "rejected"} successfully!`);
     } catch (error) {
       console.error("Error updating query status:", error);
 
-      // Show error alert
       alert("Failed to update query status. Please try again.");
     }
   };
@@ -341,18 +334,15 @@ const RecyclerPage = () => {
   }
 
   const handleOpenRecycleDialog = (product: Product) => {
-    // Find the consumer name from queries for this product
     const query = queries.find(q => q.productId === product.id && q.status === "accepted");
     setSelectedProduct(product);
     setSelectedConsumer(query ? query.consumerName : "N/A");
     setShowRecycleDialog(true);
   };
 
-  // Handler to complete recycle
   const handleCompleteRecycle = async () => {
     if (!selectedProduct) return;
     try {
-      // Update recycleStatus in manufacturer's database
       const manufacturerId = selectedProduct.userId || selectedProduct.manufacturerId;
       if (!manufacturerId) {
         alert("Manufacturer ID not found for this product.");
@@ -362,7 +352,6 @@ const RecyclerPage = () => {
       await updateDoc(productRef, { recycleStatus: "completed" });
       alert("Recycle status updated to completed!");
       setShowRecycleDialog(false);
-      // Refresh product list
     } catch (error) {
       alert("Failed to update recycle status.");
       console.error(error);
@@ -522,7 +511,7 @@ const RecyclerPage = () => {
                   <>
                     <button
                       onClick={() => {
-                        if (window.confirm("Are you sure you want to accept this query?")) {
+                        if (window.confirm("Are you sure you want to accept this Request?")) {
                           updateQueryStatus(modalQuery.id, "accepted");
                           setShowQueryModal(false);
                         }
