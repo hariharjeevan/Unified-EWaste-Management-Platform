@@ -203,14 +203,14 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
       const productRef = firestore
         .collection("manufacturers")
         .doc(manufacturerId)
-        .collection("products")
-        .doc(productId);
+        .collection(productId)
+        .doc(serialNumber);
 
       const consumerRef = firestore
         .collection("consumers")
         .doc(consumerUid)
         .collection("scannedProducts")
-        .doc(productId);
+        .doc(serialNumber);
 
       await firestore.runTransaction(async (transaction) => {
         const [productSnap, consumerSnap] = await Promise.all([
@@ -304,8 +304,8 @@ exports.onProductDeletion = functions.firestore
       const productRef = firestore
         .collection("manufacturers")
         .doc(productData.manufacturerId)
-        .collection("products")
-        .doc(productId);
+        .collection(productData.productId)
+        .doc(productData.serialNumber);
 
       await firestore.runTransaction(async (transaction) => {
         const productSnap = await transaction.get(productRef);
@@ -439,7 +439,7 @@ const model = vertexAI.getGenerativeModel({
   model: "gemini-2.0-flash-001",
 });
 
-exports.askGemini = functions.https.onCall(async (data, context) => {
+exports.askGemini = functions.https.onCall(async (data) => {
   const userMessage = (data.message || "").trim();
 
   if (!userMessage) {

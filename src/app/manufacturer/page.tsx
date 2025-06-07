@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { db, auth } from "@/firebaseConfig";
-import { collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { query, orderBy, limit, startAfter, QueryDocumentSnapshot } from "firebase/firestore";
+import { collection, doc, setDoc, getDoc, getDocs, updateDoc, deleteDoc, where, serverTimestamp } from "firebase/firestore";
+import { query, QueryDocumentSnapshot } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import InfiniteScroll from "react-infinite-scroll-component";
@@ -20,6 +20,7 @@ import { IoMdInformationCircleOutline } from "react-icons/io";
 interface Product {
   id: string;
   name: string;
+  productId: string;
   serialNumber: string;
   category: string;
   recyclability: string;
@@ -58,6 +59,52 @@ const Manufacturer = () => {
   const productSectionRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
+  interface ProductDetails {
+    name: string;
+    serialNumber: string;
+    category: string;
+    recyclability: string;
+    recoverableMetals: string;
+    [key: string]: any;
+  }
+
+  const upsertProductModel = async (
+    user: { uid: string },
+    productId: string,
+    productDetails: ProductDetails
+  ) => {
+    const modelRef = doc(db, "manufacturers", user.uid, "productModels", productId);
+    await setDoc(
+      modelRef,
+      {
+        name: productDetails.name,
+        category: productDetails.category,
+        recyclability: productDetails.recyclability,
+        recoverableMetals: productDetails.recoverableMetals,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  };
+
+  const getOrCreateProductId = async (
+    user: { uid: string },
+    productDetails: ProductDetails
+  ): Promise<string> => {
+    const productsCol = collection(db, "manufacturers", user.uid, "productModels");
+    const q = query(
+      productsCol,
+      where("name", "==", productDetails.name),
+      where("category", "==", productDetails.category)
+    );
+    const snapshot = await getDocs(q);
+
+    if (!snapshot.empty) {
+      return snapshot.docs[0].id;
+    }
+    return crypto.randomUUID();
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (!currentUser) {
@@ -71,7 +118,7 @@ const Manufacturer = () => {
           setManufacturerName(data.name || "Unknown Name");
           setManufacturerEmail(data.email || "Unknown email");
           setOrganizationID(data.orgID || "");
-          
+
           if (data.orgID) {
             const orgDoc = await getDoc(doc(db, "organizations", data.orgID));
             if (orgDoc.exists()) {
@@ -89,92 +136,38 @@ const Manufacturer = () => {
     return () => unsubscribe();
   }, [router, organizationID]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     if (!user) return;
-
     try {
-      const productQuery = query(
-        collection(db, "manufacturers", user.uid, "products"),
-        orderBy("createdAt", "desc"),
-        limit(10)
-      );
 
-      const querySnapshot = await getDocs(productQuery);
-
-      const seenIds = new Set<string>();
+      // 1. List all productID collections under /manufacturers/{uid}
+      const productModelsSnap = await getDocs(collection(db, "manufacturers", user.uid, "productModels"));
       const items: Product[] = [];
 
-      querySnapshot.forEach((doc) => {
-        const id = doc.id;
-        if (!seenIds.has(id)) {
-          seenIds.add(id);
-          items.push({ ...doc.data(), id } as Product);
-        }
-      });
+      for (const modelDoc of productModelsSnap.docs) {
+        const productId = modelDoc.id;
+        // 2. For each productID, list all serial numbers (documents)
+        const serialSnap = await getDocs(collection(db, "manufacturers", user.uid, productId));
+        serialSnap.forEach((doc) => {
+          items.push({ ...doc.data(), id: doc.id } as Product);
+        });
+      }
 
-      setProductList(items); // Replace existing list (initial fetch)
-      setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1] || null);
-      setHasMore(querySnapshot.docs.length === 10);
+      setProductList(items);
       setShowProducts(true);
-
-      // Scroll to product section smoothly after short delay
+      setLastVisible(null);
+      setHasMore(false);
       setTimeout(() => {
         productSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 200);
-
     } catch (error) {
       console.error("Error fetching products:", error);
     }
-  };
+  }, [user, productSectionRef]);
 
   const loadMoreProducts = useCallback(async () => {
-    if (!user || !lastVisible) return;
-
-    setLoadingMore(true);
-
-    try {
-      const nextQuery = query(
-        collection(db, "manufacturers", user.uid, "products"),
-        orderBy("createdAt", "desc"),
-        startAfter(lastVisible),
-        limit(10)
-      );
-
-      const snapshot = await getDocs(nextQuery);
-
-      if (snapshot.empty) {
-        setHasMore(false);
-        setLastVisible(null);
-        return;
-      }
-
-      const newProducts = snapshot.docs.map((doc) => ({
-        ...doc.data(),
-        id: doc.id,
-      })) as Product[];
-
-      // Filter out duplicates already in productList
-      const deduped = newProducts.filter(
-        (np) => !productList.some((existing) => existing.id === np.id)
-      );
-
-      // Filter out products that were deleted
-      setProductList((prev) => {
-        // Remove any duplicates by id
-        const all = [...prev, ...deduped];
-        const unique = Array.from(new Map(all.map(p => [p.id, p])).values());
-        return unique;
-      });
-
-      setLastVisible(snapshot.docs[snapshot.docs.length - 1] || null);
-      setHasMore(snapshot.docs.length === 10);
-    } catch (error) {
-      console.error("Error loading more products:", error);
-    } finally {
-      setLoadingMore(false);
-    }
-  }, [user, lastVisible, productList]);
-
+    await fetchProducts();
+  }, [fetchProducts]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -191,14 +184,25 @@ const Manufacturer = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [loadingMore, hasMore, loadMoreProducts]);
 
-  const deleteProduct = async (productId: string) => {
+  const deleteProduct = async (productId: string, serialNumber: string) => {
     if (!user) return;
-
     if (!confirm("Are you sure you want to delete this product?")) return;
-
     try {
-      await deleteDoc(doc(db, "manufacturers", user.uid, "products", productId));
-      setProductList((prev) => prev.filter((p) => p.id !== productId));
+      // 1. Delete the product instance (full details)
+      await deleteDoc(doc(db, "manufacturers", user.uid, productId, serialNumber));
+
+      // 2. Delete the minimal public details
+      await deleteDoc(doc(db, "manufacturers", user.uid, "publicProducts", serialNumber));
+
+      // 3. If no more instances under this productId, delete the product model
+      const instancesSnap = await getDocs(collection(db, "manufacturers", user.uid, productId));
+      if (instancesSnap.empty) {
+        await deleteDoc(doc(db, "manufacturers", user.uid, "productModels", productId));
+      }
+
+      setProductList((prev) =>
+        prev.filter((p) => !(p.productId === productId && p.serialNumber === serialNumber))
+      );
     } catch (error) {
       console.error("Error deleting product:", error);
     }
@@ -218,47 +222,74 @@ const Manufacturer = () => {
   };
 
   const addProduct = async () => {
-    if (!user || !productDetails.serialNumber || !productDetails.category) {
+    if (!user || !productDetails.serialNumber || !productDetails.category || !productDetails.name) {
       alert("Please fill in all required fields.");
       return;
     }
 
-    try {
-      const serialRef = doc(db, "manufacturers", user.uid, "products", productDetails.serialNumber);
-      const serialSnap = await getDoc(serialRef);
+    const productId = await getOrCreateProductId(user, productDetails);
 
-      if (serialSnap.exists()) {
-        alert("A product with this serial number already exists!");
-        return;
-      }
+    await upsertProductModel(user, productId, productDetails);
 
-      const qrData = `https://unified-e-waste-management-platform.vercel.app/consumer/register?qr=${user.uid}-${productDetails.serialNumber}`;
-      const secretKey = generateSecretKey();
+    // Full product details (private)
+    const serialRef = doc(db, "manufacturers", user.uid, productId, productDetails.serialNumber);
+    const serialSnap = await getDoc(serialRef);
 
-      const newProduct = {
-        ...productDetails,
-        qrCode: qrData,
-        secretKey,
-        registeredUsers: [],
-        registered: false,
-        userCount: 0,
-        manufacturerId: user.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        recycleStatus: "uninitiated",
-      };
-
-      await setDoc(serialRef, newProduct);
-      setShowDialog(false);
-      fetchProducts();
-    } catch (error) {
-      console.error("Error adding product:", error);
+    if (serialSnap.exists()) {
+      alert("A product with this serial number already exists for this model!");
+      return;
     }
+
+    const qrData = `https://unified-e-waste-management-platform.vercel.app/consumer/register?qr=${user.uid}|${productId}|${productDetails.serialNumber}`;
+    const secretKey = generateSecretKey();
+
+    const newProduct = {
+      ...productDetails,
+      productId,
+      qrCode: qrData,
+      secretKey,
+      registeredUsers: [],
+      registered: false,
+      userCount: 0,
+      manufacturerId: user.uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      recycleStatus: "uninitiated",
+    };
+
+    // Minimal public details
+    const publicProduct = {
+      name: productDetails.name,
+      category: productDetails.category,
+      serialNumber: productDetails.serialNumber,
+      manufacturerId: user.uid,
+      productId,
+      qrCode: qrData,
+    };
+
+    // Write full details (private)
+    await setDoc(serialRef, newProduct);
+
+    // Write minimal details (public)
+    await setDoc(
+      doc(db, "manufacturers", user.uid, "publicProducts", productDetails.serialNumber),
+      publicProduct
+    );
+
+    setShowDialog(false);
+    fetchProducts();
   };
 
-  const checkProductExists = async (serial: string) => {
+  const checkProductExists = async (product: ProductDetails) => {
     if (!user) return false;
-    const ref = doc(db, "manufacturers", user.uid, "products", serial);
+    const productId = await getOrCreateProductId(user, product);
+    const ref = doc(
+      db,
+      "manufacturers",
+      user.uid,
+      productId,
+      product.serialNumber
+    );
     const snap = await getDoc(ref);
     return snap.exists();
   };
@@ -293,7 +324,7 @@ const Manufacturer = () => {
         const errors: string[] = [];
 
         for (const product of validProducts) {
-          const exists = await checkProductExists(product.serialNumber);
+          const exists = await checkProductExists(product);
           if (exists) {
             errors.push(product.serialNumber);
           } else {
@@ -317,39 +348,58 @@ const Manufacturer = () => {
     });
   };
 
-  const addBulkProduct = async (product: Product) => {
+  const addBulkProduct = async (product: ProductDetails) => {
     if (!user) return;
 
-    try {
-      const serialRef = doc(db, "manufacturers", user.uid, "products", product.serialNumber);
-      const serialSnap = await getDoc(serialRef);
-      if (serialSnap.exists()) return;
+    const productId = await getOrCreateProductId(user, product);
 
-      const qrData = `https://unified-e-waste-management-platform.vercel.app/consumer/register?qr=${user.uid}-${product.serialNumber}`;
-      const secretKey = generateSecretKey();
+    await upsertProductModel(user, productId, product);
 
-      // Ensure userCount is a positive integer (or 0 if invalid)
-      const userCount = typeof product.userCount === "number" && product.userCount > 0
+    // Full product details (private)
+    const serialRef = doc(db, "manufacturers", user.uid, productId, product.serialNumber);
+    const serialSnap = await getDoc(serialRef);
+    if (serialSnap.exists()) return;
+
+    const qrData = `https://unified-e-waste-management-platform.vercel.app/consumer/register?qr=${user.uid}|${productId}|${product.serialNumber}`;
+    const secretKey = generateSecretKey();
+
+    const userCount =
+      typeof product.userCount === "number" && product.userCount > 0
         ? product.userCount
         : 0;
 
-      const newProduct = {
-        ...product,
-        qrCode: qrData,
-        secretKey,
-        registeredUsers: [],
-        registered: false,
-        userCount,
-        manufacturerId: user.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        recycleStatus: "uninitiated",
-      };
+    const newProduct = {
+      ...product,
+      productId,
+      qrCode: qrData,
+      secretKey,
+      registeredUsers: [],
+      registered: false,
+      userCount,
+      manufacturerId: user.uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      recycleStatus: "uninitiated",
+    };
 
-      await setDoc(serialRef, newProduct);
-    } catch (error) {
-      console.error("Error adding product:", error);
-    }
+    // Minimal public details
+    const publicProduct = {
+      name: product.name,
+      category: product.category,
+      serialNumber: product.serialNumber,
+      manufacturerId: user.uid,
+      productId,
+      qrCode: qrData,
+    };
+
+    // Write full details (private)
+    await setDoc(serialRef, newProduct);
+
+    // Write minimal details (public)
+    await setDoc(
+      doc(db, "manufacturers", user.uid, "publicProducts", product.serialNumber),
+      publicProduct
+    );
   };
 
   const downloadTemplate = () => {
@@ -373,7 +423,7 @@ const Manufacturer = () => {
   useEffect(() => {
     const fetchOrganizationDetails = async () => {
       try {
-        if (!organizationID) return; // Defensive check
+        if (!organizationID) return;
         const orgRef = doc(db, "organizations", organizationID);
         const orgDoc = await getDoc(orgRef);
         if (orgDoc.exists()) {
@@ -559,7 +609,7 @@ const Manufacturer = () => {
                       </div>
                     </div>
                     <button
-                      onClick={() => deleteProduct(product.id)}
+                      onClick={() => deleteProduct(product.productId, product.serialNumber)}
                       className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded text-sm w-full sm:w-auto"
                     >
                       Delete
@@ -631,6 +681,7 @@ const Manufacturer = () => {
             <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md mb-10">
               <h3 className="text-lg text-white text-center bg-black font-semibold mb-6 rounded-full p-2">Product Details</h3>
               <p className="text-black"><strong>Name:</strong> {showProductDetails.name}</p>
+              <p className="text-black"><strong>Product ID:</strong> {showProductDetails.productId}</p>
               <p className="text-black"><strong>Serial Number:</strong> {showProductDetails.serialNumber}</p>
               <p className="text-black"><strong>Category:</strong> {showProductDetails.category}</p>
               <p className="text-black"><strong>Recyclability:</strong> {showProductDetails.recyclability}</p>
@@ -642,10 +693,10 @@ const Manufacturer = () => {
                 <p className="text-black font-bold">Secret Key:</p>
                 <span
                   className="text-black border px-2 py-1 rounded bg-gray-200 w-[150px] text-center overflow-hidden"
-                  style={{ 
-                  whiteSpace: "nowrap", 
-                  textOverflow: "ellipsis",
-                  fontFamily: "'Consolas'"
+                  style={{
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                    fontFamily: "'Consolas'"
                   }}
                 >
                   {showSecretKey ? showProductDetails.secretKey : "**********"}

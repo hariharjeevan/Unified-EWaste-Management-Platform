@@ -37,6 +37,7 @@ const Consumer = () => {
 
   interface Product {
     id?: string;
+    productId?: string;
     name: string;
     serialNumber: string;
     category: string;
@@ -68,11 +69,6 @@ const Consumer = () => {
     address: string;
   };
 
-  type QueryDoc = {
-    id: string;
-    consumerId: string;
-  };
-
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -97,6 +93,7 @@ const Consumer = () => {
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
   const maxDistance = 500; // Maximum distance in kmx
   const recyclerSectionRef = useRef<HTMLDivElement | null>(null);
+  const [hasError, setHasError] = useState(false);
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -336,7 +333,8 @@ const Consumer = () => {
       const verifiedProducts: Product[] = [];
 
       for (const product of products) {
-        if (!product.manufacturerId || !product.serialNumber) {
+
+        if (!product.manufacturerId || !product.productId || !product.serialNumber) {
           console.error("Invalid product data:", product);
           continue;
         }
@@ -345,7 +343,7 @@ const Consumer = () => {
           db,
           "manufacturers",
           product.manufacturerId,
-          "products",
+          product.productId,
           product.serialNumber
         );
 
@@ -391,8 +389,6 @@ const Consumer = () => {
       console.error("Error fetching home location:", error);
     }
   };
-
-
 
   const fetchConsumerQueries = useCallback(async () => {
     if (!consumerId) return;
@@ -461,6 +457,7 @@ const Consumer = () => {
     }
   }, [consumerId]);
 
+  // QR Scan feature
   const startQRScanner = () => {
     if (!qrContainerRef.current) return;
 
@@ -475,56 +472,67 @@ const Consumer = () => {
         await scanner.clear();
         setScannerStarted(false);
         setErrorMessage(null);
-        setProductDetails(null);
+        setHasError(false);
+
         let qrValue = decodedText;
 
         try {
           const url = new URL(decodedText);
           const qrParam = url.searchParams.get("qr");
-          if (qrParam) {
-            qrValue = qrParam;
-          }
+          if (qrParam) qrValue = qrParam;
+        } catch (e) {
+          // If not a valid URL, proceed with the original decodedText
+        }
 
-          const parts = qrValue.split("-");
-          if (parts.length !== 2) {
-            setErrorMessage("Invalid QR Code format.");
-            return;
-          }
-          const [manufacturerUID, serialNumber] = parts;
+        // Process QR value and fetch product details if valid
+        const parts = qrValue.split("|");
+        if (parts.length === 3) {
+          const [manufacturerUID, productId, serialNumber] = parts;
           setManufacturerUID(manufacturerUID);
-          const productRef = doc(
-            db,
-            "manufacturers",
-            manufacturerUID,
-            "products",
-            serialNumber
-          );
-          const productSnap = await getDoc(productRef);
-
-          if (productSnap.exists()) {
-            const productData = productSnap.data() as Product;
-            setProductDetails(productData);
-          } else {
-            setErrorMessage("No product found for this QR code.");
-          }
-        } catch (error) {
-          console.error("Error retrieving product details:", error);
-          setErrorMessage("Failed to fetch product details.");
+          fetchMinimalProductDetails(manufacturerUID, productId, serialNumber);
+        } else {
+          setErrorMessage("Invalid QR Code format.");
         }
       },
-      (errorMessage) => {
-        console.warn("QR Scan failed:", errorMessage);
+      (errorMessage: string) => {
+        setErrorMessage(null);
       }
     );
+  };
 
-    scannerRef.current = scanner;
-    setScannerStarted(true);
+  // Function to fetch minimal product details
+  const fetchMinimalProductDetails = async (manufacturerUID: string, productId: string, serialNumber: string) => {
+    try {
+      const publicProductRef = doc(
+        db,
+        "manufacturers",
+        manufacturerUID,
+        "publicProducts",
+        serialNumber
+      );
+      const publicProductSnap = await getDoc(publicProductRef);
+
+      if (publicProductSnap.exists()) {
+        const data = publicProductSnap.data() as Product;
+        setProductDetails({
+          ...data,
+          productId,
+        });
+        setErrorMessage(null); // Reset error on successful fetch
+      } else {
+        setProductDetails(null);
+        setErrorMessage("No product found for this QR code.");
+      }
+    } catch (error) {
+      setProductDetails(null);
+      setErrorMessage("Failed to fetch product details.");
+    }
   };
 
   const stopQRScanner = async () => {
     if (scannerRef.current) {
       try {
-        await scannerRef.current.clear()
+        await scannerRef.current.clear();
         setScannerStarted(false);
         scannerRef.current = null;
       } catch (error) {
@@ -556,28 +564,49 @@ const Consumer = () => {
       const response: HttpsCallableResult<RegisterResponse> =
         await registerProduct({
           manufacturerId: manufacturerUID,
-          productId: productDetails.serialNumber,
+          productId: productDetails.productId ?? "", // Ensure productId is a string
           serialNumber: productDetails.serialNumber,
           modelNumber: productDetails.name,
           secretKey: secretKey,
         });
 
       if (response.data.success) {
-        const userScansRef = collection(
+        // Fetch full product details
+        if (!productDetails.productId) {
+          setErrorMessage("Product ID is missing. Cannot fetch full product details.");
+          setLoading(false);
+          return;
+        }
+        const fullProductRef = doc(
           db,
-          "consumers",
-          user.uid,
-          "scannedProducts"
+          "manufacturers",
+          manufacturerUID,
+          productDetails.productId,
+          productDetails.serialNumber
         );
-        await setDoc(doc(userScansRef, productDetails.serialNumber), {
-          ...productDetails,
-          registered: true,
-        });
+        const fullProductSnap = await getDoc(fullProductRef);
 
-        alert("Product registered successfully!");
-        window.location.reload();
-        setSecretKey("");
-        await fetchScannedProducts(user.uid);
+        if (fullProductSnap.exists()) {
+          const fullProductData = fullProductSnap.data();
+          // Store full details in consumer's scannedProducts
+          await setDoc(
+            doc(db, "consumers", user.uid, "scannedProducts", productDetails.serialNumber),
+            {
+              ...fullProductData,
+              registered: true,
+              manufacturerId: manufacturerUID,
+              productId: productDetails.productId,
+              serialNumber: productDetails.serialNumber,
+              name: productDetails.name,
+            }
+          );
+          alert("Product registered successfully!");
+          window.location.reload();
+          setSecretKey("");
+          await fetchScannedProducts(user.uid);
+        } else {
+          setErrorMessage("Full product details not found after registration.");
+        }
       } else {
         setErrorMessage(response.data.message || "Registration failed.");
       }
@@ -590,7 +619,6 @@ const Consumer = () => {
       setLoading(false);
     }
   };
-
   const handleDeleteProduct = async (productId: string) => {
     if (!user) {
       setErrorMessage("User is not authenticated.");
@@ -629,13 +657,14 @@ const Consumer = () => {
   };
 
   useEffect(() => {
-    const fetchProductDetails = async (manufacturerUID: string, serialNumber: string) => {
+    const fetchProductDetails = async (manufacturerUID: string, productId: string, serialNumber: string) => {
       try {
+        // If you store products as: /manufacturers/{manufacturerUID}/products/{serialNumber}
         const productRef = doc(
           db,
           "manufacturers",
           manufacturerUID,
-          "products",
+          productId,
           serialNumber
         );
         const productSnap = await getDoc(productRef);
@@ -651,13 +680,13 @@ const Consumer = () => {
         setErrorMessage("Failed to fetch product details.");
       }
     };
+
     if (qrParam && user) {
-      // Parse manufacturerUID and serialNumber
-      const parts = qrParam.split("-");
-      if (parts.length === 2) {
+      // Parse manufacturerUID, productId, serialNumber
+      const parts = qrParam.split("|");
+      if (parts.length === 3) {
         setManufacturerUID(parts[0]);
-        // Fetch product details and show registration UI as you do in QR scan
-        fetchProductDetails(parts[0], parts[1]);
+        fetchProductDetails(parts[0], parts[1], parts[2]);
       }
     }
   }, [qrParam, user]);
@@ -857,6 +886,9 @@ const Consumer = () => {
                 <strong>Name:</strong> {showProductDetails.name}
               </p>
               <p className="text-black">
+                <strong>Product Id:</strong> {showProductDetails.productId}
+              </p>
+              <p className="text-black">
                 <strong>Serial Number:</strong> {showProductDetails.serialNumber}
               </p>
               <p className="text-black">
@@ -914,7 +946,8 @@ const Consumer = () => {
                   type={showSecretKey ? "text" : "password"}
                   value={secretKey}
                   onChange={(e) => setSecretKey(e.target.value)}
-                  className="mt-2 w-full px-4 py-2 border rounded-lg text-black"
+                  className="mt-2 w-full px-4 py-2 border rounded-lg text-black font"
+                  style={{ fontFamily: "'Consolas'" }}
                   placeholder="Enter Secret Key"
                 />
                 <button

@@ -30,6 +30,8 @@ const RecyclerPage = () => {
 
   interface Product {
     id: string;
+    productId: string;
+    serialNumber: string;
     productName: string;
     category: string;
     price: number;
@@ -43,6 +45,7 @@ const RecyclerPage = () => {
   interface QueryDetails {
     id: string;
     productId: string;
+    serialNumber: string;
     productName: string;
     category: string;
     status: string;
@@ -120,7 +123,8 @@ const RecyclerPage = () => {
 
         const products: Product[] = querySnapshot.docs.map((doc) => ({
           id: doc.id,
-          ...(doc.data() as Omit<Product, "id">),
+          serialNumber: doc.id,
+          ...(doc.data() as Omit<Product, "id" | "serialNumber">),
         }));
 
         setProductArray(products);
@@ -167,7 +171,7 @@ const RecyclerPage = () => {
     fetchQueries();
   }, [user]);
 
-  const inspectqueryproductdetails = async (consumerId: string, productId: string, queryId: string) => {
+  const inspectqueryproductdetails = async (consumerId: string, productId: string, serialNumber: string, queryId: string) => {
     const query = queries.find(q => q.id === queryId);
     setInspectedQuery(query || null);
 
@@ -187,12 +191,13 @@ const RecyclerPage = () => {
       return;
     }
     try {
-      const consumerdbref = doc(db, "consumers", consumerId, "scannedProducts", productId);
+      const consumerdbref = doc(db, "consumers", consumerId, "scannedProducts", serialNumber);
       const consumerSnapshot = await getDoc(consumerdbref);
       if (consumerSnapshot.exists()) {
         const consumerData = consumerSnapshot.data();
         const productDetails = [
-          { label: "Product ID", value: consumerData?.serialNumber },
+          { label: "Product ID", value: consumerData?.productId },
+          { label: "Serial Number", value: consumerData?.serialNumber },
           { label: "Product Name", value: consumerData?.name },
           { label: "Category", value: consumerData?.category },
           { label: "Created At", value: consumerData?.createdAt },
@@ -330,7 +335,7 @@ const RecyclerPage = () => {
     return (
       <div className="flex flex-col items-center justify-center h-screen">
         <p className="text-white text-lg">Loading Google Maps...</p>
-          <Spinner size={30} color="white" />
+        <Spinner size={30} color="white" />
       </div>
     );
   }
@@ -502,6 +507,7 @@ const RecyclerPage = () => {
                 Recycling Request Actions
               </h3>
               <p className="text-black"><strong>Product:</strong> {modalQuery.productName}</p>
+              <p className="text-black"><strong>Serial Number:</strong> {modalQuery.productId}</p>
               <p className="text-black"><strong>Consumer:</strong> {modalQuery.consumerName}</p>
               <p className="text-black"><strong>Phone:</strong> {modalQuery.consumerPhone}</p>
               <p className="text-black"><strong>Address:</strong> {modalQuery.consumerAddress}</p>
@@ -536,7 +542,7 @@ const RecyclerPage = () => {
                 )}
                 <button
                   onClick={() => {
-                    inspectqueryproductdetails(modalQuery.consumerId, modalQuery.productId, modalQuery.id);
+                    inspectqueryproductdetails(modalQuery.consumerId, modalQuery.productId, modalQuery.serialNumber, modalQuery.id)
                   }}
                   className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
                 >
