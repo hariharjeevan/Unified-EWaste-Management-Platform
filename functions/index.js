@@ -5,11 +5,12 @@ const { VertexAI } = require("@google-cloud/vertexai");
 admin.initializeApp();
 const firestore = admin.firestore();
 const { v4: uuidv4 } = require("uuid");
+const region = "asia-east2";
 
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(functions.config().sendgrid.key);
 
-exports.adminCreateUser = functions.https.onCall(async (data, context) => {
+exports.adminCreateUser = functions.region(region).https.onCall(async (data, context) => {
   if (context.auth?.token?.role !== "admin") {
     throw new functions.https.HttpsError("permission-denied",
       "Only admins can create users.");
@@ -130,7 +131,7 @@ ${organization} Team
   }
 });
 
-exports.setUserOrgAdmin = functions.https.onCall(async (data, context) => {
+exports.setUserOrgAdmin = functions.region(region).https.onCall(async (data, context) => {
   // Only allow the user to set their own admin claim at signup
   if (!context.auth || context.auth.uid !== data.uid) {
     throw new functions.https.HttpsError("permission-denied", "Not allowed.");
@@ -151,7 +152,7 @@ exports.setUserOrgAdmin = functions.https.onCall(async (data, context) => {
 });
 
 {/* Assign user roles*/ }
-exports.setUserRole = functions.https.onCall(async (data, context) => {
+exports.setUserRole = functions.region(region).https.onCall(async (data, context) => {
   // Only allow admins to call this
   if (context.auth.token.role !== "admin") {
     throw new functions.https.HttpsError("permission-denied",
@@ -167,7 +168,7 @@ exports.setUserRole = functions.https.onCall(async (data, context) => {
 });
 
 {/* Product Registration Function */ }
-exports.verifyAndRegisterConsumer = functions.https.onCall(
+exports.verifyAndRegisterConsumer = functions.region(region).https.onCall(
   async (data, context) => {
     if (!context.auth) {
       throw new functions.https.HttpsError(
@@ -281,7 +282,7 @@ exports.verifyAndRegisterConsumer = functions.https.onCall(
 );
 
 {/* Product Deletion Handler */ }
-exports.onProductDeletion = functions.firestore
+exports.onProductDeletion = functions.region(region).firestore
   .document("consumers/{consumerUid}/scannedProducts/{productId}")
   .onDelete(async (snap, context) => {
     const { consumerUid, productId } = context.params;
@@ -347,7 +348,7 @@ exports.onProductDeletion = functions.firestore
   });
 
 {/* Query Handling function*/ }
-exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
+exports.sendRecyclerRequest = functions.region(region).https.onCall(async (data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError(
       "unauthenticated",
@@ -452,14 +453,14 @@ exports.sendRecyclerRequest = functions.https.onCall(async (data, context) => {
 {/* Vertex AI Chatbot */ }
 const vertexAI = new VertexAI({
   project: "uemp-aadde",
-  location: "us-central1",
+  location: "europe-central2",
 });
 
 const model = vertexAI.getGenerativeModel({
   model: "gemini-2.0-flash-001",
 });
 
-exports.askGemini = functions.https.onCall(async (data) => {
+exports.askGemini = functions.region(region).https.onCall(async (data) => {
   const userMessage = (data.message || "").trim();
 
   if (!userMessage) {
@@ -487,14 +488,24 @@ exports.askGemini = functions.https.onCall(async (data) => {
 
     const combinedContext = `${context1}\n\n${context2}`;
 
+    const prompt = `
+You are an expert assistant for the Unified E-Waste Management Platform (UEMP).
+Answer the user's question below as clearly and directly as possible, using the information provided if relevant, but do not mention "context" or "provided context" in your answer.
+
+${combinedContext}
+
+User Question: ${userMessage}
+
+Answer:
+`;
+
     const result = await model.generateContent({
       contents: [
         {
           role: "user",
           parts: [
             {
-              text: `[CONTEXT START]\n${combinedContext}\n
-              [CONTEXT END]\n\n[USER QUESTION]\n${userMessage}\n\n[ANSWER]`,
+              text: prompt,
             },
           ],
         },

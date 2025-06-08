@@ -139,36 +139,36 @@ const RecyclerPage = () => {
     fetchData();
   }, [user]);
 
-  useEffect(() => {
-    const fetchQueries = async () => {
-      if (!user) return;
+  const fetchQueries = useCallback(async () => {
+    if (!user) return;
 
-      try {
-        const docRef = doc(db, "Queries", user.uid);
-        const docSnap = await getDoc(docRef);
+    try {
+      const docRef = doc(db, "Queries", user.uid);
+      const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          const fetchedQueries: QueryDetails[] = Object.entries(data.queries || {}).map(
-            ([queryId, queryData]: [string, any]) => ({
-              id: queryId,
-              ...queryData, //spread the query data
-            })
-          );
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        const fetchedQueries: QueryDetails[] = Object.entries(data.queries || {}).map(
+          ([queryId, queryData]: [string, any]) => ({
+            id: queryId,
+            ...queryData,
+          })
+        );
 
-          setQueries(fetchedQueries);
-        } else {
-          console.error("No such document!");
-        }
-      } catch (error) {
-        console.error("Error fetching queries:", error);
-      } finally {
-        setLoading(false);
+        setQueries(fetchedQueries);
+      } else {
+        console.error("No such document!");
       }
-    };
-
-    fetchQueries();
+    } catch (error) {
+      console.error("Error fetching queries:", error);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchQueries();
+  }, [user, fetchQueries]);
 
   const inspectqueryproductdetails = async (consumerId: string, productId: string, serialNumber: string, queryId: string) => {
     const query = queries.find(q => q.id === queryId);
@@ -317,6 +317,9 @@ const RecyclerPage = () => {
       );
 
       alert(`Query ${newStatus === "accepted" ? "accepted" : "rejected"} successfully!`);
+      if (newStatus === "rejected") {
+        await fetchQueries();
+      }
     } catch (error) {
       console.error("Error updating query status:", error);
 
@@ -436,7 +439,7 @@ const RecyclerPage = () => {
             <p>No queries found.</p>
           ) : (
             <ul className="space-y-4">
-              {queries.map((query) => (
+              {activeQueries.map((query) => (
                 <li
                   key={query.id || query.productId}
                   className="p-4 border rounded shadow bg-white cursor-pointer hover:shadow-lg transition"
@@ -501,7 +504,7 @@ const RecyclerPage = () => {
                 Recycling Request Actions
               </h3>
               <p className="text-black"><strong>Product:</strong> {modalQuery.productName}</p>
-              <p className="text-black"><strong>Serial Number:</strong> {modalQuery.productId}</p>
+              <p className="text-black"><strong>Product Id:</strong> {modalQuery.productId}</p>
               <p className="text-black"><strong>Consumer:</strong> {modalQuery.consumerName}</p>
               <p className="text-black"><strong>Phone:</strong> {modalQuery.consumerPhone}</p>
               <p className="text-black"><strong>Address:</strong> {modalQuery.consumerAddress}</p>

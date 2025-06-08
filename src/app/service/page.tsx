@@ -14,7 +14,6 @@ const ServicePage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [manufacturerId, setManufacturerId] = useState("");
   const [productId, setProductId] = useState("");
-  const [seialnumber, setSeialNumber] = useState("");
   const [nameofproduct, setNameofProduct] = useState("");
   const [selectedValue, setSelectedValue] = useState("");
   const [pricevalue, setPriceValue] = useState("");
@@ -134,7 +133,6 @@ const ServicePage = () => {
       const newProduct = {
         id: productId,
         productId,
-        seialnumber,
         manufacturerId,
         productName: minimalDetails?.name || nameofproduct,
         category: minimalDetails?.category || selectedValue || "Default Category",
@@ -150,7 +148,6 @@ const ServicePage = () => {
 
       setManufacturerId("");
       setProductId("");
-      setSeialNumber("");
       setNameofProduct("");
       setSelectedValue("");
       setPriceValue("");
@@ -181,12 +178,11 @@ const ServicePage = () => {
         for (const row of results.data as any[]) {
           const manufacturerId = row["Manufacturer ID"]?.trim();
           const productId = row["Product ID"]?.trim();
-          const serialnumber = row["Serial Number"]?.trim();
           const price = parseFloat(row["Price"]);
           const points = parseInt(row["Points"], 10);
           const desc = row["Description"]?.trim();
 
-          if (!manufacturerId || !productId || !serialnumber || isNaN(price) || isNaN(points) || !desc) {
+          if (!manufacturerId || !productId || isNaN(price) || isNaN(points) || !desc) {
             errorCount++;
             continue;
           }
@@ -217,7 +213,6 @@ const ServicePage = () => {
             await setDoc(docRef, {
               id: productId,
               productId,
-              serialnumber,
               manufacturerId,
               productName,
               category,
@@ -281,14 +276,6 @@ const ServicePage = () => {
             value={loadingProduct ? "Loading..." : selectedValue}
             readOnly
             className="w-full p-2 mb-2 border border-gray-300 rounded text-black bg-gray-100"
-          />
-          <input
-            type="text"
-            placeholder="Enter Serial Number"
-            value={seialnumber}
-            onChange={(e) => setSeialNumber(e.target.value)}
-            required
-            className="w-full p-2 mb-2 border border-gray-300 rounded text-black"
           />
           <input
             type="number"

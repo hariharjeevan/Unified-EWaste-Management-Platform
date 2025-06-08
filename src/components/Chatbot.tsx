@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { httpsCallable } from "firebase/functions";
-import { functions } from "@/firebaseConfig";
+import { httpsCallable, getFunctions } from "firebase/functions";
+import { app } from "@/firebaseConfig";
 import ReactMarkdown from "react-markdown";
 import Image from "next/image";
 import { FaChevronDown } from "react-icons/fa";
@@ -24,7 +24,7 @@ const Chatbot = () => {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const irrelevantKeywords = ["sports", "weather", "news", "politics", "movies", "entertainment"];
-
+  const functions = getFunctions(app, "asia-east2");
   const handleSend = async () => {
     if (!input.trim()) return;
 

@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { getAuth } from "firebase/auth";
 import { doc, getDoc, getDocs, collection } from "firebase/firestore";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { db } from "@/firebaseConfig";
+import { db, app } from "@/firebaseConfig";
 import Navbar from "@/components/Navbar";
 import Spinner from "@/components/Spinner";
 
@@ -156,7 +156,7 @@ const ListOfProductsClientInner = () => {
 
     try {
       if (window.confirm("Do you want to send this request?")) {
-        const functions = getFunctions();
+        const functions = getFunctions(app, "asia-east2");
         const sendRecyclerRequest = httpsCallable(functions, "sendRecyclerRequest");
         const scannedProduct = scannedProducts.find((p) => p.id === serialNumber);
         if (!scannedProduct) {

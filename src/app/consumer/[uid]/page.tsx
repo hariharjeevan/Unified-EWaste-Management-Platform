@@ -1,9 +1,9 @@
 //Consumer Page
 "use client";
 
-import { useState, useEffect, useCallback, useRef, use } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { db } from "@/firebaseConfig";
+import { db, app } from "@/firebaseConfig";
 import { doc, getDoc, setDoc, collection, getDocs, deleteDoc } from "firebase/firestore";
 import { onAuthStateChanged, User, getAuth } from "firebase/auth";
 import { getFunctions, httpsCallable, HttpsCallableResult } from "firebase/functions";
@@ -523,7 +523,7 @@ const Consumer = () => {
 
     setLoading(true);
     try {
-      const functions = getFunctions();
+      const functions = getFunctions(app, "asia-east2");
       const registerProduct = httpsCallable<
         {
           manufacturerId: string;

@@ -1,6 +1,7 @@
 // AdminDashboard.tsx
 
 import React, { useState, useEffect } from 'react';
+import { app } from "@/firebaseConfig";
 import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from "firebase/functions";
@@ -18,7 +19,7 @@ const AdminDashboard = () => {
 
   const auth = getAuth();
   const db = getFirestore();
-  const functions = getFunctions();
+  const functions = getFunctions(app, "asia-east2");
 
   // Fetch employees in same org as admin
   useEffect(() => {
