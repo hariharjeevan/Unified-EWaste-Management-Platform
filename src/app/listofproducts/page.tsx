@@ -35,6 +35,7 @@ const ListOfProductsClientInner = () => {
     name: "",
     phone: "",
     address: "",
+    email: "",
   });
   const [showModal, setShowModal] = useState(false);
   const [scannedProducts, setScannedProducts] = useState<
@@ -114,7 +115,7 @@ const ListOfProductsClientInner = () => {
 
   const handleSendRequestClick = () => {
     setShowModal(true);
-    setConsumerDetails({ name: "", phone: "", address: "" });
+    setConsumerDetails({ name: "", phone: "", address: "", email: "" });
     setSelectedSerialNumber(null);
   };
 
@@ -127,7 +128,8 @@ const ListOfProductsClientInner = () => {
       !selectedSerialNumber ||
       !consumerDetails.name ||
       !consumerDetails.phone ||
-      !consumerDetails.address
+      !consumerDetails.address ||
+      !consumerDetails.email
     ) {
       alert("Please fill in all the fields and select a product.");
       return;
@@ -141,15 +143,15 @@ const ListOfProductsClientInner = () => {
     await sendRequestCloudFunction(selectedSerialNumber, consumerDetails);
     setLoading(false);
     setShowModal(false);
-    setConsumerDetails({ name: "", phone: "", address: "" });
+    setConsumerDetails({ name: "", phone: "", address: "", email: "" });
     setSelectedSerialNumber(null);
   };
 
   const sendRequestCloudFunction = async (
     serialNumber: string,
-    details: { name: string; phone: string; address: string }
+    details: { name: string; phone: string; address: string  , email: string }
   ): Promise<void> => {
-    if (!serialNumber || !recyclerId || !consumerId) {
+    if (!serialNumber || !recyclerId || !consumerId || !details) {
       alert("Missing Recycler or Consumer Details");
       return;
     }
@@ -282,6 +284,14 @@ const ListOfProductsClientInner = () => {
                   placeholder="Phone"
                   className="w-full mb-3 px-3 py-2 border rounded"
                   value={consumerDetails.phone}
+                  onChange={handleInputChange}
+                />
+                <input
+                  type="text"
+                  name="email"
+                  placeholder="email"
+                  className="w-full mb-3 px-3 py-2 border rounded"
+                  value={consumerDetails.email}
                   onChange={handleInputChange}
                 />
                 <textarea

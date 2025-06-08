@@ -338,7 +338,6 @@ exports.onProductDeletion = functions.region(region).firestore
           registeredBy: admin.firestore.FieldValue.delete(),
         });
 
-        console.log(`Manufacturer database updated for product ${productId}`);
       });
     } catch (error) {
       console.error(
@@ -372,6 +371,7 @@ exports.sendRecyclerRequest = functions.region(region).https.onCall(async (data,
     !details?.name ||
     !details?.phone ||
     !details?.address ||
+    !details?.email ||
     !productName
   ) {
     throw new functions.https.HttpsError(
@@ -386,7 +386,6 @@ exports.sendRecyclerRequest = functions.region(region).https.onCall(async (data,
     const existingData = recyclerDocSnap.exists ? recyclerDocSnap.data() : {};
     const queries = existingData.queries || {};
 
-    // Check if request already exists for this product by this user
     const alreadySent = Object.values(queries).some(
       (query) =>
         query.serialNumber === serialNumber && query.consumerId === consumerId,
@@ -411,6 +410,7 @@ exports.sendRecyclerRequest = functions.region(region).https.onCall(async (data,
       consumerName: details.name,
       consumerPhone: details.phone,
       consumerAddress: details.address,
+      consumerEmail: details.email,
     };
 
     const updatedQueries = {
@@ -435,6 +435,7 @@ exports.sendRecyclerRequest = functions.region(region).https.onCall(async (data,
           serialNumber,
           productId,
           productName,
+          consumerEmail: details.email,
           timestamp: admin.firestore.FieldValue.serverTimestamp(),
         },
       },
@@ -519,5 +520,63 @@ Answer:
   } catch (error) {
     throw new functions.https.
       HttpsError("internal", `Gemini Error: ${error.message}`);
+  }
+});
+
+exports.sendRejectionEmail = functions.region(region).https.onCall(async (data) => {
+  const { consumerEmail, productName, reason } = data;
+  if (!consumerEmail || !productName || !reason) {
+    console.error("Missing fields:", { consumerEmail, productName, reason });
+    throw new functions.https.HttpsError("invalid-argument", "Missing fields.");
+  }
+
+  const platformUrl = "https://unified-e-waste-management-platform.vercel.app";
+
+  const msg = {
+    to: consumerEmail,
+    from: "genesislive@proton.me",
+    subject: `Your Recycling Request for ${productName} was Rejected`,
+    text: `Hello ${consumerEmail},
+
+Your recycling request for "${productName}" was rejected.
+
+Reason: ${reason}
+
+If you have questions, please contact the recycler.
+
+You can always visit our platform: ${platformUrl}
+
+Best regards,
+UEMP Team
+${platformUrl}
+`,
+    html: `
+      <div style="font-family: Arial, sans-serif; background: #f9f9f9; padding: 32px;">
+        <div style="max-width: 480px; margin: auto; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #e0e0e0; padding: 32px;">
+          <h2 style="color: #d32f2f; margin-bottom: 16px;">
+            Recycling Request Rejected
+          </h2>
+          <p style="font-size: 16px; color: #222;">
+            Hello,<br><br>
+            Your recycling request for <b>${productName}</b> was <b>rejected</b>.<br><br>
+            <b>Reason:</b> <span style="color: #d32f2f;">${reason}</span>
+          </p>
+          <p style="font-size: 15px; color: #555;">
+            If you have questions, please contact the recycler.<br><br>
+            You can always visit our platform: <a href="${platformUrl}" style="color: #1976d2;">${platformUrl}</a><br><br>
+            Best regards,<br>
+            <b>UEMP Team</b>
+          </p>
+        </div>
+      </div>
+    `,
+  };
+
+  try {
+    await sgMail.send(msg);
+    return { success: true, message: "Rejection email sent successfully." };
+  } catch (error) {
+    console.error("Error sending rejection email:", error);
+    throw new functions.https.HttpsError("internal", error.message || "Failed to send email.");
   }
 });

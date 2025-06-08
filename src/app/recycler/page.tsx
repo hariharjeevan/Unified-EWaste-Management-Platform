@@ -72,7 +72,6 @@ const RecyclerPage = () => {
   const [inspectedQuery, setInspectedQuery] = useState<QueryDetails | null>(null);
   const [consumerId, setConsumerId] = useState<string | null>(null);
   const activeQueries = queries.filter(q => q.status !== "rejected");
-  const historyQueries = queries.filter(q => q.status === "rejected");
   const [showQueryModal, setShowQueryModal] = useState(false);
   const [modalQuery, setModalQuery] = useState<QueryDetails | null>(null);
 
@@ -291,24 +290,6 @@ const RecyclerPage = () => {
       await updateDoc(docRef, {
         [`queries.${queryId}.status`]: newStatus,
       });
-      console.log(`Firestore updated: Query ${queryId} set to ${newStatus}`);
-
-      if (newStatus === "rejected") {
-
-        const rejectedQuery = queries.find(q => q.id === queryId);
-        if (rejectedQuery && rejectedQuery.productId) {
-          const productDocRef = doc(db, "recyclers", user.uid, "products", rejectedQuery.productId);
-          try {
-            await deleteDoc(productDocRef);
-            setProductArray(prev => prev.filter(p => p.id !== rejectedQuery.productId));
-            setFilteredProducts(prev => prev.filter(p => p.id !== rejectedQuery.productId));
-            console.log(`Product ${rejectedQuery.productId} deleted from recycler's products`);
-          } catch (err) {
-            console.error("Error deleting product:", err);
-            alert("Failed to delete product after rejection.");
-          }
-        }
-      }
 
       setQueries((prevQueries) =>
         prevQueries.map((q) =>
@@ -367,6 +348,7 @@ const RecyclerPage = () => {
         links={[
           { label: "Find Manufacturer", href: "/manufacturerdetails", tooltip: "Find your manufacturer and their manufactured products." },
           { label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" },
+          { label: "Query Status", href: "/querystatus", tooltip: "Showes the Query Status" },
         ]}
       />
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 text-black">
@@ -471,26 +453,6 @@ const RecyclerPage = () => {
                   >
                     Complete Recycle
                   </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        {/* Recycling History */}
-        <div className="w-full max-w-4xl bg-white p-6 mt-10 mb-10 rounded shadow text-black">
-          <h2 className="text-xl font-bold mb-4">Recycling History</h2>
-          {loading ? (
-            <p>Loading...</p>
-          ) : historyQueries.length === 0 ? (
-            <p>No history found.</p>
-          ) : (
-            <ul className="space-y-4">
-              {historyQueries.map((query) => (
-                <li key={query.id || query.productId} className="p-4 border rounded shadow">
-                  <p><strong>Product:</strong> {query.productName}</p>
-                  <p><strong>Consumer:</strong> {query.consumerName}</p>
-                  <p><strong>Status:</strong> {query.status}</p>
-                  {/* Add more details if needed */}
                 </li>
               ))}
             </ul>
