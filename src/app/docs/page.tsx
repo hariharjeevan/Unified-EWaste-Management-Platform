@@ -23,11 +23,9 @@ const DocsPage = () => {
   ];
 
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-
+  const containerRef = useRef<HTMLDivElement>(null);
   const openModal = (url: string) => setImageUrl(url);
   const closeModal = () => setImageUrl(null);
-
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: "left" | "right") => {
     if (containerRef.current) {
@@ -126,8 +124,8 @@ const DocsPage = () => {
               <Image
                 src="/documentation/logos/electron_logo.png"
                 alt="Electron Logo"
-                width={100}
-                height={100}
+                width={130}
+                height={130}
                 className="pl-2 inline-block mr-1 align-text-bottom"
                 unoptimized
               />
@@ -208,17 +206,16 @@ const DocsPage = () => {
             The demo login buttons allow users to quickly test the login process for different user roles. Each button triggers a different login scenario, simulating how users from different roles would log in.
           </p>
           <div className="flex items-center justify-center mt-6">
-            <Image
-              src="/documentation/login.gif"
-              alt="Login Page Demo"
-              width={600}
-              height={400}
-              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
-              unoptimized
-              onClick={() => openModal("/documentation/login.gif")}
-            />
+            <video
+              src={"/documentation/videos/login.mp4"}
+              controls
+              loop
+              muted
+              className="rounded-lg max-w-full max-h-[70vh] mx-auto"
+            >
+              Your browser does not support the video tag.
+            </video>
           </div>
-          <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
         </section>
 
         {/* QR Registration Demo */}
@@ -269,17 +266,16 @@ const DocsPage = () => {
             The animation below illustrates the consumer QR-based registration flow, showing how users are redirected based on authentication status.
           </p>
           <div className="flex items-center justify-center mt-6">
-            <Image
-              src="/documentation/QRScanDemo.gif"
-              alt="Consumer Register Flow"
-              width={600}
-              height={400}
-              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
-              unoptimized
-              onClick={() => openModal("/documentation/QRScanDemo.gif")}
-            />
+            <video
+              src={"/documentation/videos/QRScanDemo.mp4"}
+              controls
+              loop
+              muted
+              className="rounded-lg max-w-full max-h-[70vh] mx-auto"
+            >
+              Your browser does not support the video tag.
+            </video>
           </div>
-          <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
           <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mt-4 mb-4">Technical Details</h2>
           <p className="text-gray-700 mb-4">
             This page uses Firebase Authentication and Next.js navigation utilities to ensure secure and intelligent redirect behavior:
@@ -333,18 +329,17 @@ const DocsPage = () => {
               <strong>Admin Dashboard:</strong> Improved admin dashboard for role based access control to employees.
             </li>
           </ul>
-          <div className="flex items-center justify-center mt-4 cursor-pointer transition-transform hover:scale-105">
-            <Image
-              src="/documentation/manufacturer.gif"
-              alt="Manufacturer Dashboard"
-              width={600}
-              height={400}
-              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
-              unoptimized
-              onClick={() => openModal("/documentation/manufacturer.gif")}
-            />
+          <div className="flex items-center justify-center mt-4 cursor-pointer">
+            <video
+              src={"/documentation/videos/manufacturer.mp4"}
+              controls
+              loop
+              muted
+              className="rounded-lg max-w-full max-h-[70vh] mx-auto"
+            >
+              Your browser does not support the video tag.
+            </video>
           </div>
-          <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
         </section>
 
         {/* Recycler Section */}
@@ -373,30 +368,29 @@ const DocsPage = () => {
               and update their status in the system.
             </li>
           </ul>
-          <div className="flex items-center justify-center mt-4 cursor-pointer transition-transform hover:scale-105">
-            <Image
-              src="/documentation/recycler.gif"
-              alt="Recycler Dashboard"
-              width={600}
-              height={400}
-              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
-              unoptimized
-              onClick={() => openModal("/documentation/recycler.gif")}
-            />
+          <div className="flex items-center justify-center mt-4 cursor-pointer">
+            <video
+              src={"/documentation/videos/recycler.mp4"}
+              controls
+              loop
+              muted
+              className="rounded-lg max-w-full max-h-[70vh] mx-auto"
+            >
+              Your browser does not support the video tag.
+            </video>
           </div>
-          <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
           <p className="text-black text-justify mt-4">Recyclers can obtain information about manufacturers such as <code className="mx-1">Manufacturer UID</code> and <code className="mx-1">Product ID
           </code> from Manufacturer Details page as shown below: </p>
-          <div className="flex items-center justify-center mt-4 cursor-pointer transition-transform hover:scale-105">
-            <Image
-              src="/documentation/Manufacturer Details.gif"
-              alt="Manufacturer Details"
-              width={600}
-              height={400}
-              className="mt-4 mb-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
-              unoptimized
-              onClick={() => openModal("/documentation/Manufacturer Details.gif")}
-            />
+          <div className="flex items-center justify-center mt-4 cursor-pointer">
+            <video
+              src={"/documentation/videos/Manufacturer Details.mp4"}
+              controls
+              loop
+              muted
+              className="rounded-lg max-w-full max-h-[70vh] mx-auto"
+            >
+              Your browser does not support the video tag.
+            </video>
           </div>
         </section>
 
@@ -424,18 +418,17 @@ const DocsPage = () => {
               <strong>Recycling Options:</strong> Schedule recycling pickups or drop-offs with registered recyclers.
             </li>
           </ul>
-          <div className="flex items-center justify-center mt-4 cursor-pointer transition-transform hover:scale-105">
-            <Image
-              src="/documentation/consumer.gif"
-              alt="Consumer Dashboard"
-              width={600}
-              height={400}
-              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
-              unoptimized
-              onClick={() => openModal("/documentation/consumer.gif")}
-            />
+          <div className="flex items-center justify-center mt-4 cursor-pointer">
+            <video
+              src={"/documentation/videos/consumer.mp4"}
+              controls
+              loop
+              muted
+              className="rounded-lg max-w-full max-h-[70vh] mx-auto"
+            >
+              Your browser does not support the video tag.
+            </video>
           </div>
-          <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
         </section>
 
         {/* Government Section */}
@@ -464,16 +457,16 @@ const DocsPage = () => {
               responsible e-waste management.
             </li>
           </ul>
-          <div className="flex items-center justify-center mt-4 cursor-pointer transition-transform hover:scale-105">
-            <Image
-              src="/documentation/government.gif"
-              alt="Government"
-              width={600}
-              height={400}
-              className="mt-4 shadow-md w-full max-w-lg h-auto cursor-pointer hover:brightness-75 transition-all"
-              unoptimized
-              onClick={() => openModal("/documentation/government.gif")}
-            />
+          <div className="flex items-center justify-center mt-4 cursor-pointer">
+            <video
+              src={"/documentation/videos/government.mp4"}
+              controls
+              loop
+              muted
+              className="rounded-lg max-w-full max-h-[70vh] mx-auto"
+            >
+              Your browser does not support the video tag.
+            </video>
           </div>
           <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
         </section>

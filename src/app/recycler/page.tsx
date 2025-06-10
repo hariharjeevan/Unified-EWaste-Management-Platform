@@ -347,8 +347,9 @@ const RecyclerPage = () => {
       <Navbar
         links={[
           { label: "Find Manufacturer", href: "/manufacturerdetails", tooltip: "Find your manufacturer and their manufactured products." },
-          { label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" },
           { label: "Query Status", href: "/querystatus", tooltip: "Showes the Query Status" },
+          { label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" },
+          { label: "About", href: "/about", tooltip: "About the team behind UEMP" },
         ]}
       />
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 text-black">
@@ -460,8 +461,8 @@ const RecyclerPage = () => {
         </div>
 
         {showQueryModal && modalQuery && (
-          <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+          <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl mx-2 overflow-y-auto max-h-[90vh]">
               <h3 className="text-lg text-white text-center bg-black font-semibold mb-6 rounded-full p-2">
                 Recycling Request Actions
               </h3>
@@ -471,7 +472,7 @@ const RecyclerPage = () => {
               <p className="text-black"><strong>Phone:</strong> {modalQuery.consumerPhone}</p>
               <p className="text-black"><strong>Address:</strong> {modalQuery.consumerAddress}</p>
               <p className="text-black"><strong>Status:</strong> {modalQuery.status}</p>
-              <div className="flex flex-row space-x-2 mt-4">
+              <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mt-4">
                 {modalQuery.status !== "accepted" && modalQuery.status !== "rejected" && (
                   <>
                     <button
@@ -481,7 +482,7 @@ const RecyclerPage = () => {
                           setShowQueryModal(false);
                         }
                       }}
-                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 w-full sm:w-auto"
                     >
                       Accept
                     </button>
@@ -493,7 +494,7 @@ const RecyclerPage = () => {
                           setShowQueryModal(false);
                         }
                       }}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 w-full sm:w-auto"
                     >
                       Reject
                     </button>
@@ -503,7 +504,7 @@ const RecyclerPage = () => {
                   onClick={() => {
                     inspectqueryproductdetails(modalQuery.consumerId, modalQuery.productId, modalQuery.serialNumber, modalQuery.id)
                   }}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-full sm:w-auto"
                 >
                   Inspect Product
                 </button>

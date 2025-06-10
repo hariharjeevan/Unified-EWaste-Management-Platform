@@ -58,6 +58,7 @@ const Manufacturer = () => {
   const [submissionStatus, setSubmissionStatus] = useState("");
   const productSectionRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const [isDuplicateSerial, setIsDuplicateSerial] = useState(false);
 
   interface ProductDetails {
     name: string;
@@ -625,42 +626,122 @@ const Manufacturer = () => {
           <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50 z-50 px-2">
             <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
               <h3 className="text-lg font-semibold mb-4 text-black text-center">Create New Product</h3>
-              {["name", "serialNumber", "category", "recyclability", "recoverableMetals"].map((field) => (
-                <div key={field} className="relative mb-4">
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="text"
-                      placeholder={field.replace(/([A-Z])/g, " $1")}
-                      className="border text-black p-2 w-full"
-                      onChange={(e) => setProductDetails({ ...productDetails, [field]: e.target.value })}
-                    />
-                    <div className="relative group">
-                      <IoMdInformationCircleOutline
-                        size={20}
-                        className="text-gray-500 cursor-pointer hover:text-gray-700"
-                      />
-                      <div className="absolute left-0 top-8 p-2 bg-white border 
-                      border-gray-300 shadow-lg rounded opacity-0 invisible 
-                      group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
-                        {field === "name" && <p className="text-sm text-gray-700">
-                          Enter the product&apos;s name (e.g., &quot;Samsung Galaxy S25&quot;).</p>}
-                        {field === "serialNumber" && <p className="text-sm text-gray-700">
-                          Enter the unique serial number for the product.</p>}
-                        {field === "category" && <p className="text-sm text-gray-700">
-                          Enter the product category (e.g., &quot;Electronics&quot;).</p>}
-                        {field === "recyclability" && <p className="text-sm text-gray-700">
-                          Enter the recyclability percentage (e.g., &quot;80%&quot;).</p>}
-                        {field === "recoverableMetals" && <p className="text-sm text-gray-700">
-                          Enter the recoverable metals (e.g., &quot;Gold, Silver&quot;).</p>}
-                      </div>
+              {/* Product Name */}
+              <div className="relative mb-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    className="border text-black p-2 w-full"
+                    value={productDetails.name}
+                    onChange={(e) => setProductDetails({ ...productDetails, name: e.target.value })}
+                  />
+                  <div className="relative group">
+                    <IoMdInformationCircleOutline size={20} className="text-gray-500 cursor-pointer hover:text-gray-700" />
+                    <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
+                      <p className="text-sm text-gray-700">Enter the product&apos;s name (e.g., &quot;Samsung Galaxy S25&quot;).</p>
                     </div>
                   </div>
                 </div>
-              ))}
+              </div>
+              {/* Serial Number */}
+              <div className="relative mb-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Serial Number"
+                    className="border text-black p-2 w-full"
+                    value={productDetails.serialNumber}
+                    onChange={async (e) => {
+                      const value = e.target.value;
+                      setProductDetails({ ...productDetails, serialNumber: value });
+
+                      if (value && productDetails.name && productDetails.category && user) {
+                        const productId = await getOrCreateProductId(user, { ...productDetails, serialNumber: value });
+                        const ref = doc(
+                          db,
+                          "manufacturers",
+                          user.uid,
+                          productId,
+                          value
+                        );
+                        const snap = await getDoc(ref);
+                        setIsDuplicateSerial(snap.exists());
+                      } else {
+                        setIsDuplicateSerial(false);
+                      }
+                    }}
+                  />
+                  <div className="relative group">
+                    <IoMdInformationCircleOutline size={20} className="text-gray-500 cursor-pointer hover:text-gray-700" />
+                    <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
+                      <p className="text-sm text-gray-700">Enter the unique serial number for the product.</p>
+                    </div>
+                  </div>
+                </div>
+                {isDuplicateSerial && (
+                  <p className="text-red-500 text-sm mt-1">A product with this serial number already exists for this model.</p>
+                )}
+              </div>
+              {/* Category */}
+              <div className="relative mb-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Category"
+                    className="border text-black p-2 w-full"
+                    value={productDetails.category}
+                    onChange={(e) => setProductDetails({ ...productDetails, category: e.target.value })}
+                  />
+                  <div className="relative group">
+                    <IoMdInformationCircleOutline size={20} className="text-gray-500 cursor-pointer hover:text-gray-700" />
+                    <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
+                      <p className="text-sm text-gray-700">Enter the product category (e.g., &quot;Electronics&quot;).</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Recyclability */}
+              <div className="relative mb-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Recyclability"
+                    className="border text-black p-2 w-full"
+                    value={productDetails.recyclability}
+                    onChange={(e) => setProductDetails({ ...productDetails, recyclability: e.target.value })}
+                  />
+                  <div className="relative group">
+                    <IoMdInformationCircleOutline size={20} className="text-gray-500 cursor-pointer hover:text-gray-700" />
+                    <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
+                      <p className="text-sm text-gray-700">Enter the recyclability percentage (e.g., &quot;80%&quot;).</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Recoverable Metals */}
+              <div className="relative mb-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Recoverable Metals"
+                    className="border text-black p-2 w-full"
+                    value={productDetails.recoverableMetals}
+                    onChange={(e) => setProductDetails({ ...productDetails, recoverableMetals: e.target.value })}
+                  />
+                  <div className="relative group">
+                    <IoMdInformationCircleOutline size={20} className="text-gray-500 cursor-pointer hover:text-gray-700" />
+                    <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
+                      <p className="text-sm text-gray-700">Enter the recoverable metals (e.g., &quot;Gold, Silver&quot;).</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className="flex flex-col sm:flex-row gap-2 mt-4">
                 <button
                   onClick={addProduct}
-                  className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-all duration-200 w-full sm:w-auto"
+                  className={`bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-all duration-200 w-full sm:w-auto ${isDuplicateSerial ? "opacity-50 cursor-not-allowed" : ""}`}
+                  disabled={isDuplicateSerial}
                 >
                   Save
                 </button>

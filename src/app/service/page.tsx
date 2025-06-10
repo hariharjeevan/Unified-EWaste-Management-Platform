@@ -4,10 +4,24 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/firebaseConfig";
 import { onAuthStateChanged, User } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import Navbar from "@/components/Navbar";
 import Papa from "papaparse";
 import UploadIcon from "@/icons/uploadIcon.svg";
+
+type OrganizationData = {
+  adminId: string;
+  certification: string;
+  name: string;
+};
+
+type ProductDetails = {
+  category: string;
+  name: string;
+  recoverableMetals: string;
+  recyclability: string;
+  productId: string;
+};
 
 const ServicePage = () => {
   const router = useRouter();
@@ -21,12 +35,30 @@ const ServicePage = () => {
   const [productdesc, setProductdesc] = useState("");
   const [loadingProduct, setLoadingProduct] = useState(false);
   const [productNotFound, setProductNotFound] = useState(false);
+  const [organizations, setOrganizations] = useState<OrganizationData[]>([]);
+  const [manufacturerProducts, setManufacturerProducts] = useState<ProductDetails[]>([]);
+  const [selectedManufacturer, setSelectedManufacturer] = useState<string>("");
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      const orgsRef = collection(db, "organizations");
+      const orgsSnapshot = await getDocs(orgsRef);
+      const orgList: OrganizationData[] = [];
+      orgsSnapshot.forEach((doc) => {
+        const orgData = doc.data() as OrganizationData;
+        orgList.push(orgData);
+      });
+      setOrganizations(orgList);
+    };
+    fetchOrganizations();
   }, []);
 
   useEffect(() => {
@@ -67,6 +99,24 @@ const ServicePage = () => {
     };
     fetchMinimalDetails();
   }, [manufacturerId, productId]);
+
+  useEffect(() => {
+    if (selectedManufacturer) {
+      const fetchManufacturerProducts = async () => {
+        const manufacturerRef = collection(db, "manufacturers", selectedManufacturer, "productModels");
+        const manufacturerSnapshot = await getDocs(manufacturerRef);
+        const products: ProductDetails[] = [];
+        manufacturerSnapshot.forEach((doc) => {
+          const productData = doc.data() as ProductDetails;
+          products.push({ ...productData, productId: doc.id });
+        });
+        setManufacturerProducts(products);
+      };
+      fetchManufacturerProducts();
+    } else {
+      setManufacturerProducts([]);
+    }
+  }, [selectedManufacturer]);
 
   const savedata = async () => {
     if (!user) {
@@ -244,22 +294,58 @@ const ServicePage = () => {
       <Navbar links={[{ label: "Find Manufacturer", href: "/manufacturerdetails", tooltip: "Find your manufacturer and their manufactured products." }, { label: "Recycler", href: "/recycler", tooltip: "Visit the recycler dashboard" }]} />
       <div className="flex justify-center items-center h-screen bg-white p-4">
         <div className="w-80 bg-white p-4 rounded-lg shadow-lg">
-          <input
-            type="text"
-            placeholder="Enter Manufacturer ID"
-            value={manufacturerId}
-            onChange={(e) => setManufacturerId(e.target.value)}
+          {/* Manufacturer Dropdown */}
+          <select
+            value={selectedManufacturer}
+            onChange={(e) => {
+              setSelectedManufacturer(e.target.value);
+              setManufacturerId(e.target.value); // sync for fetching
+              setSelectedProductId("");
+              setProductId(""); // reset productId
+            }}
             required
-            className="w-full p-2 mb-2 border border-gray-300 rounded text-black"
-          />
-          <input
-            type="text"
-            placeholder="Enter Product ID"
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
+            className="w-full p-2 mb-4 border border-gray-300 rounded text-black bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          >
+            <option value="" className="py-2 px-3 text-gray-500 bg-white">
+              Select Manufacturer
+            </option>
+            {organizations.map((org) => (
+              <option
+                key={org.adminId}
+                value={org.adminId}
+                className="py-2 px-3 text-black bg-white hover:bg-blue-50"
+              >
+                {org.name} ({org.adminId})
+              </option>
+            ))}
+          </select>
+
+          {/* Product Dropdown */}
+          <select
+            value={selectedProductId}
+            onChange={(e) => {
+              setSelectedProductId(e.target.value);
+              setProductId(e.target.value); // sync for fetching
+            }}
             required
-            className="w-full p-2 mb-2 border border-gray-300 rounded text-black"
-          />
+            className="w-full p-2 mb-4 border border-gray-300 rounded text-black bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            disabled={!selectedManufacturer}
+          >
+            <option value="" className="py-2 px-3 text-gray-500 bg-white">
+              Select Product
+            </option>
+            {manufacturerProducts.map((product) => (
+              <option
+                key={product.productId}
+                value={product.productId}
+                className="py-2 px-3 text-black bg-white hover:bg-blue-50"
+              >
+                {product.name} ({product.productId})
+              </option>
+            ))}
+          </select>
+
+          {/* Product Name (auto-filled, read-only) */}
           <input
             type="text"
             placeholder="Product Name"
@@ -267,9 +353,8 @@ const ServicePage = () => {
             readOnly
             className="w-full p-2 mb-2 border border-gray-300 rounded text-black bg-gray-100"
           />
-          {productNotFound && (
-            <div className="text-red-500 text-sm mb-2">Product not found for this manufacturer and product ID.</div>
-          )}
+
+          {/* Category (auto-filled, read-only) */}
           <input
             type="text"
             placeholder="Category"
@@ -277,6 +362,7 @@ const ServicePage = () => {
             readOnly
             className="w-full p-2 mb-2 border border-gray-300 rounded text-black bg-gray-100"
           />
+
           <input
             type="number"
             placeholder="Enter price of product customer gets"
