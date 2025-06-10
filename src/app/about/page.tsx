@@ -21,7 +21,12 @@ const AboutUs = () => {
         <p className="text-gray-700 text-center max-w-2xl mt-4">&quot;Our mission is to revolutionize e-waste management by creating a seamless, transparent, and efficient platform for manufacturers, recyclers, and consumers.&quot;</p>
         <div className="flex flex-col mb-4 sm:flex-row gap-4 w-full justify-center items-center px-2">
           <div className="mt-6 bg-white shadow-lg rounded-lg p-4 flex flex-col items-center w-full max-w-xs">
-            <Image src="/team/ASJ.png" alt="Team" width={200} height={200} />
+            <Image src="/team/ASJ.png"
+              alt="Team"
+              width={200}
+              height={200}
+              priority
+            />
             <GradientText
               colors={["#000000", "#000000", "#f39340", "#000000", "#000000"]}
               animationSpeed={4}
@@ -39,7 +44,13 @@ const AboutUs = () => {
             </div>
           </div>
           <div className="mt-6 bg-white shadow-lg rounded-lg p-4 flex flex-col items-center w-full max-w-xs">
-            <Image src="/team/AHR.png" alt="Team" width={200} height={200} />
+            <Image
+              src="/team/AHR.png"
+              alt="Team"
+              width={200}
+              height={200}
+              priority
+            />
             <GradientText
               colors={["#000000", "#000000", "#eeb537", "#000000", "#000000"]}
               animationSpeed={4}
@@ -57,7 +68,13 @@ const AboutUs = () => {
             </div>
           </div>
           <div className="mt-6 bg-white shadow-lg rounded-lg p-4 flex flex-col items-center w-full max-w-xs">
-            <Image src="/team/HJ1.png" alt="Team" width={200} height={200} />
+            <Image
+              src="/team/HJ1.png"
+              alt="Team"
+              width={200}
+              height={200}
+              priority
+            />
             <GradientText
               colors={["#000000", "#000000", "#ffdf3b", "#000000", "#000000"]}
               animationSpeed={4}
@@ -76,7 +93,13 @@ const AboutUs = () => {
             </div>
           </div>
           <div className="mt-6 bg-white shadow-lg rounded-lg p-4 flex flex-col items-center w-full max-w-xs">
-            <Image src="/team/PR.png" alt="Team" width={200} height={200} />
+            <Image
+              src="/team/PR.png"
+              alt="Team"
+              width={200}
+              height={200}
+              priority
+            />
             <GradientText
               colors={["#000000", "#000000", "#91d3ed", "#000000", "#000000"]}
               animationSpeed={4}

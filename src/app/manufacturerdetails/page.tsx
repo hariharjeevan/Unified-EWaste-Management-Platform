@@ -58,8 +58,11 @@ const ManufacturerDetailsPage = () => {
         const orgList: OrganizationData[] = [];
 
         orgsSnapshot.forEach((doc) => {
-          const orgData = doc.data() as OrganizationData;
-          orgList.push(orgData);
+          const orgData = doc.data() as OrganizationData & { type?: string };
+          // Only include organizations where type is "Manufacturer"
+          if (orgData.type == "Manufacturer") {
+            orgList.push(orgData);
+          }
         });
 
         setOrganizations(orgList);
@@ -79,7 +82,7 @@ const ManufacturerDetailsPage = () => {
         const products: ProductDetails[] = [];
         manufacturerSnapshot.forEach((doc) => {
           const productData = doc.data() as ProductDetails;
-          
+
           products.push({ ...productData, productId: doc.id });
         });
 

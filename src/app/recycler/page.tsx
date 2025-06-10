@@ -5,7 +5,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/firebaseConfig";
 import { AiOutlineSearch } from "react-icons/ai";
-import { collection, doc, getDocs, setDoc, getDoc, updateDoc, query } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, getDoc, updateDoc } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -14,6 +14,7 @@ import Spinner from "@/components/Spinner";
 import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { getFunctions, httpsCallable } from "firebase/functions";
+import { FcFactory, FcClock } from "react-icons/fc";
 
 const functions = getFunctions(undefined, "asia-east2");
 
@@ -359,7 +360,7 @@ const RecyclerPage = () => {
     return () => {
       scanner.clear().catch(() => { });
     };
-  }, [showQRScanner]);
+  }, [queries, updateRecycleStatus, user, showQRScanner]);
 
   const updateQueryStatus = async (queryId: string, status: "accepted" | "rejected") => {
     if (!user) return;
@@ -393,8 +394,8 @@ const RecyclerPage = () => {
     <>
       <Navbar
         links={[
-          { label: "Find Manufacturer", href: "/manufacturerdetails", tooltip: "Find your manufacturer and their manufactured products." },
-          { label: "Query Status", href: "/querystatus", tooltip: "Showes the Query Status" },
+          { label: "Find Manufacturer", icon: <FcFactory />, href: "/manufacturerdetails", tooltip: "Find your manufacturer and their manufactured products.", highlight: true },
+          { label: "Query Status", icon: <FcClock />, href: "/querystatus", tooltip: "Shows the recycling query status", highlight: true },
           { label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" },
           { label: "About", href: "/about", tooltip: "About the team behind UEMP" },
         ]}

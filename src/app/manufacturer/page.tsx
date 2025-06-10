@@ -24,6 +24,7 @@ interface Product {
   serialNumber: string;
   category: string;
   recyclability: string;
+  recycleStatus: string;
   recoverableMetals: string;
   qrCode: string;
   secretKey?: string;
@@ -59,6 +60,7 @@ const Manufacturer = () => {
   const productSectionRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [isDuplicateSerial, setIsDuplicateSerial] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   interface ProductDetails {
     name: string;
@@ -120,6 +122,9 @@ const Manufacturer = () => {
           setManufacturerEmail(data.email || "Unknown email");
           setOrganizationID(data.orgID || "");
 
+          // Check for admin role
+          setIsAdmin(data.role === "admin");
+
           if (data.orgID) {
             const orgDoc = await getDoc(doc(db, "organizations", data.orgID));
             if (orgDoc.exists()) {
@@ -138,20 +143,31 @@ const Manufacturer = () => {
   }, [router, organizationID]);
 
   const fetchProducts = useCallback(async () => {
-    if (!user) return;
+    if (!organizationID) return;
     try {
+      // 1. Get the organization document
+      const orgRef = doc(db, "organizations", organizationID);
+      const orgDoc = await getDoc(orgRef);
+      if (!orgDoc.exists()) return;
 
-      // 1. List all productID collections under /manufacturers/{uid}
-      const productModelsSnap = await getDocs(collection(db, "manufacturers", user.uid, "productModels"));
+      const orgData = orgDoc.data();
+      // Combine adminId and employeeIds into a single array of user UIDs
+      const userIds: string[] = [
+        ...(orgData.employeeIds || []),
+        ...(orgData.adminId ? [orgData.adminId] : []),
+      ];
+
       const items: Product[] = [];
 
-      for (const modelDoc of productModelsSnap.docs) {
-        const productId = modelDoc.id;
-        // 2. For each productID, list all serial numbers (documents)
-        const serialSnap = await getDocs(collection(db, "manufacturers", user.uid, productId));
-        serialSnap.forEach((doc) => {
-          items.push({ ...doc.data(), id: doc.id } as Product);
-        });
+      for (const userId of userIds) {
+        const productModelsSnap = await getDocs(collection(db, "manufacturers", userId, "productModels"));
+        for (const modelDoc of productModelsSnap.docs) {
+          const productId = modelDoc.id;
+          const serialSnap = await getDocs(collection(db, "manufacturers", userId, productId));
+          serialSnap.forEach((doc) => {
+            items.push({ ...doc.data(), id: doc.id } as Product);
+          });
+        }
       }
 
       setProductList(items);
@@ -164,7 +180,7 @@ const Manufacturer = () => {
     } catch (error) {
       console.error("Error fetching products:", error);
     }
-  }, [user, productSectionRef]);
+  }, [organizationID, productSectionRef]);
 
   const loadMoreProducts = useCallback(async () => {
     await fetchProducts();
@@ -571,54 +587,97 @@ const Manufacturer = () => {
             </p>
           )}
         </div>
-        {showProducts && (
-          <div
-            ref={productSectionRef}
-            className="mt-6 mb-10 w-full max-w-2xl bg-white shadow-md rounded-xl p-4"
-          >
-            <h3 className="text-lg text-black font-semibold mb-2">Products</h3>
 
-            <InfiniteScroll
-              dataLength={productList.length}
-              next={loadMoreProducts}
-              hasMore={hasMore}
-              loader={
-                <p className="text-gray-500 text-center my-2 animate-pulse">
-                  Loading more products...
-                </p>
-              }
-              scrollThreshold={0.9}
+        {showProducts && (
+          <div>
+            {/* Active/Other Products */}
+            <div
+              ref={productSectionRef}
+              className="mt-6 mb-10 w-full max-w-2xl bg-white shadow-md rounded-xl p-4"
             >
-              <ul>
-                {productList.map((product) => (
-                  <li
-                    key={product.id}
-                    className="border-b p-3 text-black flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"
-                  >
-                    <div className="flex items-center space-x-3 relative group w-full sm:w-auto">
-                      <span
-                        className="cursor-pointer text-blue-600 hover:underline hover:text-blue-800 transition-all duration-200 break-all"
-                        onClick={() => setShowProductDetails(product)}
+              <h3 className="text-lg text-black font-semibold mb-2">Products</h3>
+              <InfiniteScroll
+                dataLength={productList.length}
+                next={loadMoreProducts}
+                hasMore={hasMore}
+                loader={
+                  <p className="text-gray-500 text-center my-2 animate-pulse">
+                    Loading more products...
+                  </p>
+                }
+                scrollThreshold={0.9}
+              >
+                <ul>
+                  {productList
+                    .filter((product) => product.recycleStatus !== "finished")
+                    .map((product) => (
+                      <li
+                        key={product.id}
+                        className="border-b p-3 text-black flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"
                       >
-                        {product.name}
-                      </span>
-                      <span className="text-gray-700 break-all">({product.serialNumber})</span>
-                      <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 
-                shadow-lg rounded opacity-0 invisible group-hover:opacity-100 
-                group-hover:visible transition-opacity duration-300 z-20">
-                        <QRCode value={product.qrCode} size={100} />
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => deleteProduct(product.productId, product.serialNumber)}
-                      className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded text-sm w-full sm:w-auto"
-                    >
-                      Delete
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </InfiniteScroll>
+                        <div className="flex items-center space-x-3 relative group w-full sm:w-auto">
+                          <span
+                            className="cursor-pointer text-blue-600 hover:underline hover:text-blue-800 transition-all duration-200 break-all"
+                            onClick={() => setShowProductDetails(product)}
+                          >
+                            {product.name}
+                          </span>
+                          <span className="text-gray-700 break-all">({product.serialNumber})</span>
+                          {product.recycleStatus && (
+                            <span className="text-xs ml-2 px-2 py-1 rounded bg-gray-200 text-gray-700">
+                              {product.recycleStatus}
+                            </span>
+                          )}
+                          <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 
+                    shadow-lg rounded opacity-0 invisible group-hover:opacity-100 
+                    group-hover:visible transition-opacity duration-300 z-20">
+                            <QRCode value={product.qrCode} size={100} />
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => deleteProduct(product.productId, product.serialNumber)}
+                          className="bg-red-500 hover:bg-red-700 text-white px-4 py-2 rounded text-sm w-full sm:w-auto"
+                          disabled={!isAdmin}
+                          style={!isAdmin ? { opacity: 0.5, cursor: "not-allowed" } : {}}
+                        >
+                          Delete
+                        </button>
+                      </li>
+                    ))}
+                </ul>
+              </InfiniteScroll>
+            </div>
+            {/* Recycled Products */}
+            {productList.some((p) => p.recycleStatus === "finished") && (
+              <div className="mt-6 mb-10 w-full max-w-2xl bg-green-50 shadow-md rounded-xl p-4">
+                <h3 className="text-lg text-green-700 font-semibold mb-2">Recycled Products</h3>
+                <ul>
+                  {productList
+                    .filter((product) => product.recycleStatus === "finished")
+                    .map((product) => (
+                      <li
+                        key={product.id}
+                        className="border-b p-3 text-black flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2"
+                      >
+                        <div className="flex items-center space-x-3 relative group w-full sm:w-auto">
+                          <span
+                            className="cursor-pointer text-blue-600 hover:underline hover:text-blue-800 transition-all duration-200 break-all"
+                            onClick={() => setShowProductDetails(product)}
+                          >
+                            {product.name}
+                          </span>
+                          <span className="text-gray-700 break-all">({product.serialNumber})</span>
+                          <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 
+                    shadow-lg rounded opacity-0 invisible group-hover:opacity-100 
+                    group-hover:visible transition-opacity duration-300 z-20">
+                            <QRCode value={product.qrCode} size={100} />
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
@@ -757,10 +816,14 @@ const Manufacturer = () => {
         )}
 
         {showProductDetails && (
-          <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center 
-          bg-black bg-opacity-50 overflow-y-auto z-50 px-2">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md mb-10">
-              <h3 className="text-lg text-white text-center bg-black font-semibold mb-6 rounded-full p-2">Product Details</h3>
+          <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50 overflow-y-auto z-50 px-2">
+            <div
+              className="bg-white p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-md mb-10"
+              style={{ maxHeight: "95vh", overflowY: "auto" }}
+            >
+              <h3 className="text-lg text-white text-center bg-black font-semibold mb-6 rounded-full p-2">
+                Product Details
+              </h3>
               <p className="text-black"><strong>Name:</strong> {showProductDetails.name}</p>
               <p className="text-black"><strong>Product ID:</strong> {showProductDetails.productId}</p>
               <p className="text-black"><strong>Serial Number:</strong> {showProductDetails.serialNumber}</p>
@@ -768,6 +831,7 @@ const Manufacturer = () => {
               <p className="text-black"><strong>Recyclability:</strong> {showProductDetails.recyclability}</p>
               <p className="text-black"><strong>Recoverable Metals:</strong> {showProductDetails.recoverableMetals}</p>
               <p className="text-black"><strong>Registered:</strong> {showProductDetails.registered ? "Yes" : "No"}</p>
+              <p className="text-black"><strong>Recycle Status:</strong> {showProductDetails.recycleStatus || "N/A"}</p>
 
               {/* Secret Key Section */}
               <div className="flex items-center space-x-2 mt-2">
@@ -777,7 +841,7 @@ const Manufacturer = () => {
                   style={{
                     whiteSpace: "nowrap",
                     textOverflow: "ellipsis",
-                    fontFamily: "'Consolas'"
+                    fontFamily: "'Consolas'",
                   }}
                 >
                   {showSecretKey ? showProductDetails.secretKey : "**********"}
@@ -811,7 +875,6 @@ const Manufacturer = () => {
                           : "N/A"}
                       </div>
                     </div>
-
                     {/* Time Since Creation */}
                     <div className="flex items-center space-x-4">
                       <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
@@ -821,14 +884,14 @@ const Manufacturer = () => {
                           ? (() => {
                             const createdAtDate = new Date(showProductDetails.createdAt.seconds * 1000);
                             const now = new Date();
-                            const timeDifference = Math.floor((now.getTime() -
-                              createdAtDate.getTime()) / (1000 * 60 * 60 * 24));
+                            const timeDifference = Math.floor(
+                              (now.getTime() - createdAtDate.getTime()) / (1000 * 60 * 60 * 24)
+                            );
                             return timeDifference > 0 ? `${timeDifference} days ago` : "Today";
                           })()
                           : "N/A"}
                       </div>
                     </div>
-
                     {/* User Count */}
                     <div className="flex items-center space-x-4">
                       <div className="w-4 h-4 bg-red-500 rounded-full"></div>
@@ -842,8 +905,7 @@ const Manufacturer = () => {
 
               <button
                 onClick={() => setShowProductDetails(null)}
-                className="mt-4 bg-red-500 text-white px-4 py-2 rounded
-          hover:bg-red-700 transition-all duration-200 w-full"
+                className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 transition-all duration-200 w-full"
               >
                 Close
               </button>
