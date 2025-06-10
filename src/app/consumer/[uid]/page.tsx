@@ -162,7 +162,6 @@ const Consumer = () => {
         const scannedRef = collection(db, "consumers", consumerId, "scannedProducts");
         const scannedSnap = await getDocs(scannedRef);
 
-        // Collect all scanned productIds
         const scannedProductIds = scannedSnap.docs
           .map((doc) => {
             const data = doc.data();
@@ -194,8 +193,7 @@ const Consumer = () => {
             userId: data.userId || "",
           };
         });
-
-        // Match products by productId
+        
         const matchingProducts = allProducts.filter((product) =>
           scannedProductIds.includes(product.productId?.toString().trim())
         );
@@ -357,7 +355,7 @@ const Consumer = () => {
         setHomeLocation(data.location || null);
         setHomeAddress(data.address || null);
       } else {
-        console.log("No home location found for this user.");
+        console.error("No home location found for this user.");
       }
     } catch (error) {
       console.error("Error fetching home location:", error);
@@ -371,12 +369,10 @@ const Consumer = () => {
       const queriesRef = collection(db, "Queries");
       const querySnap = await getDocs(queriesRef);
 
-      // Flatten all queries from all recyclers
       let allQueries: any[] = [];
       querySnap.forEach(docSnap => {
         const data = docSnap.data();
         if (data.queries) {
-          // data.queries is an object: { [queryId]: queryData }
           Object.entries(data.queries).forEach(([queryId, queryData]: [string, any]) => {
             allQueries.push({
               id: queryId,
@@ -387,7 +383,6 @@ const Consumer = () => {
         }
       });
 
-      // Filter by consumerId
       const consumerQueries = allQueries.filter(q => q.consumerId === consumerId);
       setConsumerQueries(consumerQueries);
     } catch (error) {
@@ -431,7 +426,6 @@ const Consumer = () => {
     }
   }, [consumerId]);
 
-  // QR Scan feature
   const startQRScanner = () => {
     if (!qrContainerRef.current) return;
 
@@ -455,10 +449,8 @@ const Consumer = () => {
           const qrParam = url.searchParams.get("qr");
           if (qrParam) qrValue = qrParam;
         } catch (e) {
-          // If not a valid URL, proceed with the original decodedText
         }
 
-        // Process QR value and fetch product details if valid
         const parts = qrValue.split("|");
         if (parts.length === 3) {
           const [manufacturerUID, productId, serialNumber] = parts;
@@ -470,11 +462,11 @@ const Consumer = () => {
       },
       (errorMessage: string) => {
         setErrorMessage(null);
+        setHasError(true);
       }
     );
   };
 
-  // Function to fetch minimal product details
   const fetchMinimalProductDetails = async (manufacturerUID: string, productId: string, serialNumber: string) => {
     try {
       const publicProductRef = doc(
@@ -492,7 +484,7 @@ const Consumer = () => {
           ...data,
           productId,
         });
-        setErrorMessage(null); // Reset error on successful fetch
+        setErrorMessage(null);
       } else {
         setProductDetails(null);
         setErrorMessage("No product found for this QR code.");
@@ -538,14 +530,13 @@ const Consumer = () => {
       const response: HttpsCallableResult<RegisterResponse> =
         await registerProduct({
           manufacturerId: manufacturerUID,
-          productId: productDetails.productId ?? "", // Ensure productId is a string
+          productId: productDetails.productId ?? "",
           serialNumber: productDetails.serialNumber,
           modelNumber: productDetails.name,
           secretKey: secretKey,
         });
 
       if (response.data.success) {
-        // Fetch full product details
         if (!productDetails.productId) {
           setErrorMessage("Product ID is missing. Cannot fetch full product details.");
           setLoading(false);
@@ -562,7 +553,6 @@ const Consumer = () => {
 
         if (fullProductSnap.exists()) {
           const fullProductData = fullProductSnap.data();
-          // Store full details in consumer's scannedProducts
           await setDoc(
             doc(db, "consumers", user.uid, "scannedProducts", productDetails.serialNumber),
             {
@@ -633,7 +623,6 @@ const Consumer = () => {
   useEffect(() => {
     const fetchProductDetails = async (manufacturerUID: string, productId: string, serialNumber: string) => {
       try {
-        // If you store products as: /manufacturers/{manufacturerUID}/products/{serialNumber}
         const productRef = doc(
           db,
           "manufacturers",
@@ -656,7 +645,6 @@ const Consumer = () => {
     };
 
     if (qrParam && user) {
-      // Parse manufacturerUID, productId, serialNumber
       const parts = qrParam.split("|");
       if (parts.length === 3) {
         setManufacturerUID(parts[0]);
@@ -1079,6 +1067,11 @@ const Consumer = () => {
               </button>
             </div>
           </div>
+        )}
+        {hasError && (
+          <p className="text-red-600 mt-2 font-semibold">
+            Something went wrong while scanning the QR code. Please try again.
+          </p>
         )}
       </div>
       <Footer />

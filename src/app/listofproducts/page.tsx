@@ -39,7 +39,7 @@ const ListOfProductsClientInner = () => {
   });
   const [showModal, setShowModal] = useState(false);
   const [scannedProducts, setScannedProducts] = useState<
-    { id: string; name: string; productId: string }[]
+    { id: string; name: string; productId: string; manufacturerId?: string }[]
   >([]);
   const [loading, setLoading] = useState(false);
 
@@ -96,6 +96,7 @@ const ListOfProductsClientInner = () => {
             id: doc.id,
             name: data.name || "Unnamed Product",
             productId: data.productId,
+            manufacturerId: data.manufacturerId,
           };
         });
         setScannedProducts(scanned);
@@ -171,6 +172,7 @@ const ListOfProductsClientInner = () => {
           productId: scannedProduct.productId,
           details,
           productName: scannedProduct.name,
+          manufacturerId: scannedProduct.manufacturerId,
         });
         const data = result.data as SendRequestResponse;
         if (data && data.success) {

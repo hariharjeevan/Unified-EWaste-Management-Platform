@@ -340,8 +340,9 @@ exports.onProductDeletion = functions.region(region).firestore
 
       });
     } catch (error) {
-      console.error(
-        "Error updating manufacturer database on product deletion:", error,
+      throw new functions.https.HttpsError(
+        "invalid",
+        "Failed to delete product , try again.",
       );
     }
   });
@@ -362,6 +363,7 @@ exports.sendRecyclerRequest = functions.region(region).https.onCall(async (data,
     productId,
     details,
     productName,
+    manufacturerId
   } = data;
 
   if (
@@ -372,7 +374,8 @@ exports.sendRecyclerRequest = functions.region(region).https.onCall(async (data,
     !details?.phone ||
     !details?.address ||
     !details?.email ||
-    !productName
+    !productName ||
+    !manufacturerId
   ) {
     throw new functions.https.HttpsError(
       "invalid-argument",
@@ -411,6 +414,7 @@ exports.sendRecyclerRequest = functions.region(region).https.onCall(async (data,
       consumerPhone: details.phone,
       consumerAddress: details.address,
       consumerEmail: details.email,
+      manufacturerId,
     };
 
     const updatedQueries = {
@@ -526,7 +530,6 @@ Answer:
 exports.sendRejectionEmail = functions.region(region).https.onCall(async (data) => {
   const { consumerEmail, productName, reason } = data;
   if (!consumerEmail || !productName || !reason) {
-    console.error("Missing fields:", { consumerEmail, productName, reason });
     throw new functions.https.HttpsError("invalid-argument", "Missing fields.");
   }
 
@@ -557,7 +560,7 @@ ${platformUrl}
             Recycling Request Rejected
           </h2>
           <p style="font-size: 16px; color: #222;">
-            Hello,<br><br>
+            Hello, ${consumerEmail},<br><br>
             Your recycling request for <b>${productName}</b> was <b>rejected</b>.<br><br>
             <b>Reason:</b> <span style="color: #d32f2f;">${reason}</span>
           </p>
@@ -576,7 +579,61 @@ ${platformUrl}
     await sgMail.send(msg);
     return { success: true, message: "Rejection email sent successfully." };
   } catch (error) {
-    console.error("Error sending rejection email:", error);
     throw new functions.https.HttpsError("internal", error.message || "Failed to send email.");
+  }
+});
+
+exports.updateRecycleStatus = functions.region(region).https.onCall(async (data) => {
+  console.log("updateRecycleStatus received data:", data);
+
+  const { manufacturerId, productId, serialNumber, status, consumerId, recyclerId, queryId } = data;
+
+  if (!manufacturerId || !productId || !serialNumber || !status || !consumerId || !recyclerId || !queryId) {
+    throw new functions.https.HttpsError("invalid-argument", "Missing required fields.");
+  }
+
+  try {
+    const productRef = firestore
+      .collection("manufacturers")
+      .doc(manufacturerId)
+      .collection(productId)
+      .doc(serialNumber);
+
+    await productRef.set({ recycleStatus: status }, { merge: true });
+
+    const consumerProductRef = firestore
+      .collection("consumers")
+      .doc(consumerId)
+      .collection("scannedProducts")
+      .doc(serialNumber);
+
+    await consumerProductRef.set({ recycleStatus: status }, { merge: true });
+
+    const queriesDocRef = firestore.collection("Queries").doc(recyclerId);
+    const queriesDocSnap = await queriesDocRef.get();
+
+    if (queriesDocSnap.exists) {
+      const queries = queriesDocSnap.data().queries || {};
+      if (queries[queryId]) {
+        await queriesDocRef.update({
+          [`queries.${queryId}.recyclingStatus`]: status,
+        });
+      } else {
+        throw new functions.https.HttpsError("not-found", `Query with id ${queryId} does not exist.`);
+      }
+    } else {
+      await queriesDocRef.set({
+        queries: {
+          [queryId]: { recyclingStatus: status }
+        }
+      }, { merge: true });
+    }
+
+    if (status === "finished") {
+      await consumerProductRef.delete();
+    }
+    return { success: true, message: `Recycle status updated to ${status}` };
+  } catch (error) {
+    throw new functions.https.HttpsError("internal", error.message || "Failed to update recycle status.");
   }
 });

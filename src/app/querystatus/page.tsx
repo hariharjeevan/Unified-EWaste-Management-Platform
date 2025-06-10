@@ -27,6 +27,7 @@ interface QueryDetails {
 
 const QueryStatusPage = () => {
     const [rejectedQueries, setRejectedQueries] = useState<QueryDetails[]>([]);
+    const [finishedQueries, setFinishedQueries] = useState<QueryDetails[]>([]);
     const [loading, setLoading] = useState(true);
     const [showReasonFor, setShowReasonFor] = useState<string | null>(null);
     const [reason, setReason] = useState<{ [queryId: string]: string }>({});
@@ -38,6 +39,7 @@ const QueryStatusPage = () => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 setRejectedQueries([]);
+                setFinishedQueries([]);
                 setLoading(false);
                 return;
             }
@@ -48,6 +50,7 @@ const QueryStatusPage = () => {
                 const queriesDocSnap = await getDoc(queriesDocRef);
                 if (!queriesDocSnap.exists()) {
                     setRejectedQueries([]);
+                    setFinishedQueries([]);
                     setLoading(false);
                     return;
                 }
@@ -68,8 +71,27 @@ const QueryStatusPage = () => {
                         consumerId: q.consumerId,
                     }));
                 setRejectedQueries(rejected);
+
+                const finished = Object.entries(queriesObj)
+                    .filter(([_, q]: any) => q.recyclingStatus === "finished")
+                    .map(([queryId, q]: any) => ({
+                        queryId,
+                        productId: q.productId,
+                        serialNumber: q.serialNumber,
+                        productName: q.productName,
+                        status: q.status,
+                        consumerName: q.consumerName,
+                        consumerEmail: q.consumerEmail || "",
+                        consumerPhone: q.consumerPhone,
+                        consumerAddress: q.consumerAddress,
+                        recyclerId: user.uid,
+                        consumerId: q.consumerId,
+                    }));
+                setFinishedQueries(finished);
+
             } catch (err) {
                 setRejectedQueries([]);
+                setFinishedQueries([]);
             }
             setLoading(false);
         });
@@ -225,6 +247,62 @@ const QueryStatusPage = () => {
                                                 Send Rejection Email
                                             </button>
                                         )}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+                </div>
+                <div className="max-w-2xl mx-auto p-10 rounded-2xl shadow-2xl bg-white mt-14 mb-14">
+                    <h1 className="text-3xl font-extrabold mb-8 text-blue-700 flex items-center gap-2">
+                        Finished Recycling Queries
+                    </h1>
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-24">
+                            <Spinner size={40} color="#2563eb" />
+                            <span className="mt-4 text-lg text-gray-600">Loading finished queries...</span>
+                        </div>
+                    ) : finishedQueries.length === 0 ? (
+                        <div className="flex flex-col items-center py-20">
+                            <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3"></path>
+                                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
+                            </svg>
+                            <p className="text-gray-500 text-lg">No finished queries found.</p>
+                        </div>
+                    ) : (
+                        <div className="max-h-[500px] overflow-y-auto pr-2">
+                            <ul className="space-y-8">
+                                {finishedQueries.map((query) => (
+                                    <li
+                                        key={query.queryId}
+                                        className="p-8 border border-gray-200 rounded-xl bg-gradient-to-br from-white to-green-50"
+                                    >
+                                        <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                                            <div>
+                                                <p className="font-semibold text-lg text-blue-900">
+                                                    <span className="text-gray-500">Product:</span> {query.productName}
+                                                </p>
+                                                <p className="text-gray-700">
+                                                    <span className="text-gray-500">Consumer:</span> {query.consumerName}
+                                                </p>
+                                                <p className="text-gray-700">
+                                                    <span className="text-gray-500">Email:</span> {query.consumerEmail}
+                                                </p>
+                                                <p className="text-gray-700">
+                                                    <span className="text-gray-500">Phone:</span> {query.consumerPhone}
+                                                </p>
+                                                <p className="text-gray-700">
+                                                    <span className="text-gray-500">Address:</span> {query.consumerAddress}
+                                                </p>
+                                                <p className="text-gray-700">
+                                                    <span className="text-gray-500">Status:</span> {query.status}
+                                                </p>
+                                                <p className="text-gray-700">
+                                                    <span className="text-gray-500">Recycling Status:</span> <span className="text-green-700 font-bold">finished</span>
+                                                </p>
+                                            </div>
+                                        </div>
                                     </li>
                                 ))}
                             </ul>

@@ -5,13 +5,17 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { auth, db } from "@/firebaseConfig";
 import { AiOutlineSearch } from "react-icons/ai";
-import { collection, doc, getDocs, setDoc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc, getDoc, updateDoc, query } from "firebase/firestore";
 import { onAuthStateChanged, User } from "firebase/auth";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Spinner from "@/components/Spinner";
 import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
+import { Html5QrcodeScanner } from "html5-qrcode";
+import { getFunctions, httpsCallable } from "firebase/functions";
+
+const functions = getFunctions(undefined, "asia-east2");
 
 const mapContainerStyle = {
   width: "100%",
@@ -27,6 +31,7 @@ const libraries = ["geometry", "drawing"] as any[];
 
 const RecyclerPage = () => {
   const router = useRouter();
+  const updateRecycleStatus = httpsCallable(functions, "updateRecycleStatus");
 
   interface Product {
     id: string;
@@ -55,6 +60,8 @@ const RecyclerPage = () => {
     consumerAddress: string;
     recyclerId: string;
     consumerId: string;
+    recyclingStatus: string;
+    manufacturerId: string;
   }
 
   const [user, setUser] = useState<User | null>(auth.currentUser);
@@ -65,15 +72,13 @@ const RecyclerPage = () => {
   const [facilityLocation, setFacilityLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [queries, setQueries] = useState<QueryDetails[]>([]);
   const [facilityAddress, setFacilityAddress] = useState<string | null>(null);
-  const [showRecycleDialog, setShowRecycleDialog] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedConsumer, setSelectedConsumer] = useState<string | null>(null);
   const [selectedProductdetails, setSelectedProductDetails] = useState<{ label: string; value: any }[] | null>(null);
   const [inspectedQuery, setInspectedQuery] = useState<QueryDetails | null>(null);
-  const [consumerId, setConsumerId] = useState<string | null>(null);
   const activeQueries = queries.filter(q => q.status !== "rejected");
   const [showQueryModal, setShowQueryModal] = useState(false);
   const [modalQuery, setModalQuery] = useState<QueryDetails | null>(null);
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -169,21 +174,13 @@ const RecyclerPage = () => {
     fetchQueries();
   }, [user, fetchQueries]);
 
-  const inspectqueryproductdetails = async (consumerId: string, productId: string, serialNumber: string, queryId: string) => {
+  const inspectqueryproductdetails = async (consumerId: string, serialNumber: string, queryId: string) => {
     const query = queries.find(q => q.id === queryId);
     setInspectedQuery(query || null);
 
     if (!user) {
       return;
     }
-
-    const queryRef = doc(db, "Queries", user.uid);
-    const querySnapshot = await getDoc(queryRef);
-    if (querySnapshot.exists()) {
-      const data = querySnapshot.data();
-      setConsumerId(data.consumerId);
-    }
-
     if (!consumerId) {
       console.error("Consumer ID not found.");
       return;
@@ -271,40 +268,115 @@ const RecyclerPage = () => {
     }
   };
 
-  const updateQueryStatus = async (queryId: string, newStatus: "accepted" | "rejected") => {
-    if (!user || !queryId) {
-      console.error("Invalid user or queryId:", { user, queryId });
-      alert("Failed to update query status. Invalid user or query ID.");
-      return;
-    }
+  useEffect(() => {
+    if (!showQRScanner) return;
 
+    const scanner = new Html5QrcodeScanner(
+      "manufacturer-qr-reader",
+      { fps: 10, qrbox: { width: 300, height: 300 } },
+      false
+    );
+
+    scanner.render(
+      async (decodedText: string) => {
+        setScanLoading(true);
+        scanner.clear();
+        setShowQRScanner(false);
+
+        let qrValue = decodedText;
+        try {
+          const url = new URL(decodedText);
+          const qrParam = url.searchParams.get("qr");
+          if (qrParam) qrValue = qrParam;
+        } catch (e) { }
+
+        const parts = qrValue.split("|");
+        if (parts.length === 3) {
+          const [manufacturerId, productId, serialNumber] = parts;
+
+          const acceptedQuery = queries.find(
+            (q) =>
+              q.status === "accepted" &&
+              q.productId === productId &&
+              q.serialNumber === serialNumber
+          );
+
+          if (!acceptedQuery) {
+            alert("No accepted recycling request found for this product.");
+            setScanLoading(false);
+            return;
+          }
+
+          const productRef = doc(db, "manufacturers", manufacturerId, productId, serialNumber);
+          const productSnap = await getDoc(productRef);
+          if (productSnap.exists()) {
+            const data = productSnap.data();
+            if (
+              data.productId !== acceptedQuery.productId ||
+              data.serialNumber !== acceptedQuery.serialNumber
+            ) {
+              alert("Scanned product details do not match the accepted recycling request.");
+              setScanLoading(false);
+              return;
+            }
+
+            const consumerId =
+              Array.isArray(data.registeredUsers) && data.registeredUsers.length > 0
+                ? data.registeredUsers[0]
+                : "";
+
+            if (!user) {
+              alert("User not authenticated.");
+              setScanLoading(false);
+              return;
+            }
+
+            await updateRecycleStatus({
+              manufacturerId,
+              productId,
+              serialNumber,
+              status: "started",
+              consumerId,
+              recyclerId: user.uid,
+              queryId: acceptedQuery.id,
+            });
+
+            alert("Recycling process started for this product!");
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          } else {
+            alert("Product not found.");
+          }
+        } else {
+          alert("Invalid QR code.");
+        }
+        setScanLoading(false);
+      },
+      (errorMessage: string) => { }
+    );
+
+    return () => {
+      scanner.clear().catch(() => { });
+    };
+  }, [showQRScanner]);
+
+  const updateQueryStatus = async (queryId: string, status: "accepted" | "rejected") => {
+    if (!user) return;
     try {
-      const docRef = doc(db, "Queries", user.uid);
-
-      console.log("Updating Firestore document:", {
-        userId: user.uid,
-        queryId,
-        newStatus,
-      });
-
-      await updateDoc(docRef, {
-        [`queries.${queryId}.status`]: newStatus,
-      });
-
-      setQueries((prevQueries) =>
-        prevQueries.map((q) =>
-          q.id === queryId ? { ...q, status: newStatus } : q
-        )
+      const queriesDocRef = doc(db, "Queries", user.uid);
+      const queriesDocSnap = await getDoc(queriesDocRef);
+      if (!queriesDocSnap.exists()) return;
+      const data = queriesDocSnap.data();
+      const queries = data.queries || {};
+      if (!queries[queryId]) return;
+      queries[queryId].status = status;
+      await updateDoc(queriesDocRef, { queries });
+      setQueries((prev) =>
+        prev.map((q) => (q.id === queryId ? { ...q, status } : q))
       );
-
-      alert(`Query ${newStatus === "accepted" ? "accepted" : "rejected"} successfully!`);
-      if (newStatus === "rejected") {
-        await fetchQueries();
-      }
     } catch (error) {
-      console.error("Error updating query status:", error);
-
-      alert("Failed to update query status. Please try again.");
+      alert("Failed to update query status.");
     }
   };
 
@@ -316,31 +388,6 @@ const RecyclerPage = () => {
       </div>
     );
   }
-
-  const handleOpenRecycleDialog = (product: Product) => {
-    const query = queries.find(q => q.productId === product.id && q.status === "accepted");
-    setSelectedProduct(product);
-    setSelectedConsumer(query ? query.consumerName : "N/A");
-    setShowRecycleDialog(true);
-  };
-
-  const handleCompleteRecycle = async () => {
-    if (!selectedProduct) return;
-    try {
-      const manufacturerId = selectedProduct.userId || selectedProduct.manufacturerId;
-      if (!manufacturerId) {
-        alert("Manufacturer ID not found for this product.");
-        return;
-      }
-      const productRef = doc(db, "manufacturers", manufacturerId, "products", selectedProduct.id);
-      await updateDoc(productRef, { recycleStatus: "completed" });
-      alert("Recycle status updated to completed!");
-      setShowRecycleDialog(false);
-    } catch (error) {
-      alert("Failed to update recycle status.");
-      console.error(error);
-    }
-  };
 
   return (
     <>
@@ -383,7 +430,7 @@ const RecyclerPage = () => {
               </Link>
             ))
           ) : (
-            <p>No products found.</p>
+            <p>No products found ☹️.</p>
           )}
         </div>
 
@@ -422,44 +469,71 @@ const RecyclerPage = () => {
             <p>No queries found.</p>
           ) : (
             <ul className="space-y-4">
-              {activeQueries.map((query) => (
-                <li
-                  key={query.id || query.productId}
-                  className="p-4 border rounded shadow bg-white cursor-pointer hover:shadow-lg transition"
-                  onClick={() => {
-                    setModalQuery(query);
-                    setShowQueryModal(true);
-                    setInspectedQuery(null);
-                    setSelectedProductDetails(null);
-                  }}
-                >
-                  <h3 className="font-bold text-lg mb-2">{query.productName}</h3>
-                  <p><strong>Consumer:</strong> {query.consumerName}</p>
-                  <p><strong>Phone:</strong> {query.consumerPhone}</p>
-                  <p><strong>Address:</strong> {query.consumerAddress}</p>
-                  <p><strong>Status:</strong> {query.status}</p>
-                  <button
-                    className="mt-2 bg-green-700 text-white px-3 py-1 rounded hover:bg-green-800"
-                    type="button"
-                    onClick={e => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      const product = productArray.find(p => p.id === query.productId);
-                      if (product) {
-                        handleOpenRecycleDialog(product);
-                      } else {
-                        alert("Product not found for this query.");
-                      }
+              {activeQueries
+                .filter(query => query.recyclingStatus !== "finished")
+                .map((query) => (
+                  <li
+                    key={query.id || query.productId}
+                    className="p-4 border rounded shadow bg-white cursor-pointer hover:shadow-lg transition"
+                    onClick={() => {
+                      setModalQuery(query);
+                      setShowQueryModal(true);
+                      setInspectedQuery(null);
+                      setSelectedProductDetails(null);
                     }}
                   >
-                    Complete Recycle
-                  </button>
-                </li>
-              ))}
+                    <h3 className="font-bold text-lg mb-2">{query.productName}</h3>
+                    <p><strong>Consumer:</strong> {query.consumerName}</p>
+                    <p><strong>Phone:</strong> {query.consumerPhone}</p>
+                    <p><strong>Address:</strong> {query.consumerAddress}</p>
+                    <p><strong>Status:</strong> {query.status}</p>
+                    <p><strong>Recycling Status:</strong> {query.recyclingStatus}</p>
+                    {(query.recyclingStatus !== "started" && query.recyclingStatus !== "finished") && (
+                      <button
+                        className="mt-2 bg-green-700 text-white px-3 py-1 rounded hover:bg-green-800"
+                        type="button"
+                        onClick={e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setShowQRScanner(true);
+                        }}
+                      >
+                        Start Recycling
+                      </button>
+                    )}
+                    {query.recyclingStatus === "started" && (
+                      <button
+                        className="mt-2 bg-blue-700 text-white px-3 py-1 rounded hover:bg-blue-800"
+                        type="button"
+                        onClick={async e => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          await updateRecycleStatus({
+                            manufacturerId: query.manufacturerId,
+                            productId: query.productId,
+                            serialNumber: query.serialNumber,
+                            status: "finished",
+                            consumerId: query.consumerId,
+                            recyclerId: user?.uid || "",
+                            queryId: query.id,
+                          });
+                          alert("Recycling process finished for this product!");
+                          window.location.reload();
+                        }}
+                      >
+                        Finish Recycling
+                      </button>
+                    )}
+                    {query.recyclingStatus === "finished" && (
+                      <span className="mt-2 text-green-700 font-bold">Recycling Completed!</span>
+                    )}
+                  </li>
+                ))}
             </ul>
           )}
         </div>
 
+        {/* Query Modal */}
         {showQueryModal && modalQuery && (
           <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
             <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl mx-2 overflow-y-auto max-h-[90vh]">
@@ -502,7 +576,7 @@ const RecyclerPage = () => {
                 )}
                 <button
                   onClick={() => {
-                    inspectqueryproductdetails(modalQuery.consumerId, modalQuery.productId, modalQuery.serialNumber, modalQuery.id)
+                    inspectqueryproductdetails(modalQuery.consumerId, modalQuery.serialNumber, modalQuery.id)
                   }}
                   className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-full sm:w-auto"
                 >
@@ -543,6 +617,29 @@ const RecyclerPage = () => {
                 className="mt-4 bg-red-600 text-white px-4 py-2 rounded w-full hover:bg-red-700"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        )}
+        {/* QR Scanner Modal */}
+        {showQRScanner && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4 text-black text-center">Scan Product QR Code</h3>
+              {scanLoading ? (
+                <div className="flex flex-col items-center justify-center py-8">
+                  <Spinner size={32} color="#2563eb" />
+                  <span className="mt-4 text-blue-700 font-semibold">Processing...</span>
+                </div>
+              ) : (
+                <div id="manufacturer-qr-reader" className="mb-4" />
+              )}
+              <button
+                onClick={() => setShowQRScanner(false)}
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full"
+                disabled={scanLoading}
+              >
+                Cancel
               </button>
             </div>
           </div>
