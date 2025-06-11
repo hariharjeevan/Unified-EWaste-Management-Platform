@@ -36,6 +36,7 @@ const Consumer = () => {
   const qrParam = searchParams.get("qr");
 
   interface Product {
+    recycleStatus: string;
     id?: string;
     productId?: string;
     name: string;
@@ -162,12 +163,21 @@ const Consumer = () => {
         const scannedRef = collection(db, "consumers", consumerId, "scannedProducts");
         const scannedSnap = await getDocs(scannedRef);
 
-        const scannedProductIds = scannedSnap.docs
+        const scannedProducts = scannedSnap.docs
           .map((doc) => {
             const data = doc.data();
-            return data.productId?.toString().trim();
+            return {
+              productId: (data.productId ?? "").toString().trim(),
+              serialNumber: (data.serialNumber ?? "").toString().trim(),
+              recycleStatus: data.recycleStatus,
+            };
           })
-          .filter((id) => !!id);
+          .filter(
+            (p) =>
+              !!p.productId &&
+              !!p.serialNumber &&
+              p.recycleStatus !== "finished"
+          );
 
         const productsRef = collection(db, "recyclers", recyclerId, "products");
         const productsSnap = await getDocs(productsRef);
@@ -177,9 +187,10 @@ const Consumer = () => {
           return {
             id: doc.id,
             name: data.productName || "",
-            productId: data.productId || "",
-            serialNumber: data.serialNumber || "",
+            productId: (data.productId ?? "").toString().trim(),
+            serialNumber: (data.serialNumber ?? "").toString().trim(),
             category: data.category || "Unknown",
+            recycleStatus: data.recycleStatus || "uninitiated",
             recyclability: data.recyclability || "Unknown",
             recoverableMetals: data.recoverableMetals || "Unknown",
             secretKey: data.secretKey || "",
@@ -193,9 +204,12 @@ const Consumer = () => {
             userId: data.userId || "",
           };
         });
-        
+
         const matchingProducts = allProducts.filter((product) =>
-          scannedProductIds.includes(product.productId?.toString().trim())
+          scannedProducts.some(
+            (sp) =>
+              sp.productId === product.productId
+          )
         );
 
         return matchingProducts;
@@ -300,12 +314,11 @@ const Consumer = () => {
           id: doc.id,
           ...data,
         } as Product;
-      }).filter((product) => product !== null) as Product[];
+      }).filter((product) => product !== null && product.recycleStatus !== "finished") as Product[];
 
       const verifiedProducts: Product[] = [];
 
       for (const product of products) {
-
         if (!product.manufacturerId || !product.productId || !product.serialNumber) {
           console.error("Invalid product data:", product);
           continue;
@@ -739,29 +752,31 @@ const Consumer = () => {
         </div>
 
         {/* Registered products section */}
-        {scannedProducts.length > 0 ? (
+        {scannedProducts.filter(p => p.recycleStatus !== "finished").length > 0 ? (
           <div className="mt-6 w-full max-w-2xl bg-white shadow-lg rounded-xl p-6 border border-gray-300">
             <h3 className="text-lg text-black font-semibold border-b pb-2">
               Registered Products
             </h3>
-            {scannedProducts.map((product) => (
-              <div
-                key={product.id}
-                className="flex justify-between items-center mt-2"
-              >
-                <p
-                  className="text-black cursor-pointer underline"
-                  onClick={() => setShowProductDetails(product)}
+            {scannedProducts
+              .filter(product => product.recycleStatus !== "finished")
+              .map((product) => (
+                <div
+                  key={product.id}
+                  className="flex justify-between items-center mt-2"
                 >
-                  <strong>{product.name}</strong> - {product.serialNumber}
-                </p>
-                <button
-                  onClick={() => handleDeleteProduct(product.id!)}
-                  className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
-                  Delete
-                </button>
-              </div>
-            ))}
+                  <p
+                    className="text-black cursor-pointer underline"
+                    onClick={() => setShowProductDetails(product)}
+                  >
+                    <strong>{product.name}</strong> - {product.serialNumber}
+                  </p>
+                  <button
+                    onClick={() => handleDeleteProduct(product.id!)}
+                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">
+                    Delete
+                  </button>
+                </div>
+              ))}
           </div>
         ) : (
           <div className="mt-6 w-full max-w-2xl bg-white shadow-lg rounded-xl p-6 border border-gray-300">
@@ -988,45 +1003,50 @@ const Consumer = () => {
             </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-              {nearbyRecyclers.map((recycler) => (
-                <Link
-                  href={{
-                    pathname: "/listofproducts",
-                    query: {
-                      recyclerId: recycler.userId,
-                      ids: recycler.products.map((p) => p.id).join(","),
-                    },
-                  }}
-                  passHref
-                  key={recycler.userId}
-                  className="bg-white shadow-lg rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition duration-300 flex flex-col justify-between"
-                >
-                  <div>
-                    <h2 className="text-xl font-semibold text-green-700 mb-1">
-                      {recycler.organization || "Unknown"}
-                    </h2>
-                    <p className="text-sm text-gray-600 mb-2">{recycler.address}</p>
-                    <p className="text-sm text-gray-500 mb-3">
-                      <span className="font-medium">Distance:</span>{" "}
-                      {recycler.distance.toFixed(2)} km
-                    </p>
-                    <h3 className="font-medium text-gray-800 mb-2">Matching Products:</h3>
-                    {recycler.products.length === 0 ? (
-                      <p className="text-sm text-red-400">No product matches your scanned items.</p>
-                    ) : (
-                      <ul className="list-disc ml-5 space-y-1">
-                        {recycler.products.map((product: Product, index: number) => (
-                          <li key={index} className="text-sm text-gray-700">
-                            <span className="font-semibold">{product.name}</span>
-                            {product.price && <> – ₹{product.price}</>}
-                            <span className="ml-2 text-xs text-gray-500">(Product ID: {product.productId})</span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                </Link>
-              ))}
+              {nearbyRecyclers.map((recycler) => {
+                const filteredProducts = recycler.products.filter(
+                  (product) => product.recycleStatus !== "finished"
+                );
+                return (
+                  <Link
+                    href={{
+                      pathname: "/listofproducts",
+                      query: {
+                        recyclerId: recycler.userId,
+                        ids: filteredProducts.map((p) => p.id).join(","),
+                      },
+                    }}
+                    passHref
+                    key={recycler.userId}
+                    className="bg-white shadow-lg rounded-2xl p-6 border border-gray-100 hover:shadow-xl transition duration-300 flex flex-col justify-between"
+                  >
+                    <div>
+                      <h2 className="text-xl font-semibold text-green-700 mb-1">
+                        {recycler.organization || "Unknown"}
+                      </h2>
+                      <p className="text-sm text-gray-600 mb-2">{recycler.address}</p>
+                      <p className="text-sm text-gray-500 mb-3">
+                        <span className="font-medium">Distance:</span>{" "}
+                        {recycler.distance.toFixed(2)} km
+                      </p>
+                      <h3 className="font-medium text-gray-800 mb-2">Matching Products:</h3>
+                      {filteredProducts.length === 0 ? (
+                        <p className="text-sm text-red-400">No product matches your scanned items.</p>
+                      ) : (
+                        <ul className="list-disc ml-5 space-y-1">
+                          {filteredProducts.map((product: Product, index: number) => (
+                            <li key={index} className="text-sm text-gray-700">
+                              <span className="font-semibold">{product.name}</span>
+                              {product.price && <> – ₹{product.price}</>}
+                              <span className="ml-2 text-xs text-gray-500">(Product ID: {product.productId})</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           )}
         </div>
@@ -1051,9 +1071,27 @@ const Consumer = () => {
                               ? "text-red-600"
                               : "text-yellow-600"
                         }>{q.status}</span></span>
-                        {q.recyclerName && (
+                        <span className="text-sm text-gray-600">
+                          Recycling Status:{" "}
+                          <span className={
+                            q.recycleStatus === "started"
+                              ? "text-yellow-600"
+                              : q.recycleStatus === "finished"
+                                ? "text-green-600"
+                                : "text-blue-600"
+                          }>
+                            {q.recycleStatus}
+                          </span>
+                          {q.recycleStatus === "finished" &&
+                            q.finishedAt &&
+                            typeof q.finishedAt === "object" &&
+                            "seconds" in q.finishedAt && (
+                              <> at: <span className="text-gray-500">{new Date(q.finishedAt.seconds * 1000).toLocaleString()}</span></>
+                            )}
+                        </span>
+                        {/* {q.recyclerName && (
                           <span className="text-sm text-gray-500">Recycler: {q.recyclerName}</span>
-                        )}
+                        )} */}
                       </div>
                     </li>
                   ))}

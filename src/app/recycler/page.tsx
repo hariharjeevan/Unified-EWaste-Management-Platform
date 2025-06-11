@@ -489,19 +489,28 @@ const RecyclerPage = () => {
                     <p><strong>Address:</strong> {query.consumerAddress}</p>
                     <p><strong>Status:</strong> {query.status}</p>
                     <p><strong>Recycling Status:</strong> {query.recyclingStatus}</p>
-                    {(query.recyclingStatus !== "started" && query.recyclingStatus !== "finished") && (
-                      <button
-                        className="mt-2 bg-green-700 text-white px-3 py-1 rounded hover:bg-green-800"
-                        type="button"
-                        onClick={e => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setShowQRScanner(true);
-                        }}
-                      >
-                        Start Recycling
-                      </button>
-                    )}
+                    {query.status === "accepted" &&
+                      query.recyclingStatus !== "started" &&
+                      query.recyclingStatus !== "finished" && (
+                        scanLoading ? (
+                          <div className="flex flex-col items-center justify-center py-4">
+                            <Spinner size={24} color="#2563eb" />
+                            <span className="mt-2 text-blue-700 font-semibold">Processing...</span>
+                          </div>
+                        ) : (
+                          <button
+                            className="mt-2 bg-green-700 text-white px-3 py-1 rounded hover:bg-green-800"
+                            type="button"
+                            onClick={e => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setShowQRScanner(true);
+                            }}
+                          >
+                            Start Recycling
+                          </button>
+                        )
+                      )}
                     {query.recyclingStatus === "started" && (
                       <button
                         className="mt-2 bg-blue-700 text-white px-3 py-1 rounded hover:bg-blue-800"
@@ -635,13 +644,6 @@ const RecyclerPage = () => {
               ) : (
                 <div id="manufacturer-qr-reader" className="mb-4" />
               )}
-              <button
-                onClick={() => setShowQRScanner(false)}
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 w-full"
-                disabled={scanLoading}
-              >
-                Cancel
-              </button>
             </div>
           </div>
         )}

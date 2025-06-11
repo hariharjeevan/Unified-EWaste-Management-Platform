@@ -23,6 +23,7 @@ interface QueryDetails {
     consumerAddress: string;
     recyclerId: string;
     consumerId: string;
+    finishedAt?: string | { seconds: number; nanoseconds?: number };
 }
 
 const QueryStatusPage = () => {
@@ -86,6 +87,7 @@ const QueryStatusPage = () => {
                         consumerAddress: q.consumerAddress,
                         recyclerId: user.uid,
                         consumerId: q.consumerId,
+                        finishedAt: q.finishedAt || "",
                     }));
                 setFinishedQueries(finished);
 
@@ -296,7 +298,10 @@ const QueryStatusPage = () => {
                                                     <span className="text-gray-500">Address:</span> {query.consumerAddress}
                                                 </p>
                                                 <p className="text-gray-700">
-                                                    <span className="text-gray-500">Status:</span> {query.status}
+                                                    <span className="text-gray-500">Recycling Finished At:</span>{" "}
+                                                    {query.finishedAt && typeof query.finishedAt === "object" && "seconds" in query.finishedAt
+                                                        ? new Date(query.finishedAt.seconds * 1000).toLocaleString()
+                                                        : query.finishedAt || "N/A"}
                                                 </p>
                                                 <p className="text-gray-700">
                                                     <span className="text-gray-500">Recycling Status:</span> <span className="text-green-700 font-bold">finished</span>

@@ -599,7 +599,7 @@ exports.updateRecycleStatus = functions.region(region).https.onCall(async (data)
       .collection(productId)
       .doc(serialNumber);
 
-    await productRef.set({ recycleStatus: status }, { merge: true });
+    await productRef.set({ recycleStatus: status , finishedAt: admin.firestore.FieldValue.serverTimestamp()}, { merge: true });
 
     const consumerProductRef = firestore
       .collection("consumers")
@@ -607,7 +607,7 @@ exports.updateRecycleStatus = functions.region(region).https.onCall(async (data)
       .collection("scannedProducts")
       .doc(serialNumber);
 
-    await consumerProductRef.set({ recycleStatus: status }, { merge: true });
+    await consumerProductRef.set({ recycleStatus: status , finishedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
 
     const queriesDocRef = firestore.collection("Queries").doc(recyclerId);
     const queriesDocSnap = await queriesDocRef.get();
@@ -615,23 +615,28 @@ exports.updateRecycleStatus = functions.region(region).https.onCall(async (data)
     if (queriesDocSnap.exists) {
       const queries = queriesDocSnap.data().queries || {};
       if (queries[queryId]) {
-        await queriesDocRef.update({
+        const updateData = {
           [`queries.${queryId}.recyclingStatus`]: status,
-        });
+        };
+        if (status === "finished") {
+          updateData[`queries.${queryId}.finishedAt`] = admin.firestore.FieldValue.serverTimestamp();
+        }
+        await queriesDocRef.update(updateData);
       } else {
         throw new functions.https.HttpsError("not-found", `Query with id ${queryId} does not exist.`);
       }
     } else {
+      const newQueryData = { recyclingStatus: status };
+      if (status === "finished") {
+        newQueryData.finishedAt = admin.firestore.FieldValue.serverTimestamp();
+      }
       await queriesDocRef.set({
         queries: {
-          [queryId]: { recyclingStatus: status }
+          [queryId]: newQueryData
         }
       }, { merge: true });
     }
 
-    if (status === "finished") {
-      await consumerProductRef.delete();
-    }
     return { success: true, message: `Recycle status updated to ${status}` };
   } catch (error) {
     throw new functions.https.HttpsError("internal", error.message || "Failed to update recycle status.");

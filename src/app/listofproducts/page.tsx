@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import Spinner from "@/components/Spinner";
 
 interface Product {
+  recycleStatus: string;
   id: string;
   productName: string;
   category: string;
@@ -39,7 +40,9 @@ const ListOfProductsClientInner = () => {
   });
   const [showModal, setShowModal] = useState(false);
   const [scannedProducts, setScannedProducts] = useState<
-    { id: string; name: string; productId: string; manufacturerId?: string }[]
+    {
+      recycleStatus: string; id: string; name: string; productId: string; manufacturerId?: string
+    }[]
   >([]);
   const [loading, setLoading] = useState(false);
 
@@ -97,8 +100,10 @@ const ListOfProductsClientInner = () => {
             name: data.name || "Unnamed Product",
             productId: data.productId,
             manufacturerId: data.manufacturerId,
+            recycleStatus: data.recycleStatus || "uninitiated",
           };
         });
+
         setScannedProducts(scanned);
       } catch (error) {
         console.error("Error fetching scanned products:", error);
@@ -150,7 +155,7 @@ const ListOfProductsClientInner = () => {
 
   const sendRequestCloudFunction = async (
     serialNumber: string,
-    details: { name: string; phone: string; address: string  , email: string }
+    details: { name: string; phone: string; address: string, email: string }
   ): Promise<void> => {
     if (!serialNumber || !recyclerId || !consumerId || !details) {
       alert("Missing Recycler or Consumer Details");
@@ -266,11 +271,26 @@ const ListOfProductsClientInner = () => {
                   <option value="" disabled>
                     Select a scanned product
                   </option>
-                  {scannedProducts.map((prod) => (
-                    <option key={prod.id} value={prod.id}>
-                      {prod.name} ({prod.id})
-                    </option>
-                  ))}
+                  {scannedProducts
+                    .filter(
+                      (prod) =>
+                        prod.recycleStatus !== "finished" &&
+                        prod.recycleStatus !== "started"
+                    ).length === 0 ? (
+                    <option disabled>No eligible products found</option>
+                  ) : (
+                    scannedProducts
+                      .filter(
+                        (prod) =>
+                          prod.recycleStatus !== "finished" &&
+                          prod.recycleStatus !== "started"
+                      )
+                      .map((prod) => (
+                        <option key={prod.id} value={prod.id}>
+                          {prod.name} ({prod.id})
+                        </option>
+                      ))
+                  )}
                 </select>
                 <input
                   type="text"
