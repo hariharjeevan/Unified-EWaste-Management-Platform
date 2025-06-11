@@ -14,7 +14,7 @@ import Spinner from "@/components/Spinner";
 import { useJsApiLoader, GoogleMap, Marker } from "@react-google-maps/api";
 import { Html5QrcodeScanner } from "html5-qrcode";
 import { getFunctions, httpsCallable } from "firebase/functions";
-import { FcFactory, FcClock } from "react-icons/fc";
+import { FcFactory, FcClock, FcMultipleInputs, FcInternal, FcElectronics } from "react-icons/fc";
 
 const functions = getFunctions(undefined, "asia-east2");
 
@@ -437,7 +437,7 @@ const RecyclerPage = () => {
 
         <button
           onClick={() => router.push("/service")}
-          className="mt-6 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-green-700 transition"
         >
           Add Product
         </button>
@@ -455,27 +455,36 @@ const RecyclerPage = () => {
           )}
           <button
             onClick={saveFacilityLocation}
-            className="mt-3 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="mt-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:from-blue-600 hover:to-blue-700 transition"
+            type="button"
           >
             Save Location
           </button>
         </div>
 
         {/* Recycling Requests */}
-        <div className="w-full max-w-4xl bg-white p-6 mt-10 mb-10 rounded shadow text-black">
-          <h2 className="text-xl font-bold mb-4">Recycling Requests: </h2>
+        <div className="w-full max-w-4xl bg-white p-8 rounded-2xl shadow-lg mb-8">
+          <h2 className="text-2xl font-extrabold mb-6 flex items-center gap-2">
+            <FcMultipleInputs size={28} />
+            Recycling Requests
+          </h2>
           {loading ? (
-            <p>Loading...</p>
+            <div className="flex items-center gap-2">
+              <Spinner size={24} color="#2563eb" />
+              <span className="text-gray-700">Loading...</span>
+            </div>
           ) : activeQueries.length === 0 ? (
-            <p>No queries found.</p>
+            <div className="flex flex-col items-center py-8">
+              <span className="text-gray-400 text-lg">No queries found.</span>
+            </div>
           ) : (
-            <ul className="space-y-4">
+            <ul className="space-y-6">
               {activeQueries
                 .filter(query => query.recyclingStatus !== "finished")
                 .map((query) => (
                   <li
                     key={query.id || query.productId}
-                    className="p-4 border rounded shadow bg-white cursor-pointer hover:shadow-lg transition"
+                    className="p-6 border border-gray-200 rounded-xl shadow-md bg-gradient-to-br from-gray-50 to-white hover:shadow-xl transition cursor-pointer group relative"
                     onClick={() => {
                       setModalQuery(query);
                       setShowQueryModal(true);
@@ -483,60 +492,101 @@ const RecyclerPage = () => {
                       setSelectedProductDetails(null);
                     }}
                   >
-                    <h3 className="font-bold text-lg mb-2">{query.productName}</h3>
-                    <p><strong>Consumer:</strong> {query.consumerName}</p>
-                    <p><strong>Phone:</strong> {query.consumerPhone}</p>
-                    <p><strong>Address:</strong> {query.consumerAddress}</p>
-                    <p><strong>Status:</strong> {query.status}</p>
-                    <p><strong>Recycling Status:</strong> {query.recyclingStatus}</p>
-                    {query.status === "accepted" &&
-                      query.recyclingStatus !== "started" &&
-                      query.recyclingStatus !== "finished" && (
-                        scanLoading ? (
-                          <div className="flex flex-col items-center justify-center py-4">
-                            <Spinner size={24} color="#2563eb" />
-                            <span className="mt-2 text-blue-700 font-semibold">Processing...</span>
-                          </div>
-                        ) : (
-                          <button
-                            className="mt-2 bg-green-700 text-white px-3 py-1 rounded hover:bg-green-800"
-                            type="button"
-                            onClick={e => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setShowQRScanner(true);
-                            }}
-                          >
-                            Start Recycling
-                          </button>
-                        )
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="bg-blue-100 rounded-full p-3">
+                        <FcElectronics size={28} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-xl text-gray-900 group-hover:text-blue-700 transition">{query.productName}</h3>
+                        <span className="text-xs text-gray-500">Product ID: {query.productId}</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 mt-2">
+                      <div>
+                        <p className="text-gray-700"><span className="font-semibold">Consumer:</span> {query.consumerName}</p>
+                        <p className="text-gray-700"><span className="font-semibold">Phone:</span> {query.consumerPhone}</p>
+                        <p className="text-gray-700"><span className="font-semibold">Address:</span> {query.consumerAddress}</p>
+                      </div>
+                      <div>
+                        <p>
+                          <span className="font-semibold text-gray-700">Status:</span>{" "}
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold
+                ${query.status === "accepted"
+                              ? "bg-green-100 text-green-700"
+                              : query.status === "rejected"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }`}>
+                            {query.status ? (query.status.charAt(0).toUpperCase() + query.status.slice(1)) : "Unknown"}
+                          </span>
+                        </p>
+                        <p>
+                          <span className="font-semibold text-gray-700">Recycling Status:</span>{" "}
+                          <span className={`inline-block px-2 py-1 rounded text-xs font-semibold
+                    ${query.recyclingStatus === "started"
+                              ? "bg-blue-100 text-blue-700"
+                              : query.recyclingStatus === "finished"
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}>
+                            {query.recyclingStatus
+                              ? query.recyclingStatus.charAt(0).toUpperCase() + query.recyclingStatus.slice(1)
+                              : "Not started"}
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 mt-4">
+                      {query.status === "accepted" &&
+                        query.recyclingStatus !== "started" &&
+                        query.recyclingStatus !== "finished" && (
+                          scanLoading ? (
+                            <div className="flex items-center gap-2">
+                              <Spinner size={20} color="#2563eb" />
+                              <span className="text-blue-700 font-semibold">Processing...</span>
+                            </div>
+                          ) : (
+                            <button
+                              className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:from-green-600 hover:to-green-700 transition"
+                              type="button"
+                              onClick={e => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setShowQRScanner(true);
+                              }}
+                            >
+                              Start Recycling
+                            </button>
+                          )
+                        )}
+                      {query.recyclingStatus === "started" && (
+                        <button
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:from-blue-600 hover:to-blue-700 transition"
+                          type="button"
+                          onClick={async e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            await updateRecycleStatus({
+                              manufacturerId: query.manufacturerId,
+                              productId: query.productId,
+                              serialNumber: query.serialNumber,
+                              status: "finished",
+                              consumerId: query.consumerId,
+                              recyclerId: user?.uid || "",
+                              queryId: query.id,
+                            });
+                            alert("Recycling process finished for this product!");
+                            window.location.reload();
+                          }}
+                        >
+                          Finish Recycling
+                        </button>
                       )}
-                    {query.recyclingStatus === "started" && (
-                      <button
-                        className="mt-2 bg-blue-700 text-white px-3 py-1 rounded hover:bg-blue-800"
-                        type="button"
-                        onClick={async e => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          await updateRecycleStatus({
-                            manufacturerId: query.manufacturerId,
-                            productId: query.productId,
-                            serialNumber: query.serialNumber,
-                            status: "finished",
-                            consumerId: query.consumerId,
-                            recyclerId: user?.uid || "",
-                            queryId: query.id,
-                          });
-                          alert("Recycling process finished for this product!");
-                          window.location.reload();
-                        }}
-                      >
-                        Finish Recycling
-                      </button>
-                    )}
-                    {query.recyclingStatus === "finished" && (
-                      <span className="mt-2 text-green-700 font-bold">Recycling Completed!</span>
-                    )}
+                      {query.recyclingStatus === "finished" && (
+                        <span className="text-green-700 font-bold">Recycling Completed!</span>
+                      )}
+                    </div>
+                    <span className="absolute top-4 right-4 text-xs text-gray-400">Click for details</span>
                   </li>
                 ))}
             </ul>
@@ -545,17 +595,65 @@ const RecyclerPage = () => {
 
         {/* Query Modal */}
         {showQueryModal && modalQuery && (
-          <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-xs sm:max-w-md md:max-w-lg lg:max-w-xl mx-2 overflow-y-auto max-h-[90vh]">
-              <h3 className="text-lg text-white text-center bg-black font-semibold mb-6 rounded-full p-2">
-                Recycling Request Actions
-              </h3>
-              <p className="text-black"><strong>Product:</strong> {modalQuery.productName}</p>
-              <p className="text-black"><strong>Product Id:</strong> {modalQuery.productId}</p>
-              <p className="text-black"><strong>Consumer:</strong> {modalQuery.consumerName}</p>
-              <p className="text-black"><strong>Phone:</strong> {modalQuery.consumerPhone}</p>
-              <p className="text-black"><strong>Address:</strong> {modalQuery.consumerAddress}</p>
-              <p className="text-black"><strong>Status:</strong> {modalQuery.status}</p>
+          <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-60 z-50">
+            <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-lg mx-2 overflow-y-auto max-h-[90vh] border border-gray-200 relative">
+              <button
+                onClick={() => {
+                  setShowQueryModal(false);
+                  setInspectedQuery(null);
+                  setSelectedProductDetails(null);
+                }}
+                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+                aria-label="Close"
+              >
+                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M6 18L18 6" />
+                </svg>
+              </button>
+              <div className="flex flex-col items-center mb-6">
+                <div className="bg-white rounded-full w-16 h-16 flex items-center justify-center mb-2 shadow">
+                  <FcInternal size={32} />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-1 text-center">
+                  Recycling Request
+                </h3>
+                <span className="text-sm text-gray-500 text-center">
+                  Take action on this request
+                </span>
+              </div>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-700">Product:</span>
+                  <span className="text-gray-900">{modalQuery.productName}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-700">Product Id:</span>
+                  <span className="text-gray-900">{modalQuery.productId}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-700">Consumer:</span>
+                  <span className="text-gray-900">{modalQuery.consumerName}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-700">Phone:</span>
+                  <span className="text-gray-900">{modalQuery.consumerPhone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-700">Address:</span>
+                  <span className="text-gray-900">{modalQuery.consumerAddress}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-700">Status:</span>
+                  <span className={`px-2 py-1 rounded text-xs font-semibold ${modalQuery.status === "accepted"
+                    ? "bg-green-100 text-green-700"
+                    : modalQuery.status === "rejected"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-yellow-100 text-yellow-700"
+                    }`}>
+                    {modalQuery.status.charAt(0).toUpperCase() + modalQuery.status.slice(1)}
+                  </span>
+                </div>
+              </div>
               <div className="flex flex-col sm:flex-row sm:space-x-2 space-y-2 sm:space-y-0 mt-4">
                 {modalQuery.status !== "accepted" && modalQuery.status !== "rejected" && (
                   <>
@@ -566,7 +664,7 @@ const RecyclerPage = () => {
                           setShowQueryModal(false);
                         }
                       }}
-                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 w-full sm:w-auto"
+                      className="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:from-green-600 hover:to-green-700 transition w-full sm:w-auto"
                     >
                       Accept
                     </button>
@@ -578,7 +676,7 @@ const RecyclerPage = () => {
                           setShowQueryModal(false);
                         }
                       }}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 w-full sm:w-auto"
+                      className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:from-red-600 hover:to-red-700 transition w-full sm:w-auto"
                     >
                       Reject
                     </button>
@@ -588,27 +686,29 @@ const RecyclerPage = () => {
                   onClick={() => {
                     inspectqueryproductdetails(modalQuery.consumerId, modalQuery.serialNumber, modalQuery.id)
                   }}
-                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 w-full sm:w-auto"
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:from-blue-600 hover:to-blue-700 transition w-full sm:w-auto"
                 >
                   Inspect Product
                 </button>
               </div>
               {/* Inspected Product Details */}
               {inspectedQuery && inspectedQuery.id === modalQuery.id && selectedProductdetails && (
-                <div className="bg-gray-100 p-4 rounded mb-2 mt-4">
-                  <h4 className="font-semibold mb-2">Inspected Product Details</h4>
-                  <ul>
+                <div className="bg-gray-50 p-4 rounded-lg mb-2 mt-6 border border-gray-200">
+                  <h4 className="font-semibold mb-3 text-gray-800 text-lg">Inspected Product Details</h4>
+                  <ul className="space-y-1">
                     {selectedProductdetails.map((detail) => (
-                      <li key={detail.label} className="mb-1 text-black">
-                        <strong>{detail.label}:</strong>{" "}
-                        {detail.value && typeof detail.value === "object" && detail.value.seconds
-                          ? new Date(detail.value.seconds * 1000).toLocaleString()
-                          : String(detail.value)}
+                      <li key={detail.label} className="text-gray-700 flex items-center">
+                        <span className="font-medium">{detail.label}:</span>
+                        <span className="ml-2">
+                          {detail.value && typeof detail.value === "object" && detail.value.seconds
+                            ? new Date(detail.value.seconds * 1000).toLocaleString()
+                            : String(detail.value)}
+                        </span>
                       </li>
                     ))}
                   </ul>
                   <button
-                    className="mt-2 bg-gray-300 px-3 py-1 rounded"
+                    className="mt-4 bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg font-semibold text-gray-700 transition"
                     onClick={() => {
                       setInspectedQuery(null);
                       setSelectedProductDetails(null);
@@ -618,23 +718,22 @@ const RecyclerPage = () => {
                   </button>
                 </div>
               )}
-              <button
-                onClick={() => {
-                  setShowQueryModal(false);
-                  setInspectedQuery(null);
-                  setSelectedProductDetails(null);
-                }}
-                className="mt-4 bg-red-600 text-white px-4 py-2 rounded w-full hover:bg-red-700"
-              >
-                Close
-              </button>
             </div>
           </div>
         )}
         {/* QR Scanner Modal */}
         {showQRScanner && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md relative">
+              <button
+                onClick={() => setShowQRScanner(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition"
+                aria-label="Close"
+              >
+                <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 6l12 12M6 18L18 6" />
+                </svg>
+              </button>
               <h3 className="text-lg font-semibold mb-4 text-black text-center">Scan Product QR Code</h3>
               {scanLoading ? (
                 <div className="flex flex-col items-center justify-center py-8">

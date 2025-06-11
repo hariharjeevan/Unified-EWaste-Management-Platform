@@ -8,6 +8,7 @@ import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import Navbar from "@/components/Navbar";
 import Papa from "papaparse";
 import UploadIcon from "@/icons/uploadIcon.svg";
+import Footer from "@/components/Footer";
 
 type OrganizationData = {
   adminId: string;
@@ -292,8 +293,8 @@ const ServicePage = () => {
   return (
     <>
       <Navbar links={[{ label: "Find Manufacturer", href: "/manufacturerdetails", tooltip: "Find your manufacturer and their manufactured products." }, { label: "Recycler", href: "/recycler", tooltip: "Visit the recycler dashboard" }]} />
-      <div className="flex justify-center items-center h-screen bg-white p-4">
-        <div className="w-80 bg-white p-4 rounded-lg shadow-lg">
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center py-10 px-2">
+        <div className="w-full max-w-4xl bg-white p-8 rounded-2xl shadow-lg mb-8">
           {/* Manufacturer Dropdown */}
           <select
             value={selectedManufacturer}
@@ -431,6 +432,7 @@ const ServicePage = () => {
             />
           </label>
         </div>
+        <Footer />
       </div>
     </>
   );
