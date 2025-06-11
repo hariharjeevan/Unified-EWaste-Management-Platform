@@ -459,7 +459,7 @@ const Manufacturer = () => {
 
   const submitCertificationRequest = async () => {
     try {
-      if (!organizationID) return; // Defensive check
+      if (!organizationID) return;
       const orgRef = doc(db, "organizations", organizationID);
       await updateDoc(orgRef, {
         certification: "pending",
@@ -708,20 +708,232 @@ const Manufacturer = () => {
         {/* Create Product Dialog */}
         {showDialog && (
           <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50 z-50 px-2">
-            <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-blue-200">
-              {/* ...existing dialog content... */}
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4 text-black text-center">Create New Product</h3>
+              {/* Product Name */}
+              <div className="relative mb-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    className="border text-black p-2 w-full"
+                    value={productDetails.name}
+                    onChange={(e) => setProductDetails({ ...productDetails, name: e.target.value })}
+                  />
+                  <div className="relative group">
+                    <IoMdInformationCircleOutline size={20} className="text-gray-500 cursor-pointer hover:text-gray-700" />
+                    <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
+                      <p className="text-sm text-gray-700">Enter the product&apos;s name (e.g., &quot;Samsung Galaxy S25&quot;).</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Serial Number */}
+              <div className="relative mb-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Serial Number"
+                    className="border text-black p-2 w-full"
+                    value={productDetails.serialNumber}
+                    onChange={async (e) => {
+                      const value = e.target.value;
+                      setProductDetails({ ...productDetails, serialNumber: value });
+
+                      if (value && productDetails.name && productDetails.category && user) {
+                        const productId = await getOrCreateProductId(user, { ...productDetails, serialNumber: value });
+                        const ref = doc(
+                          db,
+                          "manufacturers",
+                          user.uid,
+                          productId,
+                          value
+                        );
+                        const snap = await getDoc(ref);
+                        setIsDuplicateSerial(snap.exists());
+                      } else {
+                        setIsDuplicateSerial(false);
+                      }
+                    }}
+                  />
+                  <div className="relative group">
+                    <IoMdInformationCircleOutline size={20} className="text-gray-500 cursor-pointer hover:text-gray-700" />
+                    <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
+                      <p className="text-sm text-gray-700">Enter the unique serial number for the product.</p>
+                    </div>
+                  </div>
+                </div>
+                {isDuplicateSerial && (
+                  <p className="text-red-500 text-sm mt-1">A product with this serial number already exists for this model.</p>
+                )}
+              </div>
+              {/* Category */}
+              <div className="relative mb-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Category"
+                    className="border text-black p-2 w-full"
+                    value={productDetails.category}
+                    onChange={(e) => setProductDetails({ ...productDetails, category: e.target.value })}
+                  />
+                  <div className="relative group">
+                    <IoMdInformationCircleOutline size={20} className="text-gray-500 cursor-pointer hover:text-gray-700" />
+                    <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
+                      <p className="text-sm text-gray-700">Enter the product category (e.g., &quot;Electronics&quot;).</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Recyclability */}
+              <div className="relative mb-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Recyclability"
+                    className="border text-black p-2 w-full"
+                    value={productDetails.recyclability}
+                    onChange={(e) => setProductDetails({ ...productDetails, recyclability: e.target.value })}
+                  />
+                  <div className="relative group">
+                    <IoMdInformationCircleOutline size={20} className="text-gray-500 cursor-pointer hover:text-gray-700" />
+                    <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
+                      <p className="text-sm text-gray-700">Enter the recyclability percentage (e.g., &quot;80%&quot;).</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Recoverable Metals */}
+              <div className="relative mb-4">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Recoverable Metals"
+                    className="border text-black p-2 w-full"
+                    value={productDetails.recoverableMetals}
+                    onChange={(e) => setProductDetails({ ...productDetails, recoverableMetals: e.target.value })}
+                  />
+                  <div className="relative group">
+                    <IoMdInformationCircleOutline size={20} className="text-gray-500 cursor-pointer hover:text-gray-700" />
+                    <div className="absolute left-0 top-8 p-2 bg-white border border-gray-300 shadow-lg rounded opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity duration-300 z-20 w-64">
+                      <p className="text-sm text-gray-700">Enter the recoverable metals (e.g., &quot;Gold, Silver&quot;).</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                <button
+                  onClick={addProduct}
+                  className={`bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-all duration-200 w-full sm:w-auto ${isDuplicateSerial ? "opacity-50 cursor-not-allowed" : ""}`}
+                  disabled={isDuplicateSerial}
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setShowDialog(false)}
+                  className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition-all duration-200 w-full sm:w-auto"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Product Details Modal */}
         {showProductDetails && (
           <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black bg-opacity-50 overflow-y-auto z-50 px-2">
             <div
-              className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl w-full max-w-md mb-10 border border-blue-200"
+              className="bg-white p-4 sm:p-6 rounded-lg shadow-lg w-full max-w-md mb-10"
               style={{ maxHeight: "95vh", overflowY: "auto" }}
             >
-              {/* ...existing modal content... */}
+              <h3 className="text-lg text-white text-center bg-black font-semibold mb-6 rounded-full p-2">
+                Product Details
+              </h3>
+              <p className="text-black"><strong>Name:</strong> {showProductDetails.name}</p>
+              <p className="text-black"><strong>Product ID:</strong> {showProductDetails.productId}</p>
+              <p className="text-black"><strong>Serial Number:</strong> {showProductDetails.serialNumber}</p>
+              <p className="text-black"><strong>Category:</strong> {showProductDetails.category}</p>
+              <p className="text-black"><strong>Recyclability:</strong> {showProductDetails.recyclability}</p>
+              <p className="text-black"><strong>Recoverable Metals:</strong> {showProductDetails.recoverableMetals}</p>
+              <p className="text-black"><strong>Registered:</strong> {showProductDetails.registered ? "Yes" : "No"}</p>
+              <p className="text-black"><strong>Recycle Status:</strong> {showProductDetails.recycleStatus || "N/A"}</p>
+
+              {/* Secret Key Section */}
+              <div className="flex items-center space-x-2 mt-2">
+                <p className="text-black font-bold">Secret Key:</p>
+                <span
+                  className="text-black border px-2 py-1 rounded bg-gray-200 w-[150px] text-center overflow-hidden"
+                  style={{
+                    whiteSpace: "nowrap",
+                    textOverflow: "ellipsis",
+                    fontFamily: "'Consolas'",
+                  }}
+                >
+                  {showSecretKey ? showProductDetails.secretKey : "**********"}
+                </span>
+                <button
+                  onClick={() => setShowSecretKey(!showSecretKey)}
+                  className="text-blue-600 hover:text-blue-800 flex items-center"
+                >
+                  {showSecretKey ? <AiFillEyeInvisible size={20} /> : <AiFillEye size={20} />}
+                </button>
+              </div>
+
+              {/* QR Code */}
+              <p className="text-red-500 text-center mt-4"><strong>Product QR Code</strong></p>
+              <div className="mt-2 flex justify-center">
+                <QRCode value={showProductDetails.qrCode} size={100} bgColor="white" fgColor="black" />
+              </div>
+
+              {/* Timeline */}
+              <div className="mt-4">
+                <h4 className="text-red-500 text-center font-semibold mb-2">Product Timeline</h4>
+                <div className="relative">
+                  <div className="flex flex-col items-center space-y-4">
+                    {/* Created Date */}
+                    <div className="flex items-center space-x-4">
+                      <div className="w-4 h-4 bg-green-500 rounded-full"></div>
+                      <div className="text-black">
+                        Created:{" "}
+                        {showProductDetails.createdAt?.seconds
+                          ? new Date(showProductDetails.createdAt.seconds * 1000).toLocaleDateString()
+                          : "N/A"}
+                      </div>
+                    </div>
+                    {/* Time Since Creation */}
+                    <div className="flex items-center space-x-4">
+                      <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
+                      <div className="text-black">
+                        Time Since Creation:{" "}
+                        {showProductDetails.createdAt?.seconds
+                          ? (() => {
+                            const createdAtDate = new Date(showProductDetails.createdAt.seconds * 1000);
+                            const now = new Date();
+                            const timeDifference = Math.floor(
+                              (now.getTime() - createdAtDate.getTime()) / (1000 * 60 * 60 * 24)
+                            );
+                            return timeDifference > 0 ? `${timeDifference} days ago` : "Today";
+                          })()
+                          : "N/A"}
+                      </div>
+                    </div>
+                    {/* User Count */}
+                    <div className="flex items-center space-x-4">
+                      <div className="w-4 h-4 bg-red-500 rounded-full"></div>
+                      <div className="text-black">
+                        Users Count: {showProductDetails.userCount || 0}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowProductDetails(null)}
+                className="mt-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-700 transition-all duration-200 w-full"
+              >
+                Close
+              </button>
             </div>
           </div>
         )}
