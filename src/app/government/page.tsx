@@ -28,6 +28,10 @@ const Government = () => {
     const [selectedManufacturer, setSelectedManufacturer] = useState<OrganizationData | null>(null);
     const [manufacturerProducts, setManufacturerProducts] = useState<ProductDetails[]>([]);
     const [loadingDetails, setLoadingDetails] = useState(false);
+    const [showRejectDialog, setShowRejectDialog] = useState(false);
+    const [rejectReason, setRejectReason] = useState("");
+    const [orgToReject, setOrgToReject] = useState<{ id: string; name: string } | null>(null);
+    const [search, setSearch] = useState("");
 
     useEffect(() => {
         const fetchCerts = async () => {
@@ -56,12 +60,32 @@ const Government = () => {
 
     const approveCertification = async (orgId: string) => {
         try {
-            await updateDoc(doc(db, "organizations", orgId), { certification: "approved" });
+            await updateDoc(doc(db, "organizations", orgId), {
+                certification: "approved",
+                certificationExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+            });
             setPendingOrgs(prev => prev.filter(org => org.id !== orgId));
             const org = pendingOrgs.find(org => org.id === orgId);
             if (org) setApprovedOrgs(prev => [...prev, org]);
         } catch (error) {
             console.error("Error approving certification:", error);
+        }
+    };
+
+    const rejectCertification = async () => {
+        if (!orgToReject) return;
+        try {
+            await updateDoc(doc(db, "organizations", orgToReject.id), {
+                certification: "rejected",
+                rejectionReason: rejectReason,
+                rejectionDate: new Date().toISOString(),
+            });
+            setPendingOrgs(prev => prev.filter(org => org.id !== orgToReject.id));
+            setShowRejectDialog(false);
+            setRejectReason("");
+            setOrgToReject(null);
+        } catch (error) {
+            console.error("Error rejecting certification:", error);
         }
     };
 
@@ -96,11 +120,18 @@ const Government = () => {
             <div className="w-full min-h-screen bg-white flex justify-center items-center text-black">
                 <div className="w-full max-w-4xl mt-10 bg-white p-6 rounded shadow-md">
                     <h3 className="text-lg font-semibold mb-4">Pending Certification Requests</h3>
-                    {pendingOrgs.length === 0 ? (
+                    <input
+                        type="text"
+                        className="border rounded px-2 py-1 mb-4 w-full"
+                        placeholder="Search organizations..."
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                    />
+                    {pendingOrgs.filter(org => org.name.toLowerCase().includes(search.toLowerCase())).length === 0 ? (
                         <p className="text-gray-500">No pending requests.</p>
                     ) : (
                         <ul>
-                            {pendingOrgs.map(org => (
+                            {pendingOrgs.filter(org => org.name.toLowerCase().includes(search.toLowerCase())).map(org => (
                                 <li key={org.id} className="flex justify-between items-center py-2 border-b">
                                     <span
                                         className="text-blue-700 hover:underline cursor-pointer"
@@ -108,12 +139,20 @@ const Government = () => {
                                     >
                                         {org.name}
                                     </span>
-                                    <button
-                                        onClick={() => approveCertification(org.id)}
-                                        className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 transition"
-                                    >
-                                        Approve
-                                    </button>
+                                    <div>
+                                        <button
+                                            onClick={() => approveCertification(org.id)}
+                                            className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 transition"
+                                        >
+                                            Approve
+                                        </button>
+                                        <button
+                                            onClick={() => { setShowRejectDialog(true); setOrgToReject(org); }}
+                                            className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 transition ml-2"
+                                        >
+                                            Reject
+                                        </button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -201,6 +240,35 @@ const Government = () => {
                                         ))}
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    )}
+                    {showRejectDialog && orgToReject && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full relative border-2 border-red-500">
+                                <button
+                                    className="absolute top-3 right-4 text-gray-400 hover:text-gray-700 text-3xl font-bold"
+                                    onClick={() => setShowRejectDialog(false)}
+                                    aria-label="Close"
+                                >
+                                    &times;
+                                </button>
+                                <h2 className="text-xl font-bold mb-4 text-red-700">Reject Certification</h2>
+                                <p className="mb-2">Provide a reason for rejecting <span className="font-semibold">{orgToReject.name}</span>:</p>
+                                <textarea
+                                    className="w-full border rounded p-2 mb-4"
+                                    rows={3}
+                                    value={rejectReason}
+                                    onChange={e => setRejectReason(e.target.value)}
+                                    placeholder="Enter rejection reason..."
+                                />
+                                <button
+                                    onClick={rejectCertification}
+                                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition w-full"
+                                    disabled={!rejectReason.trim()}
+                                >
+                                    Confirm Reject
+                                </button>
                             </div>
                         </div>
                     )}

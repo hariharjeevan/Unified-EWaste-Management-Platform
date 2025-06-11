@@ -176,7 +176,7 @@ const Consumer = () => {
             (p) =>
               !!p.productId &&
               !!p.serialNumber &&
-              p.recycleStatus !== "finished"
+              p.recycleStatus !== "finished" && p.recycleStatus !== "started"
           );
 
         const productsRef = collection(db, "recyclers", recyclerId, "products");
@@ -314,7 +314,7 @@ const Consumer = () => {
           id: doc.id,
           ...data,
         } as Product;
-      }).filter((product) => product !== null && product.recycleStatus !== "finished") as Product[];
+      }).filter((product) => product !== null && product.recycleStatus !== "finished" && product.recycleStatus != "started") as Product[];
 
       const verifiedProducts: Product[] = [];
 
@@ -376,34 +376,43 @@ const Consumer = () => {
   };
 
   const fetchConsumerQueries = useCallback(async () => {
-    if (!consumerId) return;
-    setLoadingQueries(true);
-    try {
-      const queriesRef = collection(db, "Queries");
-      const querySnap = await getDocs(queriesRef);
+  if (!consumerId) return;
+  setLoadingQueries(true);
+  try {
+    const scannedProductsRef = collection(db, "consumers", consumerId, "scannedProducts");
+    const scannedProductsSnap = await getDocs(scannedProductsRef);
 
-      let allQueries: any[] = [];
-      querySnap.forEach(docSnap => {
-        const data = docSnap.data();
-        if (data.queries) {
-          Object.entries(data.queries).forEach(([queryId, queryData]: [string, any]) => {
-            allQueries.push({
-              id: queryId,
-              recyclerId: docSnap.id,
-              ...queryData,
-            });
-          });
-        }
-      });
+    let allQueries: any[] = [];
 
-      const consumerQueries = allQueries.filter(q => q.consumerId === consumerId);
-      setConsumerQueries(consumerQueries);
-    } catch (error) {
-      console.error("Error fetching queries:", error);
-    } finally {
-      setLoadingQueries(false);
-    }
-  }, [consumerId]);
+    scannedProductsSnap.forEach(productDoc => {
+      const productData = productDoc.data();
+      const serialNumber = productDoc.id;
+
+      const recyclingstatus = productData.recycleStatus || "uninitiated";
+      const finshedat = productData.finishedAt || null;
+
+      const request = productData.recyclingRequest;
+      if (request) {
+        allQueries.push({
+          id: request.queryId || "",
+          recyclerId: request.recyclerId || "",
+          serialNumber,
+          productName: request.productName || "",
+          recycleStatus: recyclingstatus || "uninitiated",
+          finishedAt: finshedat,
+          ...request,
+        });
+      }
+    });
+
+    setConsumerQueries(allQueries);
+  } catch (error) {
+    console.error("Error fetching consumer queries:", error);
+  } finally {
+    setLoadingQueries(false);
+  }
+}, [consumerId]);
+
 
   useEffect(() => {
     if (consumerLocation && consumerId) {
@@ -752,13 +761,13 @@ const Consumer = () => {
         </div>
 
         {/* Registered products section */}
-        {scannedProducts.filter(p => p.recycleStatus !== "finished").length > 0 ? (
+        {scannedProducts.filter(p => p.recycleStatus !== "finished" && p.recycleStatus != "started").length > 0 ? (
           <div className="mt-6 w-full max-w-2xl bg-white shadow-lg rounded-xl p-6 border border-gray-300">
             <h3 className="text-lg text-black font-semibold border-b pb-2">
               Registered Products
             </h3>
             {scannedProducts
-              .filter(product => product.recycleStatus !== "finished")
+              .filter(product => product.recycleStatus !== "finished" && product.recycleStatus != "started")
               .map((product) => (
                 <div
                   key={product.id}
@@ -1005,7 +1014,7 @@ const Consumer = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
               {nearbyRecyclers.map((recycler) => {
                 const filteredProducts = recycler.products.filter(
-                  (product) => product.recycleStatus !== "finished"
+                  (product) => product.recycleStatus !== "finished" && product.recycleStatus != "started"
                 );
                 return (
                   <Link
@@ -1080,7 +1089,7 @@ const Consumer = () => {
                                 ? "text-green-600"
                                 : "text-blue-600"
                           }>
-                            {q.recycleStatus}
+                            {q.recycleStatus || "uninitiated"}
                           </span>
                           {q.recycleStatus === "finished" &&
                             q.finishedAt &&
@@ -1089,9 +1098,6 @@ const Consumer = () => {
                               <> at: <span className="text-gray-500">{new Date(q.finishedAt.seconds * 1000).toLocaleString()}</span></>
                             )}
                         </span>
-                        {/* {q.recyclerName && (
-                          <span className="text-sm text-gray-500">Recycler: {q.recyclerName}</span>
-                        )} */}
                       </div>
                     </li>
                   ))}
