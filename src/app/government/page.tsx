@@ -140,7 +140,7 @@ const Government = () => {
                     )}
                     {showDialog && selectedManufacturer && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-2xl w-full relative border-2 border-green-500">
+                            <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-8 w-full max-w-xs sm:max-w-2xl relative border-2 border-green-500 mx-2 sm:mx-0 overflow-y-auto max-h-[90vh]">
                                 <button
                                     className="absolute top-3 right-4 text-gray-400 hover:text-gray-700 text-3xl font-bold"
                                     onClick={() => setShowDialog(false)}
@@ -149,11 +149,11 @@ const Government = () => {
                                     &times;
                                 </button>
                                 <div className="mb-6">
-                                    <h2 className="text-3xl font-bold text-green-700 mb-1">{selectedManufacturer.name}</h2>
+                                    <h2 className="text-2xl sm:text-3xl font-bold text-green-700 mb-1 break-words">{selectedManufacturer.name}</h2>
                                     <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-8 text-gray-700">
-                                        <div>
+                                        <div className="break-all">
                                             <span className="font-semibold">Manufacturer ID:</span>
-                                            <span className="ml-2 px-2 py-1 bg-green-100 border border-green-400 rounded text-green-800 font-mono text-sm">
+                                            <span className="ml-2 px-2 py-1 bg-green-100 border border-green-400 rounded text-green-800 font-mono text-xs">
                                                 {selectedManufacturer.adminId}
                                             </span>
                                         </div>
@@ -165,21 +165,21 @@ const Government = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <h3 className="text-xl font-semibold text-gray-800 mb-4">Products</h3>
+                                <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4">Products</h3>
                                 {loadingDetails ? (
                                     <div className="text-center py-8 text-gray-500">Loading products...</div>
                                 ) : manufacturerProducts.length === 0 ? (
                                     <div className="text-center py-8 text-gray-400">No products found for this manufacturer.</div>
                                 ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                                         {manufacturerProducts.map(product => (
                                             <div
                                                 key={product.productId}
-                                                className="bg-gray-50 border border-green-200 rounded-lg p-4 shadow hover:shadow-md transition"
+                                                className="bg-gray-50 border border-green-200 rounded-lg p-3 sm:p-4 shadow hover:shadow-md transition break-words"
                                             >
                                                 <div className="flex flex-col gap-1 mb-3">
                                                     <div className="flex items-center gap-3">
-                                                        <span className="flex items-center bg-green-100 border border-green-400 text-green-800 font-mono text-xs rounded px-2 py-1">
+                                                        <span className="flex items-center bg-green-100 border border-green-400 text-green-800 font-mono text-xs rounded px-2 py-1 break-all">
                                                             <span className="inline-block bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded mr-2">
                                                                 ID
                                                             </span>
@@ -188,13 +188,13 @@ const Government = () => {
                                                     </div>
                                                     <span className="text-base sm:text-lg font-semibold text-gray-800">{product.name}</span>
                                                 </div>
-                                                <div className="text-gray-700 text-sm mb-1">
+                                                <div className="text-gray-700 text-xs sm:text-sm mb-1">
                                                     <span className="font-semibold">Category:</span> {product.category}
                                                 </div>
-                                                <div className="text-gray-700 text-sm mb-1">
+                                                <div className="text-gray-700 text-xs sm:text-sm mb-1">
                                                     <span className="font-semibold">Recyclability:</span> {product.recyclability}
                                                 </div>
-                                                <div className="text-gray-700 text-sm">
+                                                <div className="text-gray-700 text-xs sm:text-sm">
                                                     <span className="font-semibold">Recoverable Metals:</span> {product.recoverableMetals}
                                                 </div>
                                             </div>

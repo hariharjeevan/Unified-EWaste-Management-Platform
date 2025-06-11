@@ -437,7 +437,7 @@ const RecyclerPage = () => {
 
         <button
           onClick={() => router.push("/service")}
-          className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold shadow hover:bg-green-700 transition"
+          className="bg-green-600 text-white mt-4 px-4 py-2 rounded-lg font-semibold shadow hover:bg-green-700 transition"
         >
           Add Product
         </button>

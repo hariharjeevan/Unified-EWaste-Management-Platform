@@ -2,14 +2,17 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import BlobCursor from '@/components/BlobCursor';
 import GitHubEmbed from "@/components/GitHubEmbed";
 import Image from "next/image";
 import EnlargedImageModal from "@/components/EnlargedImageModal";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 const DocsPage = () => {
+  const router = useRouter();
   const logos = [
     { src: "/documentation/logos/next_js.png", width: 100, height: 80 },
     { src: "/documentation/logos/React.png", width: 70, height: 80 },
@@ -40,8 +43,28 @@ const DocsPage = () => {
     <div className="min-h-screen flex flex-col bg-[#f5f3f4]">
       {/* Navbar */}
       <Navbar links={[{ label: "About", href: "/about", tooltip: "About the team behind UEMP" }]} />
-
-      <main className="flex flex-col items-center px-2 sm:px-4 md:px-8 py-4">
+      {/* Blob Cursor (disabled on small screens) */}
+      <div className="fixed inset-0 pointer-events-none z-0 hidden sm:block">
+        <BlobCursor
+          blobType="circle"
+          fillColor="#3cb16d"
+          trailCount={3}
+          sizes={[40, 110, 60]}
+          innerSizes={[20, 35, 25]}
+          innerColor="rgba(255,255,255,0.8)"
+          opacities={[0.6, 0.6, 0.6]}
+          shadowColor="rgba(0,0,0,0.75)"
+          shadowBlur={5}
+          shadowOffsetX={10}
+          shadowOffsetY={10}
+          filterStdDeviation={30}
+          useFilter={true}
+          fastDuration={0.1}
+          slowDuration={0.5}
+          zIndex={0}
+        />
+      </div>
+      <main className="flex flex-col items-center px-2 sm:px-4 md:px-8 py-4 z-40">
         <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#000500] mb-2 text-center">Documentation</h1>
         <p className="text-base sm:text-lg text-gray-700 max-w-4xl text-center mb-4">
           Welcome to the Unified E-Waste Management Platform (UEMP) documentation.
@@ -229,6 +252,7 @@ const DocsPage = () => {
             <li>
               <strong>QR Code Handling:</strong> Detects the <code>qr</code> query parameter from the URL to identify the product being registered.
             </li>
+            <li>Each <code>productId</code> is unique and the <code>serial numbers</code> are the instances of the <code>productId</code> as illustrated below:</li>
           </ul>
           <div className="flex flex-col items-center justify-center text-black mb-4">
             <Image
@@ -263,7 +287,7 @@ const DocsPage = () => {
           </ul>
           <h3 className="text-lg sm:text-xl font-semibold text-[#000500] mb-2 mt-2">Demo Flow</h3>
           <p className="text-gray-700 mb-4">
-            The animation below illustrates the consumer QR-based registration flow, showing how users are redirected based on authentication status.
+            The video below illustrates the consumer QR-based registration flow, showing how users are redirected based on authentication status.
           </p>
           <div className="flex items-center justify-center mt-6">
             <video
@@ -443,6 +467,10 @@ const DocsPage = () => {
             rawUrl="https://raw.githubusercontent.com/hariharjeevan/Unified-EWaste-Management-Platform/main/src/app/government/page.tsx"
             initialLines={25}
           />
+          <p className="text-gray-700 mb-1">
+            Government organizations can certify manufacturers and recyclers for their authenticity.
+          </p>
+          <p className="text-gray-700 text-xl ">Future Scope:</p>
           <ul className="list-disc list-inside text-gray-700">
             <li>
               <strong>Data Analytics:</strong> Access data on e-waste recycling activities,
@@ -470,6 +498,50 @@ const DocsPage = () => {
           </div>
           <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
         </section>
+
+        {/* About the Team Section */}
+        <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8 text-center relative overflow-hidden">
+          <div className="relative z-10">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">About the Team</h2>
+            <p className="text-gray-700 mb-4">
+              The Unified E-Waste Management Platform is developed by a passionate team dedicated to promoting sustainability and responsible e-waste management.
+            </p>
+            <button
+              onClick={() => router.push("/about")}
+              className="bg-red-500 text-white px-8 py-3 rounded-full shadow-lg font-semibold text-lg transition-transform duration-200 hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-red-300"
+            >
+              Meet the Team
+            </button>
+          </div>
+        </section>
+
+        {/* Credits Section */}
+        <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8 text-center md:text-justify">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4 text-center">Credits</h2>
+          <p className="text-gray-700 mb-4 text-left">
+            We would like to acknowledge the following:
+          </p>
+          <ul className="list-disc list-outside text-gray-700 mb-4 text-left mx-auto max-w-2xl ml-5">
+            <li>
+              <a href="https://react-icons.github.io/react-icons/"><strong className="text-blue-600 underline">React Icons</strong></a> for iconography.
+            </li>
+            <li>
+              <a href="https://www.reactbits.dev/"><strong className="text-blue-600 underline">React Bits</strong></a> for the animated UI components.
+            </li>
+            <li>
+              Images from freepik:
+              <ul className="list-disc list-inside">
+                <li>
+                  <a href="https://www.freepik.com/free-vector/people-asking-questions-concept-illustration_209068651.htm#fromView=search&page=1&position=3&uuid=1ae9929c-19f2-4e92-8c4f-a1ababf55e61&query=Question" className="text-blue-600 underline">Why Choose UEMP</a>
+                </li>
+                <li>
+                  <a href="https://www.freepik.com/free-vector/think-outside-box-concept-illustration_38321975.htm#fromView=search&page=1&position=4&uuid=437cc60c-0b26-4610-975c-1cebff08549e&query=out+of+the+box+idea" className="text-blue-600 underline">Our Mission</a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </section>
+
       </main>
       <Footer />
     </div>

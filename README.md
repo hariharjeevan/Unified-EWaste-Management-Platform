@@ -14,7 +14,10 @@
 
 ---
 
+<div align="center">
+
 The Unified E-Waste Management Platform (UEMP) is available as both a modern web application and a downloadable desktop app.
+</div>
 
 **Web App:** Access the platform from any device with a browser at-
 <div align="center">
@@ -52,7 +55,7 @@ The **Unified E-Waste Management Platform (UEMP)** aims to streamline e-waste tr
   - Product type and class.
   - Material composition.
   - Recyclability score (based on embedded materials).
-  - Date of manufacture and estimated lifespan.
+  - Date of manufacture.
   #### 🛠 **Admin Dashboard for Manufacturers**
   - Provides manufacturers with a centralized dashboard to manage their products and QR codes.
   - Features include:
@@ -107,11 +110,14 @@ The **Unified E-Waste Management Platform (UEMP)** aims to streamline e-waste tr
 
 #### 🔍 **Structure**
 
-- The QR code embeds:
-  - **Unique product ID (UUID)**.
-  - **Manufacturer reference**.
-  - **Material and recyclability metadata**.
-  - **Register device ownership to customers**
+Each qr code contains the:
+- Manufacturer UID
+- Product ID
+- Serial Number of that product as displayed below.
+
+```
+https://unified-e-waste-management-platform.vercel.app/consumer/register?qr=/register?qr=$[user.uid]|$[productId]|$[productDetails.serialNumber]
+```
 
 ### **2. Backend System**
 
