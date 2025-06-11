@@ -362,24 +362,54 @@ const RecyclerPage = () => {
     };
   }, [queries, updateRecycleStatus, user, showQRScanner]);
 
-  const updateQueryStatus = async (queryId: string, status: "accepted" | "rejected") => {
-    if (!user) return;
-    try {
-      const queriesDocRef = doc(db, "Queries", user.uid);
-      const queriesDocSnap = await getDoc(queriesDocRef);
-      if (!queriesDocSnap.exists()) return;
-      const data = queriesDocSnap.data();
-      const queries = data.queries || {};
-      if (!queries[queryId]) return;
-      queries[queryId].status = status;
-      await updateDoc(queriesDocRef, { queries });
-      setQueries((prev) =>
-        prev.map((q) => (q.id === queryId ? { ...q, status } : q))
-      );
-    } catch (error) {
-      alert("Failed to update query status.");
+  const updateQueryStatus = async (queryId: string , uid : string , status: "accepted" | "rejected") => {
+  if (!user) return;
+
+  try {
+    const scannedProductsRef = collection(db, "consumers", uid, "scannedProducts");
+    const scannedProductsSnap = await getDocs(scannedProductsRef);
+
+    let matchingDocRef: any | null = null;
+
+    scannedProductsSnap.forEach((docSnap) => {
+      const data = docSnap.data();
+      const embeddedQueryId = data.recyclingRequest?.queryId;
+
+        if (embeddedQueryId === queryId) {
+          matchingDocRef = docSnap.ref;
+        }
+    });
+
+    if (!matchingDocRef) {
+      alert("Something went wrong. Please try again.");
+      return;
     }
-  };
+
+  await updateDoc(matchingDocRef, {
+    "recyclingRequest.status": status,
+  });
+    const queriesDocRef = doc(db, "Queries", user.uid);
+    const queriesDocSnap = await getDoc(queriesDocRef);
+
+    if (!queriesDocSnap.exists()) return;
+
+    const data = queriesDocSnap.data();
+    const queries = data.queries || {};
+
+    if (!queries[queryId]) return;
+
+    queries[queryId].status = status;
+
+    await updateDoc(queriesDocRef, { queries });
+
+    setQueries((prev) =>
+      prev.map((q) => (q.id === queryId ? { ...q, status } : q))
+    );
+  } catch (error) {
+    console.error("Failed to update query status:", error);
+    alert("Failed to update query status.");
+  }
+};
 
   if (!isLoaded) {
     return (
@@ -660,7 +690,7 @@ const RecyclerPage = () => {
                     <button
                       onClick={() => {
                         if (window.confirm("Are you sure you want to accept this Request?")) {
-                          updateQueryStatus(modalQuery.id, "accepted");
+                          updateQueryStatus(modalQuery.id , modalQuery.consumerId , "accepted");
                           setShowQueryModal(false);
                         }
                       }}
@@ -671,7 +701,7 @@ const RecyclerPage = () => {
                     <button
                       onClick={() => {
                         if (window.confirm("Are you sure you want to reject this query?")) {
-                          updateQueryStatus(modalQuery.id, "rejected");
+                          updateQueryStatus(modalQuery.id, modalQuery.consumerId , "rejected");
                           setQueries(prev => prev.filter(q => q.id !== modalQuery.id));
                           setShowQueryModal(false);
                         }
