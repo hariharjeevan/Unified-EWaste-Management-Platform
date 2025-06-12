@@ -73,20 +73,22 @@ const Home = () => {
       ]} />
       <Head>
         <title>Unified E-Waste Management Platform</title>
-        <meta name="description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, promoting sustainable recycling practices, and minimizing environmental impact." />
+        <meta name="description" content="Unified E-Waste Management Platform (UEMP) is a comprehensive digital platform that optimizes the entire lifecycle of electronic products— from manufacturing to consumer use and responsible recycling. By assigning unique QR codes to each product, UEMP enables seamless tracking, secure registration by consumers, and effortless verification by recyclers, ensuring the efficient and eco-friendly disposal of e-waste." />
 
-        {/* Open Graph tags */}
-        <meta property="og:title" content="Unified E-Waste Management Platform" />
-        <meta property="og:description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, promoting sustainable recycling practices, and minimizing environmental impact." />
-        <meta property="og:image" content="https://unified-e-waste-management-platform.vercel.app/screenshot.png" />
+        {/* Facebook Meta Tags */}
         <meta property="og:url" content="https://unified-e-waste-management-platform.vercel.app" />
         <meta property="og:type" content="website" />
+        <meta property="og:title" content="Unified E-Waste Management Platform (UEMP)" />
+        <meta property="og:description" content="Unified E-Waste Management Platform (UEMP) is a comprehensive digital platform that optimizes the entire lifecycle of electronic products— from manufacturing to consumer use and responsible recycling. By assigning unique QR codes to each product, UEMP enables seamless tracking, secure registration by consumers, and effortless verification by recyclers, ensuring the efficient and eco-friendly disposal of e-waste." />
+        <meta property="og:image" content="/screenshot.png" />
 
         {/* Twitter card meta tags */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Unified E-Waste Management Platform" />
-        <meta name="twitter:description" content="A digital platform dedicated to optimizing the lifecycle of electronic products, promoting sustainable recycling practices, and minimizing environmental impact." />
-        <meta name="twitter:image" content="https://unified-e-waste-management-platform.vercel.app/screenshot.png" />
+        <meta property="twitter:domain" content="unified-e-waste-management-platform.vercel.app" />
+        <meta property="twitter:url" content="https://unified-e-waste-management-platform.vercel.app" />
+        <meta name="twitter:title" content="Unified E-Waste Management Platform (UEMP)" />
+        <meta name="twitter:description" content="Unified E-Waste Management Platform (UEMP) is a comprehensive digital platform that optimizes the entire lifecycle of electronic products— from manufacturing to consumer use and responsible recycling. By assigning unique QR codes to each product, UEMP enables seamless tracking, secure registration by consumers, and effortless verification by recyclers, ensuring the efficient and eco-friendly disposal of e-waste." />
+        <meta name="twitter:image" content="/screenshot.png" />
       </Head>
 
       <main className="p-0 flex flex-col items-center flex-grow w-full">
