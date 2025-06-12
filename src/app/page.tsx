@@ -71,25 +71,6 @@ const Home = () => {
         { label: "Docs", href: "/docs", tooltip: "Refer to the website's documentation" },
         { label: "About", href: "/about", tooltip: "About the team behind UEMP" }
       ]} />
-      <Head>
-        <title>Unified E-Waste Management Platform</title>
-        <meta name="description" content="Unified E-Waste Management Platform (UEMP) is a comprehensive digital platform that optimizes the entire lifecycle of electronic products— from manufacturing to consumer use and responsible recycling. By assigning unique QR codes to each product, UEMP enables seamless tracking, secure registration by consumers, and effortless verification by recyclers, ensuring the efficient and eco-friendly disposal of e-waste." />
-
-        {/* Facebook Meta Tags */}
-        <meta property="og:url" content="https://unified-e-waste-management-platform.vercel.app" />
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content="Unified E-Waste Management Platform (UEMP)" />
-        <meta property="og:description" content="Unified E-Waste Management Platform (UEMP) is a comprehensive digital platform that optimizes the entire lifecycle of electronic products— from manufacturing to consumer use and responsible recycling. By assigning unique QR codes to each product, UEMP enables seamless tracking, secure registration by consumers, and effortless verification by recyclers, ensuring the efficient and eco-friendly disposal of e-waste." />
-        <meta property="og:image" content="/screenshot.png" />
-
-        {/* Twitter card meta tags */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta property="twitter:domain" content="unified-e-waste-management-platform.vercel.app" />
-        <meta property="twitter:url" content="https://unified-e-waste-management-platform.vercel.app" />
-        <meta name="twitter:title" content="Unified E-Waste Management Platform (UEMP)" />
-        <meta name="twitter:description" content="Unified E-Waste Management Platform (UEMP) is a comprehensive digital platform that optimizes the entire lifecycle of electronic products— from manufacturing to consumer use and responsible recycling. By assigning unique QR codes to each product, UEMP enables seamless tracking, secure registration by consumers, and effortless verification by recyclers, ensuring the efficient and eco-friendly disposal of e-waste." />
-        <meta name="twitter:image" content="/screenshot.png" />
-      </Head>
 
       <main className="p-0 flex flex-col items-center flex-grow w-full">
 
