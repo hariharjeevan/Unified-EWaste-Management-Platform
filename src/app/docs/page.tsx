@@ -364,6 +364,25 @@ const DocsPage = () => {
               Your browser does not support the video tag.
             </video>
           </div>
+          <ul className="list-disc list-inside text-gray-700 mt-2">
+            <li>
+              <strong>Employee Invitations:</strong> Manufacturers can invite users to join their organization as employees via email.
+              Invitation emails are sent using the <span className="font-semibold text-blue-700">SendGrid API</span>.
+              Employees receive a unique link to register and join the manufacturer&apos;s dashboard.
+            </li>
+          </ul>
+          <div className="flex justify-center mt-4">
+            <Image
+              src={"/documentation/Email.png"}
+              alt="Invite Email Example"
+              width={700}
+              height={700}
+              className="rounded-lg shadow cursor-pointer transition-transform hover:scale-105"
+              onClick={() => openModal("/documentation/Email.png")}
+              unoptimized
+            />
+          </div>
+          <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
         </section>
 
         {/* Recycler Section */}
@@ -416,6 +435,24 @@ const DocsPage = () => {
               Your browser does not support the video tag.
             </video>
           </div>
+          <ul className="list-disc list-inside text-gray-700 mt-2">
+            <li>
+              <strong>Recycling request rejection email:</strong> Recyclers can reject product recycling request and the consumer will receive an email stating the reason for the rejection.
+              Emails are sent using the <span className="font-semibold text-blue-700">SendGrid API</span>.
+            </li>
+          </ul>
+          <div className="flex justify-center mt-4">
+            <Image
+              src={"/documentation/Email1.png"}
+              alt="Recycling request rejection email"
+              width={700}
+              height={700}
+              className="rounded-lg shadow cursor-pointer transition-transform hover:scale-105"
+              onClick={() => openModal("/documentation/Email1.png")}
+              unoptimized
+            />
+          </div>
+          <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
         </section>
 
         {/* Consumer Section */}
@@ -499,6 +536,42 @@ const DocsPage = () => {
           <EnlargedImageModal imageUrl={imageUrl} onClose={closeModal} />
         </section>
 
+        {/* Demo Videos Section */}
+        <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8 text-center">
+          <h2 className="text-xl sm:text-2xl font-bold text-[#000500] mb-4">Prototype Demo Videos</h2>
+          <p className="text-gray-700 mb-6">
+            Watch the following demo videos to see the Unified E-Waste Management Platform prototype in action.
+          </p>
+          <div className="flex flex-col md:flex-row gap-8 items-center justify-center">
+            <div className="w-full md:w-1/2 aspect-video">
+              <iframe
+                width="100%"
+                height="315"
+                src="https://www.youtube.com/embed/k2Mg07B7cVk?si=kHl3qUahWBveh2Hs"
+                title="UEMP Prototype Demo 1"
+                style={{ border: "none" }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="rounded-lg w-full h-64 md:h-72"
+              ></iframe>
+              <p className="mt-2 text-gray-700 font-medium">Old Demo Video</p>
+            </div>
+            <div className="w-full md:w-1/2 aspect-video">
+              <iframe
+                width="100%"
+                height="315"
+                src="https://www.youtube.com/embed/JryL2OasFwA?si=7Kkr_wts2LuHDP2J"
+                title="UEMP Prototype Demo 2"
+                style={{ border: "none" }}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="rounded-lg w-full h-64 md:h-72"
+              ></iframe>
+              <p className="mt-2 text-gray-700 font-medium">New Demo Video</p>
+            </div>
+          </div>
+        </section>
+
         {/* About the Team Section */}
         <section className="w-full max-w-4xl bg-white p-4 sm:p-6 rounded-lg shadow-md mb-8 text-center relative overflow-hidden">
           <div className="relative z-10">
@@ -541,7 +614,6 @@ const DocsPage = () => {
             </li>
           </ul>
         </section>
-
       </main>
       <Footer />
     </div>
