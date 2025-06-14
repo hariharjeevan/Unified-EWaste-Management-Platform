@@ -443,12 +443,12 @@ const DocsPage = () => {
           </ul>
           <div className="flex justify-center mt-4">
             <Image
-              src={"/documentation/Email1.png"}
+              src={"/documentation/Email2.png"}
               alt="Recycling request rejection email"
               width={700}
               height={700}
               className="rounded-lg shadow cursor-pointer transition-transform hover:scale-105"
-              onClick={() => openModal("/documentation/Email1.png")}
+              onClick={() => openModal("/documentation/Email2.png")}
               unoptimized
             />
           </div>
@@ -596,19 +596,22 @@ const DocsPage = () => {
           </p>
           <ul className="list-disc list-outside text-gray-700 mb-4 text-left mx-auto max-w-2xl ml-5">
             <li>
-              <a href="https://react-icons.github.io/react-icons/"><strong className="text-blue-600 underline">React Icons</strong></a> for iconography.
+              <a href="https://react-icons.github.io/react-icons/" target="_blank" rel="noopener noreferrer"><strong className="text-blue-600 underline">React Icons</strong></a> for iconography.
             </li>
             <li>
-              <a href="https://www.reactbits.dev/"><strong className="text-blue-600 underline">React Bits</strong></a> for the animated UI components.
+              <a href="https://www.reactbits.dev/" target="_blank" rel="noopener noreferrer"><strong className="text-blue-600 underline">React Bits</strong></a> for the animated UI components.
+            </li>
+            <li>
+              <a href="https://github.com/yusanshi/emgithub" target="_blank" rel="noopener noreferrer"><strong className="text-blue-600 underline">emgithub</strong></a> for embedding files from GitHub.
             </li>
             <li>
               Images from freepik:
               <ul className="list-disc list-inside">
                 <li>
-                  <a href="https://www.freepik.com/free-vector/people-asking-questions-concept-illustration_209068651.htm#fromView=search&page=1&position=3&uuid=1ae9929c-19f2-4e92-8c4f-a1ababf55e61&query=Question" className="text-blue-600 underline">Why Choose UEMP</a>
+                  <a href="https://www.freepik.com/free-vector/people-asking-questions-concept-illustration_209068651.htm#fromView=search&page=1&position=3&uuid=1ae9929c-19f2-4e92-8c4f-a1ababf55e61&query=Question" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Why Choose UEMP</a>
                 </li>
                 <li>
-                  <a href="https://www.freepik.com/free-vector/think-outside-box-concept-illustration_38321975.htm#fromView=search&page=1&position=4&uuid=437cc60c-0b26-4610-975c-1cebff08549e&query=out+of+the+box+idea" className="text-blue-600 underline">Our Mission</a>
+                  <a href="https://www.freepik.com/free-vector/think-outside-box-concept-illustration_38321975.htm#fromView=search&page=1&position=4&uuid=437cc60c-0b26-4610-975c-1cebff08549e&query=out+of+the+box+idea" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">Our Mission</a>
                 </li>
               </ul>
             </li>
